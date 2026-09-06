@@ -1,6 +1,9 @@
 PY := cd packages/python && uv run
 
-.PHONY: spec models test live lint
+.PHONY: snapshot spec models test live lint
+
+snapshot:        ## re-download ANVISA's spec + portal docs into spec/ (no credentials)
+	python3 spec/snapshot.py
 
 spec:            ## apply the overlay -> spec/consultas-externas.resolved.json
 	$(PY) python ../../spec/apply_overlay.py ../../spec/consultas-externas.overlay.yaml

@@ -1,0 +1,137 @@
+{
+  "slug": "funcionamento-empresa-internacional",
+  "rota": "consultas-externas/funcionamento-empresa-internacional",
+  "titulo": "Documentação de Empresa Internacional",
+  "formato": "ENDPOINTS",
+  "conteudo": [
+    {
+      "id": "funcionamentoEmpresaInternacional",
+      "path": "funcionamento/empresaInternacional/funcionamento",
+      "method": "POST",
+      "description": "Busca por Funcionamento de Empresas Internacionais",
+      "filters": [
+        {
+          "name": "filter.razaoSocial",
+          "type": "string",
+          "description": "Número para pesquisa de razão social (min. 3 caracteres)",
+          "example": "HANGZHOU"
+        },
+        {
+          "name": "filter.codigoUnico",
+          "type": "string",
+          "description": "Número para pesquisa de Nº de Código Único",
+          "example": "C014056"
+        },
+        {
+          "name": "filter.situacao",
+          "type": "string",
+          "description": "Status de Ativação",
+          "example": "S=SIM, N=NÃO"
+        },
+        {
+          "name": "filter.tipoCadastro",
+          "type": "string",
+          "description": "Tipo de Cadastro",
+          "example": "Ex.: Insumos Farmacêuticos, Produtos para Saúde, Alimentos, ect"
+        },
+        {
+          "name": "filter.cidade",
+          "type": "number",
+          "description": "Código de Cidade",
+          "example": "Ex.: 6993, etc"
+        },
+        {
+          "name": "filter.pais",
+          "type": "number",
+          "description": "Código de País",
+          "example": "Ex.: 134, etc"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/funcionamento/empresaInternacional/funcionamento' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"sorting\": { \"razaoSocial\": \"DESC\" },\n    \"order\": \"DESC\",\n    \"page\": 1,\n    \"filter\": {\n                \"sorting\": {\n                  \"razaoSocial\": \"ASC\",\n                  \"additionalProp2\": \"ASC\",\n                  \"additionalProp3\": \"ASC\"\n                },\n                \"page\": 1,\n                \"size\": 1,\n                \"column\": \"razaoSocial\",\n                \"order\": \"ASC\",\n                \"filter\": {\n                  \"razaoSocial\": \"HANGZHOU\",\n                  \"codigoUnico\": \"C014056\",\n                  \"situacao\": \"S\",\n                  \"tipoCadastro\": \"C\",\n                  \"cidade\": 6993,\n                  \"pais\": 134\n                }\n              }'"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/funcionamento/empresaInternacional/funcionamento HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"sorting\": {\n    \"razaoSocial\": \"ASC\",\n    \"additionalProp2\": \"ASC\",\n    \"additionalProp3\": \"ASC\"\n  },\n  \"page\": 1,\n  \"size\": 1,\n  \"column\": \"razaoSocial\",\n  \"order\": \"ASC\",\n  \"filter\": {\n    \"razaoSocial\": \"HANGZHOU\",\n    \"codigoUnico\": \"C014056\",\n    \"situacao\": \"S\",\n    \"tipoCadastro\": \"C\",\n    \"cidade\": 6993,\n    \"pais\": 134\n  }\n}"
+        }
+      ]
+    },
+    {
+      "id": "find",
+      "path": "/",
+      "method": "POST",
+      "description": "Pesquisa de razão social (min. 3 caracteres)",
+      "filters": [
+        {
+          "name": "filter.razaoSocial",
+          "type": "string",
+          "description": "Pesquisa de razão social (min. 3 caracteres)",
+          "example": "HANGZHOU"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/funcionamento/empresaInternacional/' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"sorting\": { \"razaoSocial\": \"DESC\" },\n    \"order\": \"DESC\",\n    \"page\": 1,\n    \"filter\": {\n  \"sorting\": {\n    \"razaoSocial\": \"ASC\",\n    \"additionalProp2\": \"ASC\",\n    \"additionalProp3\": \"ASC\"\n  },\n  \"page\": 1,\n  \"size\": 1,\n  \"column\": \"razaoSocial\",\n  \"order\": \"ASC\",\n  \"filter\": {\n  \"razaoSocial\": \"HANGZHOU\"\n  }\n}\n  }'"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/funcionamento/empresaInternacional/ HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"sorting\": { \"razaoSocial\": \"DESC\" },\n  \"order\": \"DESC\",\n  \"page\": 1,\n  \"filter\": {\n  \"sorting\": {\n    \"razaoSocial\": \"ASC\",\n    \"additionalProp2\": \"ASC\",\n    \"additionalProp3\": \"ASC\"\n  },\n  \"page\": 1,\n  \"size\": 1,\n  \"column\": \"razaoSocial\",\n  \"order\": \"ASC\",\n  \"filter\": {\n    \"razaoSocial\": \"HANGZHOU\"\n\n  }\n}\n}"
+        }
+      ]
+    },
+    {
+      "id": "empresaCnpj",
+      "path": "/funcionamento/empresaInternacional/{codigoUnico}",
+      "method": "GET",
+      "description": "Busca por Empresas Internacionais por Código Único",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/funcionamento/empresaInternacional/{codigoUnico}' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/funcionamento/empresaInternacional/{codigoUnico} HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ]
+    },
+    {
+      "id": "listaPaises",
+      "path": "/funcionamento/empresaInternacional/funcionamentoTipo/funcionamentoInternacional",
+      "method": "GET",
+      "description": "Lista de Países",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/funcionamento/empresaInternacional/funcionamentoTipo/funcionamentoInternacional' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/funcionamento/empresaInternacional/funcionamentoTipo/funcionamentoInternacional HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ]
+    },
+    {
+      "id": "",
+      "path": "/funcionamento/empresaInternacional/funcionamento/{id}",
+      "method": "GET",
+      "description": "Pesquisa Funcionamento Empresas Internacionais por ID",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/funcionamento/empresaInternacional/funcionamento/{id}' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/funcionamento/empresaInternacional/funcionamento/{id} HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ]
+    }
+  ]
+}

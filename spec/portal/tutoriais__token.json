@@ -1,0 +1,50 @@
+{
+  "slug": "tutorial-token",
+  "rota": "tutoriais/token",
+  "titulo": "Token de Acesso via Client Credentials",
+  "formato": "ENDPOINTS",
+  "conteudo": [
+    {
+      "path": "/realms/{{idpRealm}}/protocol/openid-connect/token",
+      "method": "POST",
+      "description": "Obtém um token de acesso via Client Credentials Grant",
+      "filters": [
+        {
+          "name": "grant_type",
+          "type": "string",
+          "description": "Tipo de fluxo OAuth2",
+          "example": "client_credentials"
+        },
+        {
+          "name": "client_id",
+          "type": "string",
+          "description": "ID do client registrado",
+          "example": "my-client"
+        },
+        {
+          "name": "client_secret",
+          "type": "string",
+          "description": "Segredo do client (confidencial)",
+          "example": "eXamPl3S3cr3t"
+        },
+        {
+          "name": "scope",
+          "type": "string",
+          "description": "Escopos solicitados (opcional)",
+          "example": "openid profile"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{idpUrl}}/realms/{{idpRealm}}/protocol/openid-connect/token' \\\n  -H 'Content-Type: application/x-www-form-urlencoded' \\\n  -d 'grant_type=client_credentials&client_id=my-client&client_secret=eXamPl3S3cr3t&scope=openid'"
+        },
+        {
+          "type": "http",
+          "snippet": "POST /realms/{{idpRealm}}/protocol/openid-connect/token HTTP/1.1\nHost: {{idpHost}}\nContent-Type: application/x-www-form-urlencoded\n\ngrant_type=client_credentials&client_id=my-client&client_secret=eXamPl3S3cr3t&scope=openid"
+        }
+      ],
+      "responseExample": "{\n  \"access_token\": \"eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9…\", -> token de acesso\n  \"expires_in\": 300,\n  \"refresh_expires_in\": 0,\n  \"token_type\": \"Bearer\",\n  \"scope\": \"openid\"\n}"
+    }
+  ]
+}

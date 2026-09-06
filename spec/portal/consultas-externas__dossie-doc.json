@@ -1,0 +1,158 @@
+{
+  "slug": "dossie-doc",
+  "rota": "consultas-externas/dossie-doc",
+  "titulo": "Documentação de Endpoints de Dossiê",
+  "formato": "ENDPOINTS",
+  "conteudo": [
+    {
+      "id": "tiposProduto",
+      "path": "/dossie/tiposProduto",
+      "method": "GET",
+      "description": "Lista de tipos de produto disponíveis",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/dossie/tiposProduto' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        }
+      ]
+    },
+    {
+      "id": "acoesFiscalizacao",
+      "path": "/dossie/acoesFiscalizacao",
+      "method": "GET",
+      "description": "Lista de ações/atividades de fiscalização",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/dossie/acoesFiscalizacao' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        }
+      ]
+    },
+    {
+      "id": "classesRisco",
+      "path": "/dossie/classesRisco",
+      "method": "GET",
+      "description": "Lista de classes de risco disponíveis",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/dossie/classesRisco' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        }
+      ]
+    },
+    {
+      "id": "dossie",
+      "path": "/dossie",
+      "method": "POST",
+      "description": "Busca dossiês (paginação, ordenação e filtros avançados)",
+      "filters": [
+        {
+          "name": "sorting",
+          "type": "object",
+          "description": "Campos de ordenação",
+          "example": "{ \"processo\": \"ASC\" }"
+        },
+        {
+          "name": "order",
+          "type": "string",
+          "description": "ASC | DESC",
+          "example": "\"ASC\""
+        },
+        {
+          "name": "page",
+          "type": "string",
+          "description": "Página (1-based)",
+          "example": "\"1\""
+        },
+        {
+          "name": "count",
+          "type": "number",
+          "description": "Itens por página",
+          "example": "10"
+        },
+        {
+          "name": "filter.codigoRisco",
+          "type": "string",
+          "description": "Código da classe de risco",
+          "example": "\"19\"",
+          "metadataFragment": "classesRisco"
+        },
+        {
+          "name": "filter.dataPublicacaoInicial",
+          "type": "string",
+          "description": "Data/hora inicial (dd/MM/yyyy HH:mm:ss)",
+          "example": "\"01/12/2024 03:00:00\""
+        },
+        {
+          "name": "filter.dataPublicacaoFinal",
+          "type": "string",
+          "description": "Data/hora final (dd/MM/yyyy HH:mm:ss)",
+          "example": "\"30/01/2025 03:00:00\""
+        },
+        {
+          "name": "filter.empresaEnvolvidaCnpj",
+          "type": "string",
+          "description": "CNPJ da empresa envolvida",
+          "example": "\"03112386000111\""
+        },
+        {
+          "name": "filter.empresaEnvolvidaRazaoSocial",
+          "type": "string",
+          "description": "Razão social da empresa",
+          "example": "\"AGÊNCIA NACIONAL DE VIGILÂNCIA SANITÁRIA – ANVISA\""
+        },
+        {
+          "name": "filter.empresaEnvolvidaTipoOrigem",
+          "type": "string",
+          "description": "0=nacional | 1=internacional",
+          "example": "\"0\""
+        },
+        {
+          "name": "filter.listaAcoesAtividades",
+          "type": "string",
+          "description": "IDs de ações/atividades no formato <acao>-<ativ>[,<ativ>]...; use \"@\" para adicionar outra ação. Ex.: \"3-@1-5,3,6,7\" (ação 3 completa e ação 1 com atividades 5,3,6,7).",
+          "example": "\"3-@1-5,3,6,7\"",
+          "metadataFragment": "acoesFiscalizacao"
+        },
+        {
+          "name": "filter.parametroProduto",
+          "type": "string",
+          "description": "Palavra-chave do produto",
+          "example": "\"SUPLEMENTO\""
+        },
+        {
+          "name": "filter.processo",
+          "type": "string",
+          "description": "Número completo do processo",
+          "example": "\"25351093571202597\""
+        },
+        {
+          "name": "filter.tipoAssunto",
+          "type": "string",
+          "description": "Tipo de assunto: 1 = todos, 2 = somente produtos irregulares, 3 = somente falsificados",
+          "example": "\"1\""
+        },
+        {
+          "name": "filter.tiposProduto",
+          "type": "string",
+          "description": "IDs dos tipos de produto",
+          "example": "\"6,2,15,1,8,12,3\"",
+          "metadataFragment": "tiposProduto"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/dossie' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{ \"page\": 1, \"count\": 10, \"filter\": { \"codigoRisco\": \"19\" } }'"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/dossie HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{ \"page\": 1, \"count\": 10, \"filter\": { \"codigoRisco\": \"19\" } }"
+        }
+      ]
+    }
+  ]
+}

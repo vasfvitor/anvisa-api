@@ -45,17 +45,24 @@ class FakeApi:
 
     def __init__(self) -> None:
         self.requests: list[httpx.Request] = []
-        self.routes = {
-            (e["method"], e["path"]): e["name"] for e in MANIFEST["responses"] if e["status"] == 200
-        }
+        self.routes: dict[tuple[str, str], list[dict]] = {}
+        for e in MANIFEST["responses"]:
+            if e["status"] == 200:
+                self.routes.setdefault((e["method"], e["path"]), []).append(e)
 
     def handler(self, request: httpx.Request) -> httpx.Response:
         self.requests.append(request)
         path = request.url.path.removeprefix("/consultas-externas-api")  # the base_url prefix
-        name = self.routes.get((request.method, path))
-        if name is None:
+        candidates = self.routes.get((request.method, path)) or []
+        if not candidates:
             return httpx.Response(404, json={"error": f"no fixture for {request.method} {path}"})
-        return response_for(name)
+        try:
+            body = json.loads(request.read()) if request.content else None
+        except ValueError:  # the token request is form-encoded
+            body = None
+        # several fixtures on one path (e.g. fila/consulta for two subfilas): match the request body
+        entry = next((e for e in candidates if e.get("request") == body), candidates[0])
+        return response_for(entry["name"])
 
     def json_bodies(self) -> list[dict]:
         return [

@@ -13,19 +13,21 @@ ships a client that encodes it.
 | Behavior | Reality |
 |---|---|
 | User-Agent | Cloudflare answers **403** to curl's default UA, even for the spec URL. Send a descriptive one. |
-| Auth | OAuth 2.0 client credentials (Keycloak, realm `externo`). Token lasts **1740 s**, **no refresh token**. |
-| Rate limit | Token bucket per client: **burst 25, refill 1/s**, reported only in `X-RateLimit-*` headers. |
+| Auth | OAuth 2.0 client credentials (Keycloak, realm `externo`). Token lasts **1740 s** (the portal tutorial says 300), **no refresh token**, one role `CONSULTASEXTERNAS_LEITURA`. |
+| Rate limit | Token bucket, **burst 25, refill 1/s**, reported only in `X-RateLimit-*` headers. Keyed by **source address**, not client id: the unauthenticated portal endpoints on the same gateway drain the same bucket. |
 | Pagination | Requests are **1-based** (`page: 0` → error); responses are Spring `Page` objects, **0-based**. |
 | Filters | `POST /udi` needs **at least one** `filter` key; `POST /fila/consulta` **and** `POST /lista/consulta` need `filter.subfila` (yes, also for listas). |
 | Errors | Validation failures come back as **HTTP 500** with `{status, mensagem, data_hora, mensagem_detalhada}`. |
-| `fila/consulta`, `lista/consulta` | Return the **whole** subqueue/sublista as an array; `page`/`size` are ignored. |
+| `fila/consulta`, `lista/consulta` | Return the **whole** subqueue/sublista as an array (40, 35 and 555 rows observed); `page`/`size` are ignored. |
 | Dates | Integer **epoch milliseconds**. |
+| Coverage | The spec has 32 endpoints. The portal's doc pages describe **35 more** (certificados, empresa nacional/internacional, dossiê, alimentos, produtos de saúde) on the same base path, but the four probed answer a plain Spring **404**: documented, not deployed. |
 
 ## Layout
 
 ```
-spec/       ANVISA's OpenAPI document (untouched) + an OpenAPI Overlay with the corrections
-            above + the resolved spec. Language-neutral source of truth.
+spec/       ANVISA's OpenAPI document (as published, only reformatted) + an OpenAPI Overlay
+            with the corrections above + the resolved spec. Language-neutral source of truth.
+            spec/portal/ holds the portal's own doc pages and menu, fetched by snapshot.py.
 fixtures/   Real responses recorded from the API, with a manifest. Shared test fixtures.
 packages/python/   The `anvisa` Python library and CLI.
 ```
@@ -90,13 +92,17 @@ others) instead of a bare 500.
 cd packages/python && uv sync
 uv run pytest             # fixture-only, no network
 uv run pytest -m live     # 3 real requests; needs credentials
-make spec && make models  # at the repo root; a non-empty git diff means ANVISA changed the spec
+make spec && make models  # at the repo root; a non-empty git diff means the overlay drifted
+make snapshot             # re-download the spec and portal docs; a diff means ANVISA changed them
 ```
 
 ## Scope
 
-Covered: every JSON endpoint of the API, as the `fila`, `lista`, `udi`, `nome_tecnico`, and
-`assunto` domains. The two XLS/XLSX download endpoints are not wrapped. The SNGPC API (a
+Covered: every JSON endpoint in the published spec, as the `fila`, `lista`, `udi`,
+`nome_tecnico`, and `assunto` domains. The two XLS/XLSX download endpoints are not wrapped.
+The domains the portal documents but the gateway does not serve yet (see the table) are
+saved under `spec/portal/`; a daily workflow re-fetches them, so the day ANVISA deploys
+them shows up as a diff. The SNGPC API (a
 separate service for pharmacies) is out of scope.
 
 Not affiliated with ANVISA. MIT.

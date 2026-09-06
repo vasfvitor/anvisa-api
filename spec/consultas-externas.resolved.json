@@ -51,7 +51,7 @@
           "Consulta UDI"
         ],
         "summary": "Retorna UDI paginados",
-        "description": "Paginated UDI search. At least one `filter` key is required; an empty filter fails with HTTP 500 and `mensagem: mensagens.MSG-062`. Only `nomeComercial` has been verified live; the other keys come from the published example and are unverified.",
+        "description": "Paginated UDI search. At least one `filter` key is required; an empty filter fails with HTTP 500 and `mensagem: mensagens.MSG-062`. Only `nomeComercial` has been verified live; the other keys come from the published example and are unverified. The filter check runs before the page check: `page: 0` with an empty filter still yields MSG-062, not the page-index error.",
         "operationId": "paginar",
         "requestBody": {
           "description": "Payload completo de PaginationBuilder",
@@ -1367,7 +1367,8 @@
             "subfila"
           ]
         },
-        "x-paginated": false
+        "x-paginated": false,
+        "x-observed-sizes": "Whole queues observed on 2026-09-06: subfila 167 → 40 rows, subfila 161 → 35 rows; the sibling /lista/consulta returned 555 rows through the same DTO. No sign of a silent cap."
       }
     },
     "/api/v1/assunto/download": {
@@ -6218,19 +6219,20 @@
     "securitySchemes": {
       "Keycloak": {
         "type": "oauth2",
-        "description": "Keycloak OAuth2 client credentials (realm `externo`). The access token expires in 1740 s and no refresh token is issued; request a new token with the same credentials.",
+        "description": "Keycloak OAuth2 client credentials (realm `externo`). The access token expires in 1740 s (the portal's token tutorial says 300; the live value is 1740) and no refresh token is issued; request a new token with the same credentials. The JWT carries `aud: [consultas-externas-service, account]` and the single role `CONSULTASEXTERNAS_LEITURA`; there are no per-endpoint scopes.",
         "flows": {
           "clientCredentials": {
             "tokenUrl": "https://acesso.prd.apps.anvisa.gov.br/auth/realms/externo/protocol/openid-connect/token",
             "scopes": {}
           }
         },
-        "x-token-lifetime-seconds": 1740
+        "x-token-lifetime-seconds": 1740,
+        "x-jwt-role": "CONSULTASEXTERNAS_LEITURA"
       }
     },
     "headers": {
       "X-RateLimit-Remaining": {
-        "description": "Tokens left in the per-client bucket after this request.",
+        "description": "Tokens left in the bucket after this request (shared per source address).",
         "schema": {
           "type": "integer"
         }
@@ -6252,7 +6254,7 @@
   "x-anvisa-client-requirements": {
     "userAgent": "Required. Cloudflare answers HTTP 403 (HTML \"Attention Required\") to curl's default User-Agent, even for this spec document. Send a descriptive User-Agent.",
     "rateLimit": {
-      "type": "token-bucket per client_id (Spring Cloud Gateway)",
+      "type": "token bucket (Spring Cloud Gateway). Observed 2026-09-06 to be shared between the authenticated API and the unauthenticated portal backend on the same gateway, i.e. keyed by source address rather than by client_id.",
       "burstCapacity": 25,
       "replenishRate": 1,
       "headers": [

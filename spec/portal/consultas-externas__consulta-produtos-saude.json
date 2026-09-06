@@ -1,0 +1,96 @@
+{
+  "slug": "consulta-produtos-saude",
+  "rota": "consultas-externas/consulta-produtos-saude",
+  "titulo": "Consulta Produtos de Saúde",
+  "formato": "ENDPOINTS",
+  "conteudo": [
+    {
+      "id": "consultaProdutosSaude",
+      "path": "/consulta/saude",
+      "method": "POST",
+      "description": "Consulta de Produtos de Saúde",
+      "filters": [
+        {
+          "name": "filter.nomeProduto",
+          "type": "string",
+          "description": "Nome do Dispositivo Médico",
+          "example": "MEDIC"
+        },
+        {
+          "name": "filter.numeroRegistro",
+          "type": "string",
+          "description": "Número da Notificação ou do Registro do Dispositivo Médico",
+          "example": ""
+        },
+        {
+          "name": "filter.numeroProcesso",
+          "type": "string",
+          "description": "Processo da Notificação ou do Registro do Dispositivo Médico",
+          "example": ""
+        },
+        {
+          "name": "filter.nomeTecnico.codigos",
+          "type": "string",
+          "description": "Nome Técnico do Dispositivo Médico",
+          "example": ""
+        },
+        {
+          "name": "filter.empresa.cnpj",
+          "type": "number",
+          "description": "CNPJ da Empresa Fabricante Nacional",
+          "example": "14 caracteres"
+        },
+        {
+          "name": "filter.situacaoNotificacaoRegistro",
+          "type": "number",
+          "description": "Situação da Notificação ou do Registro do Dispositivo Médico",
+          "example": "1=Ativo, 2=Inativo"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/consulta/saude' \\\n    -H 'Accept: application/json' \\\n    -H 'Authorization: Bearer <token>' \\\n    -H 'Content-Type: application/json' \\\n    -d ' {\n                          \"sorting\": { \"nomeProduto\": \"ASC\" },\n                          \"count\": 10,\n                          \"order\": \"ASC\",\n                          \"page\": \"1\",\n                          \"filter\": {\n                            \"nomeProduto\":\"MEDIC\"\n                            \"nomeTecnico\": \"\",\n                            \"tipoAssunto\": \"true\",\n                            \"cnpj\": \"05993698000107\",\n                             \"situacaoNotificacaoRegistro\": \"1\"\n                          }\n                        }'"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/consulta/saude HTTP/1.1\n  Host: {{gatewayHost}}\n  Accept: application/json\n  Authorization: Bearer <token>\n  Content-Type: application/json\n\n {\n                           \"sorting\": { \"nomeProduto\": \"ASC\" },\n                           \"count\": 10,\n                           \"order\": \"ASC\",\n                           \"page\": \"1\",\n                           \"filter\": {\n                             \"nomeProduto\":\"MEDIC\"\n                             \"nomeTecnico\": \"\",\n                             \"tipoAssunto\": \"true\",\n                             \"cnpj\": \"05993698000107\",\n                              \"situacaoNotificacaoRegistro\": \"1\"\n                           }\n                         }"
+        }
+      ]
+    },
+    {
+      "id": "nomesTwecnicos",
+      "path": "/consulta/nomeTecnico",
+      "method": "POST",
+      "description": "Consulta de de Nome Técnico do Dispositivo Médico",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/consulta/nomeTecnico' \\\n             -H 'Accept: application/json' \\\n             -H 'Authorization: Bearer <token>' \\\n             -H 'Content-Type: application/json' \\\n             -d ' {\n                     \"sorting\":{\n                        \"codigo\":\"ASC\"\n                     },\n                     \"count\":10,\n                     \"order\":\"ASC\",\n                     \"page\":\"1\",\n                     \"filter\":{\n                        \"codigo\":\"1511345\",\n                        \"nome\":\"Detector de Bile\"\n                     }\n                  }'"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/consulta/nomeTecnico HTTP/1.1\n           Host: {{gatewayHost}}\n           Accept: application/json\n           Authorization: Bearer <token>\n           Content-Type: application/json\n\n         {\n                              \"sorting\":{\n                                 \"codigo\":\"ASC\"\n                              },\n                              \"count\":10,\n                              \"order\":\"ASC\",\n                              \"page\":\"1\",\n                              \"filter\":{\n                                 \"codigo\":\"1511345\",\n                                 \"nome\":\"Detector de Bile\"\n                              }\n                           }"
+        }
+      ]
+    },
+    {
+      "id": "numeroProcesso",
+      "path": "/consulta/saude/{numeroProcesso}",
+      "method": "POST",
+      "description": "Consulta de Produtos Saúde por número processo",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/consulta/saude/{numeroProcesso}' \\\n              -H 'Accept: application/json' \\\n              -H 'Authorization: Bearer <token>' \\\n              -H 'Content-Type: application/json' \\\n              -d ' {\n                                    \"sorting\": { \"nomeProduto\": \"ASC\" },\n                                    \"count\": 10,\n                                    \"order\": \"ASC\",\n                                    \"page\": \"1\",\n                                    \"filter\": {\n                                      \"nomeProduto\":\"MEDIC\"\n                                      \"nomeTecnico\": \"\",\n                                      \"tipoAssunto\": \"true\",\n                                      \"cnpj\": \"05993698000107\",\n                                       \"situacaoNotificacaoRegistro\": \"1\"\n                                    }\n                                  }'"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/consulta/saude/{numeroProcesso} HTTP/1.1\n            Host: {{gatewayHost}}\n            Accept: application/json\n            Authorization: Bearer <token>\n            Content-Type: application/json\n\n           {\n                                     \"sorting\": { \"nomeProduto\": \"ASC\" },\n                                     \"count\": 10,\n                                     \"order\": \"ASC\",\n                                     \"page\": \"1\",\n                                     \"filter\": {\n                                       \"nomeProduto\":\"MEDIC\"\n                                       \"nomeTecnico\": \"\",\n                                       \"tipoAssunto\": \"true\",\n                                       \"cnpj\": \"05993698000107\",\n                                        \"situacaoNotificacaoRegistro\": \"1\"\n                                     }\n                                   }"
+        }
+      ]
+    }
+  ]
+}

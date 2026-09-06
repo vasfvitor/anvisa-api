@@ -1,0 +1,27 @@
+name: drift
+
+# Daily: re-download ANVISA's OpenAPI document and the portal documentation pages and fail
+# if anything changed relative to what is committed under spec/. A red run here means ANVISA
+# changed the API surface or its docs; the fix is to look at the diff, re-record affected
+# fixtures, and commit the new snapshot. Kept out of ci.yml so unrelated PRs don't go red
+# because of an upstream change. No credentials are used; the requests are unauthenticated.
+
+on:
+  schedule:
+    - cron: "17 9 * * *"   # 06:17 America/Sao_Paulo
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - name: Snapshot the spec and the portal pages
+        run: python3 spec/snapshot.py
+      - name: Fail if ANVISA changed anything
+        run: |
+          git diff --exit-code --stat -- spec/

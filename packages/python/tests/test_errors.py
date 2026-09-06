@@ -49,6 +49,13 @@ def test_msg062_is_explained():
         raise_for_response(response_for("err_msg062"))
 
 
+def test_documented_but_undeployed_endpoint_is_not_found():
+    # portal-documented endpoints answer Spring's default 404 body, not the ErroApi envelope
+    with pytest.raises(NotFoundError) as info:
+        raise_for_response(response_for("err_not_deployed"))
+    assert "/api/v1/empresa/" in str(info.value)
+
+
 def test_success_is_silent():
     raise_for_response(response_for("areafila"))
 

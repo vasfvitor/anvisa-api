@@ -28,6 +28,7 @@ def test_fila_chain(client, fake_api):
     assert len(fila) == 40
     assert fila[0].nuOrdem == 1
     assert fake_api.json_bodies()[-1] == {"filter": {"subfila": 167}}
+    assert len(client.fila.consulta(161)) == 35  # a second recorded queue; sizes vary, no cap
 
 
 def test_lista_chain_uses_the_subfila_key(client, fake_api):

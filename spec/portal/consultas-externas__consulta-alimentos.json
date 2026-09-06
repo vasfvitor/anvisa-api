@@ -1,0 +1,267 @@
+{
+  "slug": "consulta-alimentos",
+  "rota": "consultas-externas/consulta-alimentos",
+  "titulo": "Consulta Alimentos",
+  "formato": "ENDPOINTS",
+  "conteudo": [
+    {
+      "id": "consultaAlimentos",
+      "path": "/consulta/alimento/produtos",
+      "method": "POST",
+      "description": "Consulta de Alimentos",
+      "filters": [
+        {
+          "name": "filter.detentorRegistro",
+          "type": "number",
+          "description": "CNPJ do Detentor da Regularização",
+          "example": "82496183000223"
+        },
+        {
+          "name": "filter.nomeProduto",
+          "type": "string",
+          "description": "Nome do Produto",
+          "example": "FARINHA DE TRIGO"
+        },
+        {
+          "name": "filter.marca",
+          "type": "string",
+          "description": "Marca do Produto",
+          "example": "DONA BENTA"
+        },
+        {
+          "name": "filter.numeroProcesso",
+          "type": "string",
+          "description": "Número do Processo 13 posições",
+          "example": "2502000016493"
+        },
+        {
+          "name": "filter.categorias",
+          "type": "number",
+          "description": "Categoria do Produto",
+          "example": "462"
+        },
+        {
+          "name": "filter.numeroRegistroNotificacao",
+          "type": "string",
+          "description": "Número da Regularização de 9 posições",
+          "example": "563690040"
+        },
+        {
+          "name": "filter.formasFisicas",
+          "type": "number",
+          "description": "Forma Física do Produto",
+          "example": "PÓ=1029 "
+        },
+        {
+          "name": "filter.situacaoProduto",
+          "type": "string",
+          "description": "Situação do Produto",
+          "example": "S=Ativo, N=Inativo"
+        },
+        {
+          "name": "filter.tiposRegularizacao",
+          "type": "string",
+          "description": "Tipo de Regularização do Produto",
+          "example": "1=Notificado, 2=Registrado"
+        },
+        {
+          "name": "filter.empresaFabricanteInternacional",
+          "type": "string",
+          "description": "Código Único da Empresa Fabricante Internacional",
+          "example": ""
+        },
+        {
+          "name": "filter.empresaFabricanteNacional",
+          "type": "string",
+          "description": "CNPJ da Empresa Fabricante Nacional",
+          "example": "67256362000119"
+        },
+        {
+          "name": "filter.estado",
+          "type": "number",
+          "description": "Estado da Empresa Fabricante Nacional",
+          "example": "SP=São Paulo"
+        },
+        {
+          "name": "filter.pais",
+          "type": "number",
+          "description": "País da Empresa Fabricante Internacional",
+          "example": "182 = \"Estados Unidos\""
+        },
+        {
+          "name": "filter.grupoPopulacional",
+          "type": "number",
+          "description": "Grupo Populacional Indicado",
+          "example": "7 = \"4 a 8 anos\""
+        },
+        {
+          "name": "filter.alegacoesFuncionais",
+          "type": "number",
+          "description": "Alegações Funcionais do Produto",
+          "example": "84 = \"O ferro auxilia na formação das células vermelhas do sangue\""
+        },
+        {
+          "name": "filter.dataPublicacaoInicial",
+          "type": "date",
+          "description": "Data Inicial do Período da Regularização do Produto",
+          "example": "Ex.: 00/00/0000"
+        },
+        {
+          "name": "filter.dataPublicacaoFinal",
+          "type": "date",
+          "description": "Data Final do Período da Regularização do Produto",
+          "example": "Ex.: 00/00/0000"
+        },
+        {
+          "name": "filter.composicaoAlergenico",
+          "type": "number",
+          "description": "Composição do Alergênico",
+          "example": "4=\"Aveia\""
+        },
+        {
+          "name": "filter.alergenicos",
+          "type": "string",
+          "description": "Alimentos Alergênicos",
+          "example": "1=\"Contém\", 4=\"Contém derivado de\", 2=\"Não contém\", 3=\"Pode conter\""
+        },
+        {
+          "name": "filter.intoleranciasAlimentares",
+          "type": "number",
+          "description": "Intolerâncias Alimentares",
+          "example": "1=\"Glúten\""
+        },
+        {
+          "name": "filter.intoleranciasAlimentaresOpcoes",
+          "type": "string",
+          "description": "Declaração: Glúten/Lactose",
+          "example": "S=Contém, N=Não Contém"
+        },
+        {
+          "name": "filter.viasAdministracao",
+          "type": "number",
+          "description": "Via de Administração",
+          "example": "82=\"ENTERAL\""
+        },
+        {
+          "name": "count",
+          "type": "number",
+          "description": "Itens por página (max 300)",
+          "example": "10"
+        },
+        {
+          "name": "page",
+          "type": "number",
+          "description": "Número da página (inicia em 1)",
+          "example": "1"
+        },
+        {
+          "name": "order",
+          "type": "string",
+          "description": "Ordenação (ASC ou DESC)",
+          "example": "ASC"
+        },
+        {
+          "name": "column",
+          "type": "string",
+          "description": "Coluna para ordenação",
+          "example": "razaoSocial"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/consulta/alimento/produtos' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"sorting\": { \"nomeProduto\": \"ASC\" },\n    \"order\": \"DESC\",\n    \"page\": 1,\n    \"filter\": {\n                \"sorting\": {\n                  \"nomeProduto\": \"ASC\",\n                  \"additionalProp2\": \"ASC\",\n                  \"additionalProp3\": \"ASC\"\n                },\n                \"page\": 1,\n                \"size\": 10,\n                \"column\": \"nomeProduto\",\n                \"order\": \"ASC\",\n                  \"filter\":{\n                            \"detentorRegistro\":\"41171125000161\",\n                            \"nomeProduto\":\"ARROZ\",\n                            \"marca\":\"\",\n                            \"numeroProcesso\":\"2502000016493\",\n                            \"categorias\":\"\",\n                            \"numeroRegistroNotificacao\":\"541680002\"\n                         }\n              }'"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/consulta/alimento/produtos HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n    \"sorting\": { \"nomeProduto\": \"ASC\" },\n    \"order\": \"DESC\",\n    \"page\": 1,\n    \"filter\": {\n                \"sorting\": {\n                  \"nomeProduto\": \"ASC\",\n                  \"additionalProp2\": \"ASC\",\n                  \"additionalProp3\": \"ASC\"\n                },\n                \"page\": 1,\n                \"size\": 10,\n                \"column\": \"nomeProduto\",\n                \"order\": \"ASC\",\n                  \"filter\":{\n                            \"detentorRegistro\":\"41171125000161\",\n                            \"nomeProduto\":\"ARROZ\",\n                            \"marca\":\"\",\n                            \"numeroProcesso\":\"2502000016493\",\n                            \"categorias\":\"\",\n                            \"numeroRegistroNotificacao\":\"541680002\"\n                         }\n              }"
+        }
+      ]
+    },
+    {
+      "id": "numeroProcesso",
+      "path": "/consulta/alimento/produtos/{numeroProcesso}",
+      "method": "GET",
+      "description": "Consulta de Alimentos por número processo",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/consulta/alimento/produtos/{numeroProcesso}'' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/consulta/alimento/produtos/{numeroProcesso}' HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ]
+    },
+    {
+      "id": "grupoPopulacional",
+      "path": "/grupoPopulacional/",
+      "method": "GET",
+      "description": "Lista de Grupo Populacional",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/grupoPopulacional/ \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/grupoPopulacional/ HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ]
+    },
+    {
+      "id": "categoriaProdutoAlimentos",
+      "path": "/categoriaProduto/alimentos",
+      "method": "GET",
+      "description": "Listagem  de categorias de Produtos(alimentos)",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/categoriaProduto/alimentos' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/categoriaProduto/alimentos HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ]
+    },
+    {
+      "id": "alegacaoFuncional",
+      "path": "/alegacaoFuncional/",
+      "method": "GET",
+      "description": "Lista de Alegações Funcionais",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/alegacaoFuncional/ \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/alegacaoFuncional/ HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ]
+    },
+    {
+      "id": "alergenico",
+      "path": "/alergenico/",
+      "method": "GET",
+      "description": "Lista de Alergêncios",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/alergenico/ \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/alergenico/ HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ]
+    }
+  ]
+}

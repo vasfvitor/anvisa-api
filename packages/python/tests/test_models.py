@@ -12,6 +12,8 @@ CASES = [
     ("fila_grupos.json", models.ChaveValorLong, 8),
     ("subfilas.json", models.ChaveValorInteger, 13),
     ("fila_consulta.json", models.FilaCalculadaDTO, 40),
+    ("subfilas_281.json", models.ChaveValorInteger, 4),
+    ("fila_consulta_161.json", models.FilaCalculadaDTO, 35),
     ("lista_grupos.json", models.ChaveValorLong, 6),
     ("lista_sublistas.json", models.ChaveValorInteger, 1),
     ("lista_consulta.json", models.FilaCalculadaDTO, 555),

@@ -1,0 +1,55 @@
+{
+  "slug": "empresa-internacional-doc",
+  "rota": "consultas-externas/empresa-internacional-doc",
+  "titulo": "Documentação de Empresas Internacionais",
+  "formato": "ENDPOINTS",
+  "conteudo": [
+    {
+      "path": "/empresaInternacional",
+      "method": "POST",
+      "description": "Busca empresas internacionais por razão social",
+      "filters": [
+        {
+          "name": "filter.razaoSocial",
+          "type": "string",
+          "description": "Texto para pesquisa de razão social (min. 3 caracteres)",
+          "example": "bac"
+        },
+        {
+          "name": "count",
+          "type": "number",
+          "description": "Itens por página (max 300)",
+          "example": "10"
+        },
+        {
+          "name": "page",
+          "type": "number",
+          "description": "Número da página (inicia em 1)",
+          "example": "1"
+        },
+        {
+          "name": "order",
+          "type": "string",
+          "description": "Ordenação (ASC ou DESC)",
+          "example": "ASC"
+        },
+        {
+          "name": "column",
+          "type": "string",
+          "description": "Coluna para ordenação",
+          "example": "razaoSocial"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/empresaInternacional' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"sorting\": { \"razaoSocial\": \"DESC\" },\n    \"order\": \"DESC\",\n    \"page\": 1,\n    \"filter\": { \"razaoSocial\": \"BAC\" }\n  }'"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/empresaInternacional HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"sorting\": { \"razaoSocial\": \"DESC\" },\n  \"order\": \"DESC\",\n  \"page\": 1,\n  \"filter\": { \"razaoSocial\": \"BAC\" }\n}"
+        }
+      ]
+    }
+  ]
+}

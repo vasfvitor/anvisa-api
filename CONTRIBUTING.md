@@ -7,7 +7,11 @@ guessed.
 
 ## Layout
 
-- `spec/consultas-externas.openapi.json`: ANVISA's document, byte-for-byte. Never edited.
+- `spec/consultas-externas.openapi.json`: ANVISA's document, reformatted by `make snapshot` and
+  otherwise never edited.
+- `spec/portal/`: the portal's menu, its backend spec and its documentation pages, also from
+  `make snapshot`. They describe endpoints the published spec omits, most of which are not
+  deployed; the daily `drift` workflow diffs them.
 - `spec/consultas-externas.overlay.yaml`: every correction, as an
   [OpenAPI Overlay](https://spec.openapis.org/overlay/v1.0.0.html) action with a comment
   pointing at the evidence.
@@ -22,8 +26,9 @@ guessed.
 1. Get credentials from https://api.anvisa.gov.br/ (login Gov.br). Keep them in
    `~/.config/anvisa/credentials.env` with mode 600. Never commit them; never paste a token
    into an issue.
-2. Mind the rate limit: 25-request burst, 1 request per second, per client id. A probe
-   session should need a handful of requests, not dozens. Reuse the token (it lasts 29 min).
+2. Mind the rate limit: 25-request burst, 1 request per second, per source address (the
+   unauthenticated portal endpoints count too). A probe session should need a handful of
+   requests, not dozens. Reuse the token (it lasts 29 min).
 3. Send a descriptive `User-Agent` (Cloudflare blocks curl's default with a 403 HTML page).
 4. Save the raw body and headers. Redact nothing but tokens; the shape of the data,
    including nulls and odd values, is the point.
@@ -50,6 +55,7 @@ uv run pytest             # fixture-only; safe to run on a loop
 uv run pytest -m live     # 3 real requests; needs credentials
 uv run ruff check . && uv run ruff format .
 make spec models          # from the repo root; commit the diff if any
+make snapshot             # re-download ANVISA's spec and portal docs (12 unauthenticated requests)
 ```
 
 ## Pull requests

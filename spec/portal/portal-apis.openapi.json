@@ -1,0 +1,686 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "portal-anvisa-backend",
+    "description": "Feito com Arquitetura Spring Boot da Anvisa",
+    "contact": {
+      "name": "Contato",
+      "email": "arquitetura@anvisa.gov.br"
+    },
+    "version": "1.3.0"
+  },
+  "servers": [
+    {
+      "url": "https://api-gateway.prd.apps.anvisa.gov.br/portal-apis",
+      "description": "Public API Gateway URL"
+    }
+  ],
+  "security": [
+    {
+      "Keycloak": [
+        "*"
+      ]
+    }
+  ],
+  "tags": [
+    {
+      "name": "Portal",
+      "description": "Endpoints públicos de navegacão e conteúdo do portal"
+    }
+  ],
+  "paths": {
+    "/api/v1/keycloak/clients/create": {
+      "post": {
+        "tags": [
+          "keycloak-client-controller"
+        ],
+        "operationId": "createClient",
+        "responses": {
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateClientResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/keycloak/clients/secret": {
+      "patch": {
+        "tags": [
+          "keycloak-client-controller"
+        ],
+        "operationId": "updateClientSecret",
+        "responses": {
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateSecretResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/portal/paginas": {
+      "get": {
+        "tags": [
+          "Portal"
+        ],
+        "summary": "Busca uma página pública pela rota do menu",
+        "operationId": "getPagina",
+        "parameters": [
+          {
+            "name": "rota",
+            "in": "query",
+            "description": "Rota pública da página, sem barra inicial",
+            "required": true,
+            "schema": {
+              "maxLength": 300,
+              "minLength": 0,
+              "type": "string"
+            },
+            "example": "consultas-externas/assunto-doc"
+          }
+        ],
+        "responses": {
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parâmetro rota ausente ou inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Página não encontrada para a rota informada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno ao buscar a página",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Mais de um item ativo foi encontrado para a rota",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Pagina encontrada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalPaginaDTO"
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/public/portal/menus": {
+      "get": {
+        "tags": [
+          "Portal"
+        ],
+        "summary": "Lista a árvore publica de menus do portal",
+        "operationId": "getMenu",
+        "responses": {
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Erro interno ao montar os menus",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Menus retornados com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MenuItemDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": []
+      }
+    },
+    "/api/v1/keycloak/clients/exists": {
+      "get": {
+        "tags": [
+          "keycloak-client-controller"
+        ],
+        "operationId": "clientExists",
+        "responses": {
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/keycloak/clients": {
+      "delete": {
+        "tags": [
+          "keycloak-client-controller"
+        ],
+        "operationId": "deleteClient",
+        "responses": {
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CreateClientResponse": {
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "type": "string"
+          },
+          "clientUuid": {
+            "type": "string"
+          },
+          "clientSecret": {
+            "type": "string"
+          }
+        }
+      },
+      "GenerateSecretResponse": {
+        "type": "object",
+        "properties": {
+          "clientUuid": {
+            "type": "string"
+          },
+          "clientId": {
+            "type": "string"
+          },
+          "clientSecret": {
+            "type": "string"
+          }
+        }
+      },
+      "ApiError": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Status HTTP do erro",
+            "example": "INTERNAL_SERVER_ERROR",
+            "enum": [
+              "100 CONTINUE",
+              "101 SWITCHING_PROTOCOLS",
+              "102 PROCESSING",
+              "103 CHECKPOINT",
+              "200 OK",
+              "201 CREATED",
+              "202 ACCEPTED",
+              "203 NON_AUTHORITATIVE_INFORMATION",
+              "204 NO_CONTENT",
+              "205 RESET_CONTENT",
+              "206 PARTIAL_CONTENT",
+              "207 MULTI_STATUS",
+              "208 ALREADY_REPORTED",
+              "226 IM_USED",
+              "300 MULTIPLE_CHOICES",
+              "301 MOVED_PERMANENTLY",
+              "302 FOUND",
+              "302 MOVED_TEMPORARILY",
+              "303 SEE_OTHER",
+              "304 NOT_MODIFIED",
+              "305 USE_PROXY",
+              "307 TEMPORARY_REDIRECT",
+              "308 PERMANENT_REDIRECT",
+              "400 BAD_REQUEST",
+              "401 UNAUTHORIZED",
+              "402 PAYMENT_REQUIRED",
+              "403 FORBIDDEN",
+              "404 NOT_FOUND",
+              "405 METHOD_NOT_ALLOWED",
+              "406 NOT_ACCEPTABLE",
+              "407 PROXY_AUTHENTICATION_REQUIRED",
+              "408 REQUEST_TIMEOUT",
+              "409 CONFLICT",
+              "410 GONE",
+              "411 LENGTH_REQUIRED",
+              "412 PRECONDITION_FAILED",
+              "413 PAYLOAD_TOO_LARGE",
+              "413 REQUEST_ENTITY_TOO_LARGE",
+              "414 URI_TOO_LONG",
+              "414 REQUEST_URI_TOO_LONG",
+              "415 UNSUPPORTED_MEDIA_TYPE",
+              "416 REQUESTED_RANGE_NOT_SATISFIABLE",
+              "417 EXPECTATION_FAILED",
+              "418 I_AM_A_TEAPOT",
+              "419 INSUFFICIENT_SPACE_ON_RESOURCE",
+              "420 METHOD_FAILURE",
+              "421 DESTINATION_LOCKED",
+              "422 UNPROCESSABLE_ENTITY",
+              "423 LOCKED",
+              "424 FAILED_DEPENDENCY",
+              "425 TOO_EARLY",
+              "426 UPGRADE_REQUIRED",
+              "428 PRECONDITION_REQUIRED",
+              "429 TOO_MANY_REQUESTS",
+              "431 REQUEST_HEADER_FIELDS_TOO_LARGE",
+              "451 UNAVAILABLE_FOR_LEGAL_REASONS",
+              "500 INTERNAL_SERVER_ERROR",
+              "501 NOT_IMPLEMENTED",
+              "502 BAD_GATEWAY",
+              "503 SERVICE_UNAVAILABLE",
+              "504 GATEWAY_TIMEOUT",
+              "505 HTTP_VERSION_NOT_SUPPORTED",
+              "506 VARIANT_ALSO_NEGOTIATES",
+              "507 INSUFFICIENT_STORAGE",
+              "508 LOOP_DETECTED",
+              "509 BANDWIDTH_LIMIT_EXCEEDED",
+              "510 NOT_EXTENDED",
+              "511 NETWORK_AUTHENTICATION_REQUIRED"
+            ]
+          },
+          "mensagem": {
+            "type": "string",
+            "description": "Mensagem resumida sobre o erro",
+            "example": "Erro interno no servidor"
+          },
+          "data_hora": {
+            "type": "string",
+            "description": "Data e hora do erro",
+            "format": "date-time"
+          },
+          "mensagem_detalhada": {
+            "type": "string",
+            "description": "Mensagem detalhada do erro",
+            "example": "Uma exceção inesperada ocorreu"
+          }
+        },
+        "description": "Objeto que descreve detalhes de um erro genérico da API"
+      },
+      "PortalPaginaDTO": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "rota": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "formato": {
+            "type": "string"
+          },
+          "conteudo": {
+            "type": "string"
+          }
+        }
+      },
+      "MenuItemDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "icone": {
+            "type": "string"
+          },
+          "tipo": {
+            "type": "string"
+          },
+          "rota": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "spa": {
+            "type": "boolean"
+          },
+          "ordem": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "filhos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MenuItemDTO"
+            }
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "Keycloak": {
+        "type": "oauth2",
+        "description": "Keycloak OAuth2 - OpenID Connect",
+        "flows": {
+          "implicit": {
+            "authorizationUrl": "https://acesso.prd.apps.anvisa.gov.br/auth/realms/externo/protocol/openid-connect/auth?nonce=ce975341-a7c3-4c52-824b-9a2eef5ed495&kc_idp_hint=govbr",
+            "tokenUrl": "https://acesso.prd.apps.anvisa.gov.br/auth/realms/externo/protocol/openid-connect/token",
+            "refreshUrl": "https://acesso.prd.apps.anvisa.gov.br/auth/realms/externo/protocol/openid-connect/token",
+            "scopes": {}
+          }
+        }
+      }
+    }
+  }
+}

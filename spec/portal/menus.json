@@ -1,0 +1,186 @@
+[
+  {
+    "id": 1,
+    "nome": "Home",
+    "icone": "home",
+    "tipo": "SPA",
+    "rota": "",
+    "spa": true,
+    "ordem": 0
+  },
+  {
+    "id": 2,
+    "nome": "Tutoriais",
+    "icone": "book-open",
+    "tipo": "SECAO",
+    "spa": true,
+    "ordem": 1,
+    "filhos": [
+      {
+        "id": 6,
+        "nome": "GOV.BR e Client Id/Client Secret",
+        "icone": "id-badge",
+        "tipo": "PAGINA",
+        "rota": "tutoriais/gov-br-e-clientid-clientsecret",
+        "spa": true,
+        "ordem": 0
+      },
+      {
+        "id": 7,
+        "nome": "Token",
+        "icone": "key",
+        "tipo": "PAGINA",
+        "rota": "tutoriais/token",
+        "spa": true,
+        "ordem": 1
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "nome": "Documentação",
+    "icone": "book-open",
+    "tipo": "SECAO",
+    "spa": true,
+    "ordem": 2,
+    "filhos": [
+      {
+        "id": 8,
+        "nome": "Consultas Externas",
+        "icone": "folder-open",
+        "tipo": "SECAO",
+        "spa": true,
+        "ordem": 0,
+        "filhos": [
+          {
+            "id": 10,
+            "nome": "Meta-data",
+            "icone": "list",
+            "tipo": "SPA",
+            "rota": "consultas-externas/meta-data",
+            "spa": true,
+            "ordem": 0
+          },
+          {
+            "id": 11,
+            "nome": "Certificados",
+            "icone": "file-alt",
+            "tipo": "PAGINA",
+            "rota": "consultas-externas/certificados-doc",
+            "spa": true,
+            "ordem": 1
+          },
+          {
+            "id": 12,
+            "nome": "Funcionamento de Empresa Nacional",
+            "icone": "file-alt",
+            "tipo": "PAGINA",
+            "rota": "consultas-externas/funcionamento-empresa-nacional",
+            "spa": true,
+            "ordem": 2
+          },
+          {
+            "id": 13,
+            "nome": "Funcionamento de Empresa Internacional",
+            "icone": "file-alt",
+            "tipo": "PAGINA",
+            "rota": "consultas-externas/funcionamento-empresa-internacional",
+            "spa": true,
+            "ordem": 3
+          },
+          {
+            "id": 14,
+            "nome": "Empresas Internacionais",
+            "icone": "file-alt",
+            "tipo": "PAGINA",
+            "rota": "consultas-externas/empresa-internacional-doc",
+            "spa": true,
+            "ordem": 4
+          },
+          {
+            "id": 15,
+            "nome": "Produtos Irregulares (Dossiê)",
+            "icone": "file-alt",
+            "tipo": "PAGINA",
+            "rota": "consultas-externas/dossie-doc",
+            "spa": true,
+            "ordem": 5
+          },
+          {
+            "id": 16,
+            "nome": "Consulta Alimentos",
+            "icone": "file-alt",
+            "tipo": "PAGINA",
+            "rota": "consultas-externas/consulta-alimentos",
+            "spa": true,
+            "ordem": 6
+          },
+          {
+            "id": 17,
+            "nome": "Consulta Produtos de Saúde",
+            "icone": "file-alt",
+            "tipo": "PAGINA",
+            "rota": "consultas-externas/consulta-produtos-saude",
+            "spa": true,
+            "ordem": 7
+          },
+          {
+            "id": 18,
+            "nome": "Swagger UI",
+            "icone": "globe",
+            "tipo": "LINK_EXTERNO",
+            "url": "{{gatewayUrl}}/consultas-externas-api/swagger-ui/index.html",
+            "spa": false,
+            "ordem": 8
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "nome": "SNGPC",
+        "icone": "folder-open",
+        "tipo": "SECAO",
+        "spa": true,
+        "ordem": 1,
+        "filhos": [
+          {
+            "id": 19,
+            "nome": "Documentação",
+            "icone": "folder-open",
+            "tipo": "PAGINA",
+            "rota": "sngpc/docs",
+            "spa": true,
+            "ordem": 0
+          },
+          {
+            "id": 20,
+            "nome": "Swagger UI",
+            "icone": "globe",
+            "tipo": "LINK_EXTERNO",
+            "url": "{{sngpcUrl}}/swagger/index.html",
+            "spa": false,
+            "ordem": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "nome": "Gerenciamento de Client IDs e Client Secrets",
+    "icone": "bell",
+    "tipo": "SPA",
+    "rota": "client-manage",
+    "spa": true,
+    "ordem": 3
+  },
+  {
+    "id": 5,
+    "nome": "Change Log",
+    "icone": "history",
+    "tipo": "SPA",
+    "rota": "change-log",
+    "spa": true,
+    "ordem": 4
+  }
+]

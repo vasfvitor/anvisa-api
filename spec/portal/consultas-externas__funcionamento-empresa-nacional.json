@@ -1,0 +1,487 @@
+{
+  "slug": "funcionamento-empresa-nacional",
+  "rota": "consultas-externas/funcionamento-empresa-nacional",
+  "titulo": "Documentação de Empresa Nacional",
+  "formato": "ENDPOINTS",
+  "conteudo": [
+    {
+      "id": "funcionamentoEmpresaNacional",
+      "path": "funcionamento/empresaNacional/funcionamento",
+      "method": "POST",
+      "description": "Busca por Funcionamento de Empresas Nacionais",
+      "filters": [
+        {
+          "name": "filter.CNPJ",
+          "type": "number",
+          "description": "CNPJ da Empresa Nacional ",
+          "example": "99.999.999/9999-99"
+        },
+        {
+          "name": "filter.razaoSocial",
+          "type": "number",
+          "description": "Número para pesquisa de razão social (min. 3 caracteres)",
+          "example": "bac"
+        },
+        {
+          "name": "filter.autorizacao",
+          "type": "number",
+          "description": "Número para pesquisa de Nº da Autorização",
+          "example": "99999"
+        },
+        {
+          "name": "filter.novaAutorizacao",
+          "type": "number",
+          "description": "Número para pesquisa de Nº da NUVS",
+          "example": "99999"
+        },
+        {
+          "name": "filter.tipoEmpresa",
+          "type": "string",
+          "description": "Classificação por ramo de empresa",
+          "example": "Ex.: FARMACIA,OUTRAS, etc"
+        },
+        {
+          "name": "filter.tipoProduto",
+          "type": "number",
+          "description": "Classificação por ramo de produto",
+          "example": "Ex.: 2,28, etc"
+        },
+        {
+          "name": "filter.atividade",
+          "type": "string",
+          "description": "Classificação por atividade da empresa",
+          "example": "Ex.: ARMAZENAR,COMERCIALIZAR, etc"
+        },
+        {
+          "name": "filter.classe",
+          "type": "string",
+          "description": "Classificação por classe de Atividade da empresa",
+          "example": "Ex.: 29,31 etc"
+        },
+        {
+          "name": "filter.dataPublicacaoInicial",
+          "type": "date",
+          "description": "Período de Publicação por Data Inicial",
+          "example": "Ex.: 00/00/0000"
+        },
+        {
+          "name": "filter.dataPublicacaoFinal",
+          "type": "date",
+          "description": "Período de Publicação por Data Final",
+          "example": "Ex.: 00/00/0000"
+        },
+        {
+          "name": "filter.situacao",
+          "type": "string",
+          "description": "Classificação por Situação",
+          "example": "Ex.: Ativa e Inativa"
+        },
+        {
+          "name": "filter.uf",
+          "type": "string",
+          "description": "Estado de Loacalização da Empresa",
+          "example": "Ex.: SP,MG,SC,RO"
+        },
+        {
+          "name": "filter.cidade",
+          "type": "string",
+          "description": "Estado de Loacalização da Empresa",
+          "example": "Ex.: SP - ADAMANTINA"
+        },
+        {
+          "name": "count",
+          "type": "number",
+          "description": "Itens por página (max 300)",
+          "example": "10"
+        },
+        {
+          "name": "page",
+          "type": "number",
+          "description": "Número da página (inicia em 1)",
+          "example": "1"
+        },
+        {
+          "name": "order",
+          "type": "string",
+          "description": "Ordenação (ASC ou DESC)",
+          "example": "ASC"
+        },
+        {
+          "name": "column",
+          "type": "string",
+          "description": "Coluna para ordenação",
+          "example": "razaoSocial"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/empresa/funcionamento' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"sorting\": { \"razaoSocial\": \"DESC\" },\n    \"order\": \"DESC\",\n    \"page\": 1,\n    \"filter\": {\n   \"razaoSocial\":\"DROGARIA\",\n   \"cnpj\":\"19086699000182\",\n   \"nomeFantasia\":\"radial\",\n   \"dataPublicacaoInicial\":\"01/01/2024 01:00:00\",\n   \"dataPublicacaoFinal\":\"01/06/2026 23:59:00\",\n   \"tipoEmpresa\":\"FARMACIA,OUTRAS\",\n   \"atividade\":\"ARMAZENAR,COMERCIALIZAR\",\n   \"cidade\":\"4795\",\n   \"classe\":\"29,31\",\n   \"tipoProduto\":\"2,28\",\n   \"uf\":\"SP\"\n}\n  }'"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/empresa/funcionamento HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"sorting\": { \"razaoSocial\": \"DESC\" },\n  \"order\": \"DESC\",\n  \"page\": 1,\n  \"filter\": {\n   \"razaoSocial\":\"DROGARIA\",\n   \"cnpj\":\"19086699000182\",\n   \"nomeFantasia\":\"radial\",\n   \"dataPublicacaoInicial\":\"01/01/2024 01:00:00\",\n   \"dataPublicacaoFinal\":\"01/06/2026 23:59:00\",\n   \"tipoEmpresa\":\"FARMACIA,OUTRAS\",\n   \"atividade\":\"ARMAZENAR,COMERCIALIZAR\",\n   \"cidade\":\"4795\",\n   \"classe\":\"29,31\",\n   \"tipoProduto\":\"2,28\",\n   \"uf\":\"SP\"\n}\n}"
+        }
+      ]
+    },
+    {
+      "id": "extendido",
+      "path": "/empresa/extendido",
+      "method": "POST",
+      "description": "Busca por Funcionamento de Empresas Nacionais Extendido",
+      "filters": [
+        {
+          "name": "filter.CNPJ",
+          "type": "number",
+          "description": "CNPJ da Empresa Nacional ",
+          "example": "99.999.999/9999-99"
+        },
+        {
+          "name": "filter.razaoSocial",
+          "type": "number",
+          "description": "Número para pesquisa de razão social (min. 3 caracteres)",
+          "example": "bac"
+        },
+        {
+          "name": "filter.autorizacao",
+          "type": "number",
+          "description": "Número para pesquisa de Nº da Autorização",
+          "example": "99999"
+        },
+        {
+          "name": "filter.novaAutorizacao",
+          "type": "number",
+          "description": "Número para pesquisa de Nº da NUVS",
+          "example": "99999"
+        },
+        {
+          "name": "filter.tipoEmpresa",
+          "type": "string",
+          "description": "Classificação por ramo de empresa",
+          "example": "Ex.: FARMACIA,OUTRAS, etc"
+        },
+        {
+          "name": "filter.tipoProduto",
+          "type": "number",
+          "description": "Classificação por ramo de produto",
+          "example": "Ex.: 2,28, etc"
+        },
+        {
+          "name": "filter.atividade",
+          "type": "string",
+          "description": "Classificação por atividade da empresa",
+          "example": "Ex.: ARMAZENAR,COMERCIALIZAR, etc"
+        },
+        {
+          "name": "filter.classe",
+          "type": "string",
+          "description": "Classificação por classe de Atividade da empresa",
+          "example": "Ex.: 29,31 etc"
+        },
+        {
+          "name": "filter.dataPublicacaoInicial",
+          "type": "date",
+          "description": "Período de Publicação por Data Inicial",
+          "example": "Ex.: 00/00/0000"
+        },
+        {
+          "name": "filter.dataPublicacaoFinal",
+          "type": "date",
+          "description": "Período de Publicação por Data Final",
+          "example": "Ex.: 00/00/0000"
+        },
+        {
+          "name": "filter.situacao",
+          "type": "string",
+          "description": "Classificação por Situação",
+          "example": "Ex.: Ativa e Inativa"
+        },
+        {
+          "name": "filter.uf",
+          "type": "string",
+          "description": "Estado de Loacalização da Empresa",
+          "example": "Ex.: SP,MG,SC,RO"
+        },
+        {
+          "name": "filter.cidade",
+          "type": "string",
+          "description": "Estado de Loacalização da Empresa",
+          "example": "Ex.: SP - ADAMANTINA"
+        },
+        {
+          "name": "count",
+          "type": "number",
+          "description": "Itens por página (max 300)",
+          "example": "10"
+        },
+        {
+          "name": "page",
+          "type": "number",
+          "description": "Número da página (inicia em 1)",
+          "example": "1"
+        },
+        {
+          "name": "order",
+          "type": "string",
+          "description": "Ordenação (ASC ou DESC)",
+          "example": "ASC"
+        },
+        {
+          "name": "column",
+          "type": "string",
+          "description": "Coluna para ordenação",
+          "example": "razaoSocial"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/empresa/extendido' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"sorting\": { \"razaoSocial\": \"DESC\" },\n    \"order\": \"DESC\",\n    \"page\": 1,\n    \"filter\": {\n   \"razaoSocial\":\"DROGARIA\",\n   \"cnpj\":\"19086699000182\",\n   \"nomeFantasia\":\"radial\",\n   \"dataPublicacaoInicial\":\"01/01/2024 01:00:00\",\n   \"dataPublicacaoFinal\":\"01/06/2026 23:59:00\",\n   \"tipoEmpresa\":\"FARMACIA,OUTRAS\",\n   \"atividade\":\"ARMAZENAR,COMERCIALIZAR\",\n   \"cidade\":\"4795\",\n   \"classe\":\"29,31\",\n   \"tipoProduto\":\"2,28\",\n   \"uf\":\"SP\"\n}\n  }'"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/empresa/extendido HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"sorting\": { \"razaoSocial\": \"DESC\" },\n  \"order\": \"DESC\",\n  \"page\": 1,\n  \"filter\": {\n   \"razaoSocial\":\"DROGARIA\",\n   \"cnpj\":\"19086699000182\",\n   \"nomeFantasia\":\"radial\",\n   \"dataPublicacaoInicial\":\"01/01/2024 01:00:00\",\n   \"dataPublicacaoFinal\":\"01/06/2026 23:59:00\",\n   \"tipoEmpresa\":\"FARMACIA,OUTRAS\",\n   \"atividade\":\"ARMAZENAR,COMERCIALIZAR\",\n   \"cidade\":\"4795\",\n   \"classe\":\"29,31\",\n   \"tipoProduto\":\"2,28\",\n   \"uf\":\"SP\"\n}\n}"
+        }
+      ]
+    },
+    {
+      "id": "empresa",
+      "path": "/empresa",
+      "method": "POST",
+      "description": "Busca por Empresas Nacionais",
+      "filters": [
+        {
+          "name": "filter.CNPJ",
+          "type": "number",
+          "description": "CNPJ da Empresa Nacional ",
+          "example": "99.999.999/9999-99"
+        },
+        {
+          "name": "filter.razaoSocial",
+          "type": "number",
+          "description": "Número para pesquisa de razão social (min. 3 caracteres)",
+          "example": "bac"
+        },
+        {
+          "name": "filter.autorizacao",
+          "type": "number",
+          "description": "Número para pesquisa de Nº da Autorização",
+          "example": "99999"
+        },
+        {
+          "name": "filter.novaAutorizacao",
+          "type": "number",
+          "description": "Número para pesquisa de Nº da NUVS",
+          "example": "99999"
+        },
+        {
+          "name": "filter.tipoEmpresa",
+          "type": "string",
+          "description": "Classificação por ramo de empresa",
+          "example": "Ex.: FARMACIA,OUTRAS, etc"
+        },
+        {
+          "name": "filter.tipoProduto",
+          "type": "number",
+          "description": "Classificação por ramo de produto",
+          "example": "Ex.: 2,28, etc"
+        },
+        {
+          "name": "filter.atividade",
+          "type": "string",
+          "description": "Classificação por atividade da empresa",
+          "example": "Ex.: ARMAZENAR,COMERCIALIZAR, etc"
+        },
+        {
+          "name": "filter.classe",
+          "type": "string",
+          "description": "Classificação por classe de Atividade da empresa",
+          "example": "Ex.: 29,31 etc"
+        },
+        {
+          "name": "filter.dataPublicacaoInicial",
+          "type": "date",
+          "description": "Período de Publicação por Data Inicial",
+          "example": "Ex.: 00/00/0000"
+        },
+        {
+          "name": "filter.dataPublicacaoFinal",
+          "type": "date",
+          "description": "Período de Publicação por Data Final",
+          "example": "Ex.: 00/00/0000"
+        },
+        {
+          "name": "filter.situacao",
+          "type": "string",
+          "description": "Classificação por Situação",
+          "example": "Ex.: Ativa e Inativa"
+        },
+        {
+          "name": "filter.uf",
+          "type": "string",
+          "description": "Estado de Loacalização da Empresa",
+          "example": "Ex.: SP,MG,SC,RO"
+        },
+        {
+          "name": "filter.cidade",
+          "type": "string",
+          "description": "Estado de Loacalização da Empresa",
+          "example": "Ex.: SP - ADAMANTINA"
+        },
+        {
+          "name": "count",
+          "type": "number",
+          "description": "Itens por página (max 300)",
+          "example": "10"
+        },
+        {
+          "name": "page",
+          "type": "number",
+          "description": "Número da página (inicia em 1)",
+          "example": "1"
+        },
+        {
+          "name": "order",
+          "type": "string",
+          "description": "Ordenação (ASC ou DESC)",
+          "example": "ASC"
+        },
+        {
+          "name": "column",
+          "type": "string",
+          "description": "Coluna para ordenação",
+          "example": "razaoSocial"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/empresa' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"sorting\": { \"razaoSocial\": \"DESC\" },\n    \"order\": \"DESC\",\n    \"page\": 1,\n    \"filter\": {\n  \"sorting\": {\n    \"razaoSocial\": \"ASC\",\n    \"additionalProp2\": \"ASC\",\n    \"additionalProp3\": \"ASC\"\n  },\n  \"page\": 1,\n  \"size\": 1,\n  \"column\": \"razaoSocial\",\n  \"order\": \"ASC\",\n  \"filter\": {\n    \"razaoSocial\": \"DROGARIA\",\n\"cnpj\": \"19086699000182\"\n  }\n}\n  }'"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/empresa HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"sorting\": { \"razaoSocial\": \"DESC\" },\n  \"order\": \"DESC\",\n  \"page\": 1,\n  \"filter\": {\n  \"sorting\": {\n    \"razaoSocial\": \"ASC\",\n    \"additionalProp2\": \"ASC\",\n    \"additionalProp3\": \"ASC\"\n  },\n  \"page\": 1,\n  \"size\": 1,\n  \"column\": \"razaoSocial\",\n  \"order\": \"ASC\",\n  \"filter\": {\n    \"razaoSocial\": \"DROGARIA\",\n\"cnpj\": \"19086699000182\"\n\n  }\n}\n}"
+        }
+      ]
+    },
+    {
+      "id": "empresaCnpj",
+      "path": "/empresa/{cnpj}",
+      "method": "GET",
+      "description": "Busca por Empresas Nacionais por CNPJ",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/empresa/{cnpj}' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/empresa/{cnpj} HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ]
+    },
+    {
+      "id": "tiposEmpresa",
+      "path": "/empresa/tipoEmpresa",
+      "method": "GET",
+      "description": "Tipos de Empresa",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/empresa/tipoEmpresa' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/empresa/tipoEmpresa HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ]
+    },
+    {
+      "id": "tipoAtividade",
+      "path": "/empresa/tipoAtividade",
+      "method": "GET",
+      "description": "Tipos de Atividade",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/empresa/tipoAtividade' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/empresa/tipoAtividade HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ]
+    },
+    {
+      "id": "tipoAtividadeAgrupada",
+      "path": "/empresa/tipoAtividadeAgrupada",
+      "method": "GET",
+      "description": "Tipos de Atividade Agrupada",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/empresa/tipoAtividadeAgrupada?tiposEmpresa%5B%5D=63&tiposEmpresa%5B%5D=64' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/empresa/tipoAtividadeAgrupada?tiposEmpresa%5B%5D=63&tiposEmpresa%5B%5D=64 HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ]
+    },
+    {
+      "id": "funcionamentoEmpresaProcesso",
+      "path": "/empresa/funcionamento/{processo}",
+      "method": "GET",
+      "description": "Funcionamento de empresa Por Processo",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/empresa/funcionamento/{processo}' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/empresa/funcionamento/{processo} HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ]
+    },
+    {
+      "id": "classes",
+      "path": "/empresa/classes",
+      "method": "GET",
+      "description": "Classes de empresa nacional",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/empresa/classes' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/empresa/classes HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ]
+    },
+    {
+      "id": "areasProduto",
+      "path": "/empresa/areasProduto",
+      "method": "GET",
+      "description": "Áreas de produto de empresa nacional",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/empresa/areasProduto' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/empresa/areasProduto HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ]
+    }
+  ]
+}
