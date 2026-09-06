@@ -50,6 +50,10 @@ def test_udi_search_and_get(fake_cli_client):
     assert [d["udiDi"] for d in json.loads(result.output)] == ["07898620922696", "07898620922702"]
     assert fake_cli_client.json_bodies()[-1]["filter"] == {"nomeComercial": "cateter"}
 
+    result = runner.invoke(cli.app, ["-f", "json", "udi", "gmdn-search", "pacing", "--size", "2"])
+    assert result.exit_code == 0, result.output
+    assert [t["codigo"] for t in json.loads(result.output)] == ["17882", "47852"]
+
     result = runner.invoke(cli.app, ["-f", "json", "udi", "get", "377"])
     assert result.exit_code == 0, result.output
     assert json.loads(result.output)["dispositivo"]["versaoModelo"] == "VCET-5110CK1"

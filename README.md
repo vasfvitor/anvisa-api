@@ -20,6 +20,7 @@ ships a client that encodes it.
 | Errors | Validation failures come back as **HTTP 500** with `{status, mensagem, data_hora, mensagem_detalhada}`. |
 | `fila/consulta`, `lista/consulta` | Return the **whole** subqueue/sublista as an array (40, 35 and 555 rows observed); `page`/`size` are ignored. |
 | Dates | Integer **epoch milliseconds**. |
+| Filter keys | Verified live: `udi` accepts `nomeComercial` (substring), `udiDi` (exact), `cnpjDetentora`, `codigoGmdn`, `nuRegistro`; `nomeTecnico` accepts `nomeTecnico` (substring) and `categoriaProduto`; `termoGmdn` accepts `conteudo`. `POST /assunto/` is **broken** (500, body not bound). |
 | Coverage | The spec has 32 endpoints. The portal's doc pages describe **35 more** (certificados, empresa nacional/internacional, dossiê, alimentos, produtos de saúde) on the same base path, but the four probed answer a plain Spring **404**: documented, not deployed. |
 
 ## Layout
@@ -62,6 +63,7 @@ anvisa lista consulta 2141              # same shape as fila consulta
 anvisa udi search --nome cateter --size 5
 anvisa udi get 377
 anvisa udi gmdn 47852
+anvisa udi gmdn-search pacing           # GMDN terms by text (names are in Portuguese)
 anvisa nome-tecnico search --size 50    # nomes técnicos with risk class
 anvisa nome-tecnico categorias
 anvisa assunto lista --busca bioequival   # petition subject codes

@@ -177,8 +177,8 @@ class NomeTecnico:
         **filters: Any,
     ) -> models.PageNomeTecnicoDTO:
         """One page of technical names. Unlike `udi`, no filter is required (~2,700 rows).
-        Filter keys from ANVISA's example: `nomeTecnico`, `codigo`, `categoriaProduto`
-        (unverified)."""
+        Verified filters: `nomeTecnico` (substring match) and `categoriaProduto` (id from
+        `categorias`); `codigo` comes from ANVISA's example and is untested."""
         data = self._client.post("/api/v1/nomeTecnico", page_body(page, size, sort, filters))
         return models.PageNomeTecnicoDTO.model_validate(data)
 
@@ -207,8 +207,9 @@ class Udi:
         sort: dict[str, str] | None = None,
         **filters: Any,
     ) -> models.PageUdiDTO:
-        """One page of devices. At least one filter is required (`nomeComercial` is verified;
-        `udiDi`, `cnpjDetentora`, `codigoGmdn`, `nuRegistro`, ... come from ANVISA's example)."""
+        """One page of devices. At least one filter is required. Verified filters:
+        `nomeComercial` (substring), `udiDi` (exact), `cnpjDetentora`, `codigoGmdn`,
+        `nuRegistro`; the rest of ANVISA's example keys are untested."""
         if not filters:
             raise MissingFilterError(
                 "udi.search needs at least one filter, e.g. nomeComercial='cateter'"
@@ -226,10 +227,14 @@ class Udi:
         return models.DetalheDispositivoDTO.model_validate(self._client.get(f"/api/v1/udi/{id}"))
 
     def get_historico(self, id_dispositivo: int, id_historico: int) -> models.DetalheDispositivoDTO:
+        """A device as recorded in one snapshot from `historicos`. Raises `NotFoundError`
+        (empty 404) when the device was not part of that snapshot."""
         data = self._client.get(f"/api/v1/udi/{id_dispositivo}/{id_historico}")
         return models.DetalheDispositivoDTO.model_validate(data)
 
     def historicos(self) -> list[models.HistoricoUdiDTO]:
+        """The daily UDI snapshots (`tipoHistorico` DIARIO), newest first, with how many
+        records each one holds. 171 entries on 2026-09-06."""
         data = self._client.get("/api/v1/udi/historico")
         return [models.HistoricoUdiDTO.model_validate(x) for x in data]
 
@@ -240,6 +245,8 @@ class Udi:
         sort: dict[str, str] | None = None,
         **filters: Any,
     ) -> models.PageTermoGMDNDTO:
+        """GMDN term search. Verified filter: `conteudo` (text, matches the Portuguese name and
+        definition); `codigo` comes from ANVISA's example. No filter is required."""
         data = self._client.post("/api/v1/udi/termoGmdn", page_body(page, size, sort, filters))
         return models.PageTermoGMDNDTO.model_validate(data)
 
@@ -251,8 +258,8 @@ class Udi:
 
 class Assunto:
     """Assuntos de peticionamento: subject codes, and per code the required documents,
-    forms, legal basis and fees. `lista` and `detalhe` are verified live; the catalogs and
-    `busca` come from the spec only."""
+    forms, legal basis and fees. `lista`, `detalhe` and the four catalogs are verified live;
+    `busca` is not usable as of 2026-09-06 (see its docstring)."""
 
     def __init__(self, client: Client) -> None:
         self._client = client
@@ -289,7 +296,10 @@ class Assunto:
         sort: dict[str, str] | None = None,
         **filters: Any,
     ) -> models.PageConsultaAssunto:
-        """Paginated search. Filter keys from ANVISA's example, unverified: `codigosAssunto`,
-        `servicos`, `sistemas`, `tiposProduto`, `tiposSolicitacao`."""
+        """Paginated search, `POST /api/v1/assunto/`. Not usable as of 2026-09-06: the API answers
+        HTTP 500 "PaginationBuilder.getColumn() because filtro is null" to a JSON body, and the
+        path without the trailing slash is a 404 (fixture `err_assunto_busca`). Filter keys from
+        ANVISA's example: `codigosAssunto`, `servicos`, `sistemas`, `tiposProduto`,
+        `tiposSolicitacao`. Use `lista` and filter locally instead."""
         data = self._client.post("/api/v1/assunto/", page_body(page, size, sort, filters))
         return models.PageConsultaAssunto.model_validate(data)

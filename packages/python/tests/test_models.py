@@ -18,6 +18,18 @@ CASES = [
     ("lista_sublistas.json", models.ChaveValorInteger, 1),
     ("lista_consulta.json", models.FilaCalculadaDTO, 555),
     ("udi_filtro.json", models.PageUdiDTO, None),
+    ("udi_filtro_udiDi.json", models.PageUdiDTO, None),
+    ("udi_filtro_cnpj.json", models.PageUdiDTO, None),
+    ("udi_filtro_gmdn.json", models.PageUdiDTO, None),
+    ("udi_filtro_registro.json", models.PageUdiDTO, None),
+    ("udi_historicos.json", models.HistoricoUdiDTO, 171),
+    ("gmdn_busca.json", models.PageTermoGMDNDTO, None),
+    ("nomeTecnico_filtro_nome.json", models.PageNomeTecnicoDTO, None),
+    ("nomeTecnico_filtro_categoria.json", models.PageNomeTecnicoDTO, None),
+    ("assunto_tiposSolicitacao.json", models.TipoSolicitacaoDTO, 2),
+    ("assunto_tiposProduto.json", models.TipoProdutoDTO, 13),
+    ("assunto_sistemas.json", models.SistemaDTO, 7),
+    ("assunto_servicos.json", models.ServicoDTO, 378),
     ("nomeTecnico_p1.json", models.PageNomeTecnicoDTO, None),
     ("udi_detail_377.json", models.DetalheDispositivoDTO, None),
     ("gmdn_47852.json", models.TermoGMDNDTO, None),
@@ -28,6 +40,7 @@ CASES = [
     ("err_sublista.json", models.ErroApi, None),
     ("err_page_index.json", models.ErroApi, None),
     ("err_jackson.json", models.ErroApi, None),
+    ("err_assunto_busca.json", models.ErroApi, None),
 ]
 
 

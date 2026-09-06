@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Verification session (17 requests, 2026-09-06): every `udi` filter key the command line exposes, both
+  `nome_tecnico` filters, the GMDN text search (`conteudo`), the daily UDI snapshots
+  (`historicos`) and the four `assunto` catalogs are now recorded as fixtures and tested.
+  `POST /assunto/` (`assunto.busca`) answers HTTP 500 with the body unbound and is documented
+  as not usable. New command `anvisa udi gmdn-search <texto>`.
+
 ## 0.2.0 (2026-09-06)
 
 Every JSON endpoint in the published spec now has a client method and a command; the

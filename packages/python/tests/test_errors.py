@@ -13,6 +13,7 @@ from anvisa.errors import (
     MissingFilterError,
     NotFoundError,
     RateLimitError,
+    RequestRejectedError,
     parse_data_hora,
     raise_for_response,
 )
@@ -54,6 +55,14 @@ def test_documented_but_undeployed_endpoint_is_not_found():
     with pytest.raises(NotFoundError) as info:
         raise_for_response(response_for("err_not_deployed"))
     assert "/api/v1/empresa/" in str(info.value)
+
+
+def test_assunto_busca_is_a_plain_api_error():
+    # the body is not bound server-side; nothing to map, but the message must survive
+    with pytest.raises(ApiError) as info:
+        raise_for_response(response_for("err_assunto_busca"))
+    assert not isinstance(info.value, RequestRejectedError)
+    assert "filtro" in (info.value.mensagem_detalhada or "")
 
 
 def test_success_is_silent():

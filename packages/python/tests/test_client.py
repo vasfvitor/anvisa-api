@@ -72,6 +72,45 @@ def test_udi_search_sends_1_based_page_and_filters(client, fake_api):
     }
 
 
+@pytest.mark.parametrize(
+    ("filters", "total"),
+    [
+        ({"udiDi": "07898620922696"}, 1),
+        ({"cnpjDetentora": "06167295000171"}, 12),
+        ({"codigoGmdn": "47852"}, 4),
+        ({"nuRegistro": "80454410018"}, 4),
+    ],
+)
+def test_udi_verified_filter_keys(client, fake_api, filters, total):
+    page = client.udi.search(size=2, **filters)  # routed to the fixture recorded for this body
+    assert page.totalElements == total
+    assert page.content[0].id == 377
+    assert fake_api.json_bodies()[-1]["filter"] == filters
+
+
+def test_udi_historicos_and_gmdn_search(client, fake_api):
+    snapshots = client.udi.historicos()
+    assert len(snapshots) == 171
+    first = snapshots[0]
+    assert (first.id, first.tipoHistorico, first.totalRegistros) == (171, "DIARIO", 88)
+    page = client.udi.termos_gmdn(size=2, conteudo="pacing")
+    assert page.totalElements == 3
+    assert page.content[1].codigo == "47852"
+
+
+def test_nome_tecnico_verified_filters(client):
+    assert client.nome_tecnico.search(size=2, nomeTecnico="ANIDROGLUCITOL").totalElements == 1
+    assert client.nome_tecnico.search(size=2, categoriaProduto="12").totalElements == 993
+
+
+def test_assunto_catalogs(client):
+    tipos = client.assunto.tipos_solicitacao()
+    assert len(tipos) == 2 and tipos[0].valor == "S"
+    assert len(client.assunto.tipos_produto()) == 13
+    assert client.assunto.sistemas()[0].id == "COSMETICOS"
+    assert len(client.assunto.servicos()) == 378
+
+
 def test_udi_search_without_filter_fails_before_any_request(client, fake_api):
     with pytest.raises(MissingFilterError):
         client.udi.search()

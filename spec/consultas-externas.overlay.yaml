@@ -159,14 +159,15 @@ actions:
     update:
       description: >-
         Paginated UDI search. At least one `filter` key is required; an empty filter fails
-        with HTTP 500 and `mensagem: mensagens.MSG-062`. Only `nomeComercial` has been
-        verified live; the other keys come from the published example and are unverified. The
+        with HTTP 500 and `mensagem: mensagens.MSG-062`. Verified live: `nomeComercial`
+        (substring), `udiDi` (exact), `cnpjDetentora`, `codigoGmdn`, `nuRegistro`; the other
+        keys come from the published example and are untested. The
         filter check runs before the page check: `page: 0` with an empty filter still yields
         MSG-062, not the page-index error.
       x-required-filters:
         anyOf: [nomeComercial, udiDi, cnpjDetentora, codigoGmdn, nuRegistro, razaoSocialFabLegal,
                 categoriaDispositivo, tipoCadastro, versaoModelo, usoLeigo, incorpora]
-        verified: [nomeComercial]
+        verified: [nomeComercial, udiDi, cnpjDetentora, codigoGmdn, nuRegistro]
   - target: $.paths['/api/v1/udi'].post.requestBody.content['application/json'].examples['Filtro completo de UDI'].value.count
     remove: true
   - target: $.paths['/api/v1/udi'].post.requestBody.content['application/json'].examples['Filtro completo de UDI'].value
@@ -211,6 +212,35 @@ actions:
     update:
       description: >-
         Paginated technical names of health products (2,678 rows on 2026-09-06). Works with
-        an empty `filter`; the keys in ANVISA's example (`nomeTecnico`, `codigo`,
-        `categoriaProduto`) are unverified.
+        an empty `filter`. Verified live: `nomeTecnico` (substring) and `categoriaProduto`
+        (id from GET /nomeTecnico/categorias); `codigo` from ANVISA's example is untested.
       x-required-filters: {anyOf: []}
+      x-verified-filters: [nomeTecnico, categoriaProduto]
+
+  # Verified 2026-09-06 (fixtures gmdn_busca, udi_historicos, err_assunto_busca).
+  - target: $.paths['/api/v1/udi/termoGmdn'].post
+    update:
+      description: >-
+        Paginated GMDN term search; names and definitions are in Portuguese. Works with an
+        empty `filter`. Verified live: `conteudo` (text); `codigo` from ANVISA's example is
+        untested.
+      x-required-filters: {anyOf: []}
+      x-verified-filters: [conteudo]
+  - target: $.paths['/api/v1/udi/historico'].get
+    update:
+      description: >-
+        The daily UDI snapshots (`tipoHistorico` DIARIO, newest first) with `totalRegistros`
+        per snapshot; 171 entries on 2026-09-06. Dates are epoch milliseconds.
+  - target: $.paths['/api/v1/udi/{idDispositivo}/{idHistorico}'].get
+    update:
+      description: >-
+        One device as recorded in one snapshot. Answers an empty-bodied 404 when the device is
+        not part of that snapshot (observed for device 377 in snapshot 171).
+  - target: $.paths['/api/v1/assunto/'].post
+    update:
+      description: >-
+        Not usable as observed on 2026-09-06: a JSON `PaginationBuilder` body is answered with
+        HTTP 500 'Cannot invoke PaginationBuilder.getColumn() because "filtro" is null', and
+        the path without the trailing slash is a 404. Use GET /api/v1/assunto/assuntos and
+        filter client-side.
+      x-observed-status: broken

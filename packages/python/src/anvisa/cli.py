@@ -221,11 +221,11 @@ def lista_consulta(
 @udi_app.command("search")
 def udi_search(
     ctx: typer.Context,
-    nome: str | None = typer.Option(None, "--nome", "-n", help="nomeComercial (verified filter)"),
-    udi_di: str | None = typer.Option(None, "--udi-di", help="udiDi (unverified)"),
-    cnpj: str | None = typer.Option(None, "--cnpj", help="cnpjDetentora (unverified)"),
-    gmdn: str | None = typer.Option(None, "--gmdn", help="codigoGmdn (unverified)"),
-    registro: str | None = typer.Option(None, "--registro", help="nuRegistro (unverified)"),
+    nome: str | None = typer.Option(None, "--nome", "-n", help="nomeComercial, substring"),
+    udi_di: str | None = typer.Option(None, "--udi-di", help="udiDi, exact"),
+    cnpj: str | None = typer.Option(None, "--cnpj", help="cnpjDetentora"),
+    gmdn: str | None = typer.Option(None, "--gmdn", help="codigoGmdn"),
+    registro: str | None = typer.Option(None, "--registro", help="nuRegistro"),
     page: int = typer.Option(1, "--page", min=1),
     size: int = typer.Option(20, "--size", min=1),
     all_pages: bool = typer.Option(
@@ -267,6 +267,20 @@ def udi_historico(ctx: typer.Context, id_dispositivo: int, id_historico: int) ->
         emit(ctx, client.udi.get_historico(id_dispositivo, id_historico), "UDI (histórico)")
 
 
+@udi_app.command("gmdn-search")
+def udi_gmdn_search(
+    ctx: typer.Context,
+    texto: str = typer.Argument(help="text matched against the term's name and definition"),
+    page: int = typer.Option(1, "--page", min=1),
+    size: int = typer.Option(20, "--size", min=1),
+) -> None:
+    """Busca de termos GMDN por texto (nomes em português)."""
+    with handle_errors(), make_client() as client:
+        result = client.udi.termos_gmdn(page=page, size=size, conteudo=texto)
+        total = f" (página {page} de {result.totalPages}, {result.totalElements} no total)"
+        emit(ctx, result.content or [], "GMDN" + total)
+
+
 @udi_app.command("gmdn")
 def udi_gmdn(ctx: typer.Context, codigo: str) -> None:
     """Termo GMDN por código."""
@@ -280,10 +294,10 @@ def udi_gmdn(ctx: typer.Context, codigo: str) -> None:
 @nome_tecnico_app.command("search")
 def nome_tecnico_search(
     ctx: typer.Context,
-    nome: str | None = typer.Option(None, "--nome", "-n", help="nomeTecnico (unverified)"),
-    codigo: str | None = typer.Option(None, "--codigo", help="codigo (unverified)"),
+    nome: str | None = typer.Option(None, "--nome", "-n", help="nomeTecnico, substring"),
+    codigo: str | None = typer.Option(None, "--codigo", help="codigo (ANVISA's example, untested)"),
     categoria: str | None = typer.Option(
-        None, "--categoria", help="categoriaProduto, see `categorias` (unverified)"
+        None, "--categoria", help="categoriaProduto, id from `categorias`"
     ),
     page: int = typer.Option(1, "--page", min=1),
     size: int = typer.Option(20, "--size", min=1),

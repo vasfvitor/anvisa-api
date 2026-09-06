@@ -51,7 +51,7 @@
           "Consulta UDI"
         ],
         "summary": "Retorna UDI paginados",
-        "description": "Paginated UDI search. At least one `filter` key is required; an empty filter fails with HTTP 500 and `mensagem: mensagens.MSG-062`. Only `nomeComercial` has been verified live; the other keys come from the published example and are unverified. The filter check runs before the page check: `page: 0` with an empty filter still yields MSG-062, not the page-index error.",
+        "description": "Paginated UDI search. At least one `filter` key is required; an empty filter fails with HTTP 500 and `mensagem: mensagens.MSG-062`. Verified live: `nomeComercial` (substring), `udiDi` (exact), `cnpjDetentora`, `codigoGmdn`, `nuRegistro`; the other keys come from the published example and are untested. The filter check runs before the page check: `page: 0` with an empty filter still yields MSG-062, not the page-index error.",
         "operationId": "paginar",
         "requestBody": {
           "description": "Payload completo de PaginationBuilder",
@@ -229,7 +229,11 @@
             "incorpora"
           ],
           "verified": [
-            "nomeComercial"
+            "nomeComercial",
+            "udiDi",
+            "cnpjDetentora",
+            "codigoGmdn",
+            "nuRegistro"
           ]
         }
       }
@@ -240,7 +244,7 @@
           "Consulta UDI"
         ],
         "summary": "Retorna Termo Gmdn paginados",
-        "description": "Recebe JSON com column, count, order, page e filtros em filter[...]. Use os filtros específicos como categoriaDispositivo, cnpjDetentora, codigoGmdn etc.",
+        "description": "Paginated GMDN term search; names and definitions are in Portuguese. Works with an empty `filter`. Verified live: `conteudo` (text); `codigo` from ANVISA's example is untested.",
         "operationId": "paginarTermoGmdn",
         "requestBody": {
           "description": "Payload completo de PaginationBuilder",
@@ -393,7 +397,13 @@
               }
             }
           }
-        }
+        },
+        "x-required-filters": {
+          "anyOf": []
+        },
+        "x-verified-filters": [
+          "conteudo"
+        ]
       }
     },
     "/api/v1/nomeTecnico": {
@@ -402,7 +412,7 @@
           "Consulta Nomes Técnicos de Produtos para Saúde"
         ],
         "summary": "Lista Nomes Técnicos de Produtos para Saúde",
-        "description": "Paginated technical names of health products (2,678 rows on 2026-09-06). Works with an empty `filter`; the keys in ANVISA's example (`nomeTecnico`, `codigo`, `categoriaProduto`) are unverified.",
+        "description": "Paginated technical names of health products (2,678 rows on 2026-09-06). Works with an empty `filter`. Verified live: `nomeTecnico` (substring) and `categoriaProduto` (id from GET /nomeTecnico/categorias); `codigo` from ANVISA's example is untested.",
         "operationId": "listar",
         "requestBody": {
           "description": "Payload completo de PaginationBuilder",
@@ -559,7 +569,11 @@
         },
         "x-required-filters": {
           "anyOf": []
-        }
+        },
+        "x-verified-filters": [
+          "nomeTecnico",
+          "categoriaProduto"
+        ]
       }
     },
     "/api/v1/nomeTecnico/download": {
@@ -1684,7 +1698,7 @@
           "Consulta Assuntos"
         ],
         "summary": "Retorna assuntos paginados",
-        "description": "Recebe JSON com page, order, sorting e filtros em filter[...]. Use os filtros específicos como codigosAssunto, servicos, sistemas, tiposProduto, tiposSolicitacao, etc.",
+        "description": "Not usable as observed on 2026-09-06: a JSON `PaginationBuilder` body is answered with HTTP 500 'Cannot invoke PaginationBuilder.getColumn() because \"filtro\" is null', and the path without the trailing slash is a 404. Use GET /api/v1/assunto/assuntos and filter client-side.",
         "operationId": "findAssunto",
         "requestBody": {
           "description": "Payload completo de PaginationBuilder",
@@ -1842,7 +1856,8 @@
               }
             }
           }
-        }
+        },
+        "x-observed-status": "broken"
       }
     },
     "/api/v1/udi/{id}": {
@@ -2142,7 +2157,7 @@
           "Consulta UDI"
         ],
         "summary": "Retorna o Historico do UDI",
-        "description": "Retorna o  Historico do UDI de acordo com os IDs informados.",
+        "description": "One device as recorded in one snapshot. Answers an empty-bodied 404 when the device is not part of that snapshot (observed for device 377 in snapshot 171).",
         "operationId": "findHistorico",
         "parameters": [
           {
@@ -2599,7 +2614,7 @@
           "Consulta UDI"
         ],
         "summary": "Retorna o Historico do UDI",
-        "description": "Retorna o  Historico do UDI .",
+        "description": "The daily UDI snapshots (`tipoHistorico` DIARIO, newest first) with `totalRegistros` per snapshot; 171 entries on 2026-09-06. Dates are epoch milliseconds.",
         "operationId": "findHistorico_1",
         "responses": {
           "403": {
