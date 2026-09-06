@@ -5,9 +5,19 @@ on:
     branches: [main]
   pull_request:
 
+# The token only ever needs to read the repo; nothing here writes back.
+permissions:
+  contents: read
+
+# A newer push to the same branch/PR supersedes the running one.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
@@ -16,22 +26,39 @@ jobs:
       run:
         working-directory: packages/python
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v7
+      - name: Install uv and Python ${{ matrix.python }}
+        uses: astral-sh/setup-uv@v10
         with:
+          python-version: ${{ matrix.python }}
           enable-cache: true
-      - run: uv sync --python ${{ matrix.python }}
-      - run: uv run ruff check .
-      - run: uv run ruff format --check .
-      - run: uv run pytest   # fixture-only; never touches the live API
+          cache-dependency-glob: packages/python/uv.lock
+      - name: Sync from the lockfile
+        run: uv sync --locked   # fails if uv.lock is stale, instead of silently re-resolving
+      - name: Lint
+        run: uv run ruff check .
+      - name: Check formatting
+        run: uv run ruff format --check .
+      - name: Test
+        run: uv run pytest   # fixture-only; never touches the live API
 
   spec-drift:
     # The resolved spec and the generated models are committed. Regenerating them must be a no-op;
     # a diff means the overlay, the raw spec or the generator changed without the outputs.
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-      - run: cd packages/python && uv sync --python 3.12
-      - run: make spec models
-      - run: git diff --exit-code -- spec/ packages/python/src/anvisa/models.py
+      - uses: actions/checkout@v7
+      - name: Install uv and Python 3.12
+        uses: astral-sh/setup-uv@v10
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: packages/python/uv.lock
+      - name: Sync from the lockfile
+        run: uv sync --locked
+        working-directory: packages/python
+      - name: Regenerate the spec and models
+        run: make spec models
+      - name: Fail if regeneration changed anything
+        run: git diff --exit-code -- spec/ packages/python/src/anvisa/models.py

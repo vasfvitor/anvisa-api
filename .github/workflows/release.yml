@@ -4,41 +4,63 @@ name: release
 # Uses PyPI trusted publishing (no token stored anywhere): on pypi.org, add a
 # "pending publisher" for owner vasfvitor, repository anvisa-api, workflow
 # release.yml, environment pypi, before pushing the first tag.
+#
+# Deliberately no `concurrency` block: a release must never be cancelled by a later one.
 
 on:
   push:
     tags: ["v*"]
 
+# Read-only by default; only the publish job gets the OIDC token it needs.
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: packages/python
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-      - run: uv sync --python 3.12
-      - run: uv run pytest
+      - uses: actions/checkout@v7
+      - name: Install uv and Python 3.12
+        uses: astral-sh/setup-uv@v10
+        with:
+          python-version: "3.12"
+          # setup-uv leaves the cache off on tag pushes (cache-poisoning guard); a release
+          # is rare and small enough that a cold install is the right trade.
+      - name: Sync from the lockfile
+        run: uv sync --locked
       - name: Check the tag matches the package version
         run: |
           version=$(uv run python -c 'import anvisa; print(anvisa.__version__)')
           test "v$version" = "${GITHUB_REF_NAME}" || { echo "tag $GITHUB_REF_NAME != version $version"; exit 1; }
-      - run: uv build
-      - uses: actions/upload-artifact@v4
+      - name: Test
+        run: uv run pytest
+      - name: Build sdist and wheel
+        run: uv build
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: packages/python/dist/
+          if-no-files-found: error
 
   publish:
     needs: build
     runs-on: ubuntu-latest
-    environment: pypi
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/p/anvisa
     permissions:
-      id-token: write
+      id-token: write   # trusted publishing; everything else falls back to none
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist/
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          attestations: true   # PEP 740; the release/v1 default, made explicit
