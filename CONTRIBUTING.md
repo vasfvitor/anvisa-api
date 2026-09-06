@@ -11,7 +11,7 @@ guessed.
   otherwise never edited.
 - `spec/portal/`: the portal's menu, its backend spec and its documentation pages, also from
   `make snapshot`. They describe endpoints the published spec omits, most of which are not
-  deployed; the daily `drift` workflow diffs them.
+  deployed; the `drift` workflow diffs them twice a month.
 - `spec/consultas-externas.overlay.yaml`: every correction, as an
   [OpenAPI Overlay](https://spec.openapis.org/overlay/v1.0.0.html) action with a comment
   pointing at the evidence.

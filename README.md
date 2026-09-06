@@ -101,7 +101,7 @@ make snapshot             # re-download the spec and portal docs; a diff means A
 Covered: every JSON endpoint in the published spec, as the `fila`, `lista`, `udi`,
 `nome_tecnico`, and `assunto` domains. The two XLS/XLSX download endpoints are not wrapped.
 The domains the portal documents but the gateway does not serve yet (see the table) are
-saved under `spec/portal/`; a daily workflow re-fetches them, so the day ANVISA deploys
+saved under `spec/portal/`; a workflow re-fetches them twice a month, so the day ANVISA deploys
 them shows up as a diff. The SNGPC API (a
 separate service for pharmacies) is out of scope.
 

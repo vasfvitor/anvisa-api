@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- `spec/portal/` snapshots of the portal's documentation pages plus a daily `drift` workflow.
+- `spec/portal/` snapshots of the portal's documentation pages plus a twice-monthly `drift` workflow.
   The pages document 35 endpoints missing from the OpenAPI spec; four probed on 2026-09-06
   (`GET /empresa/{cnpj}`, `POST /consulta/saude`, `GET /empresa/tipoEmpresa`,
   `GET /certificado/status`) return a plain 404, so they are documented but not deployed.

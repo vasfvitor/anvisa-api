@@ -1,6 +1,6 @@
 name: drift
 
-# Daily: re-download ANVISA's OpenAPI document and the portal documentation pages and fail
+# Every two weeks: re-download ANVISA's OpenAPI document and the portal documentation pages and fail
 # if anything changed relative to what is committed under spec/. A red run here means ANVISA
 # changed the API surface or its docs; the fix is to look at the diff, re-record affected
 # fixtures, and commit the new snapshot. Kept out of ci.yml so unrelated PRs don't go red
@@ -8,7 +8,7 @@ name: drift
 
 on:
   schedule:
-    - cron: "17 9 * * *"   # 06:17 America/Sao_Paulo
+    - cron: "17 9 1,15 * *"   # 1st and 15th, 06:17 America/Sao_Paulo; tighten if the repo gets busier
   workflow_dispatch:
 
 permissions:
