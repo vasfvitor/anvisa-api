@@ -1,6 +1,6 @@
-# anvisa
+# `anvisa`
 
-Python client and CLI for ANVISA's official **Consultas Externas** API
+Python client and command-line tool for ANVISA's official **Consultas Externas** API
 (fila de análise, listas, UDI de dispositivos médicos, termos GMDN, nomes técnicos, assuntos
 de peticionamento).
 

@@ -2,20 +2,21 @@
 
 ## Unreleased
 
-- `client.lista` (áreas, grupos, sublistas, consulta) and `client.nome_tecnico` (search,
-  iter_search, categorias), with CLI commands `anvisa lista ...` and `anvisa nome-tecnico ...`.
+- `client.lista` (`areas`, `grupos`, `sublistas`, `consulta`) and `client.nome_tecnico`
+  (`search`, `iter_search`, `categorias`), with the commands `anvisa lista` and
+  `anvisa nome-tecnico`.
   Recorded live on 2026-09-06 (4 requests): `POST /lista/consulta` requires the filter key
   `subfila`, not `sublista`, and returns the whole sublista unpaginated like `fila/consulta`.
 
-## 0.1.0 — 2026-09-06
+## 0.1.0 (2026-09-06)
 
-First release. Python client and CLI for the `fila` (queue of analysis), `udi` (medical
+First release. Python client and command-line tool for the `fila` (queue of analysis), `udi` (medical
 device identification) and `assunto` (petition subject codes) domains of ANVISA's Consultas
 Externas API, built on ANVISA's OpenAPI document plus an overlay recording the behavior
 observed live:
 
 - Cloudflare rejects curl's default User-Agent; a descriptive one is sent.
-- OAuth2 client-credentials tokens last 1740 s with no refresh token; renewed before expiry
+- OAuth 2.0 client-credentials tokens last 1740 s with no refresh token; renewed before expiry
   and once after a 401.
 - Rate limit is a per-client token bucket (burst 25, refill 1/s) visible only in headers;
   the client mirrors it and sleeps only when about to run dry.

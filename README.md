@@ -1,7 +1,7 @@
-# anvisa
+# `anvisa`
 
-Open-source client for ANVISA's official [Portal de APIs](https://api.anvisa.gov.br/) —
-the **Consultas Externas** API: fila de análise, UDI de dispositivos médicos, termos GMDN,
+Open source client for ANVISA's official [Portal de APIs](https://api.anvisa.gov.br/),
+specifically the **Consultas Externas** API: fila de análise, UDI de dispositivos médicos, termos GMDN,
 nomes técnicos, listas e assuntos de peticionamento.
 
 ANVISA publishes an OpenAPI document for this API, but it is wrong or silent about most of
@@ -13,7 +13,7 @@ ships a client that encodes it.
 | Behavior | Reality |
 |---|---|
 | User-Agent | Cloudflare answers **403** to curl's default UA, even for the spec URL. Send a descriptive one. |
-| Auth | OAuth2 client credentials (Keycloak, realm `externo`). Token lasts **1740 s**, **no refresh token**. |
+| Auth | OAuth 2.0 client credentials (Keycloak, realm `externo`). Token lasts **1740 s**, **no refresh token**. |
 | Rate limit | Token bucket per client: **burst 25, refill 1/s**, reported only in `X-RateLimit-*` headers. |
 | Pagination | Requests are **1-based** (`page: 0` → error); responses are Spring `Page` objects, **0-based**. |
 | Filters | `POST /udi` needs **at least one** `filter` key; `POST /fila/consulta` **and** `POST /lista/consulta` need `filter.subfila` (yes, also for listas). |
@@ -81,8 +81,8 @@ with Client.from_env() as anvisa:
 
 The client sends a User-Agent, caches the token and renews it before expiry, mirrors the
 gateway's token bucket so a loop never hits 429, and raises typed exceptions
-(`MissingFilterError`, `InvalidPageError`, `MalformedRequestError`, `BlockedError`, ...)
-instead of a bare 500.
+(`MissingFilterError`, `InvalidPageError`, `MalformedRequestError`, `BlockedError`, and
+others) instead of a bare 500.
 
 ### Development
 
@@ -95,8 +95,8 @@ make spec && make models  # at the repo root; a non-empty git diff means ANVISA 
 
 ## Scope
 
-Covered: every JSON endpoint of the API: the **fila**, **lista**, **udi**, **nome_tecnico**
-and **assunto** domains. The two XLS/XLSX download endpoints are not wrapped. The SNGPC API (a
+Covered: every JSON endpoint of the API, as the `fila`, `lista`, `udi`, `nome_tecnico`, and
+`assunto` domains. The two XLS/XLSX download endpoints are not wrapped. The SNGPC API (a
 separate service for pharmacies) is out of scope.
 
 Not affiliated with ANVISA. MIT.
