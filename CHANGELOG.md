@@ -1,7 +1,15 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 (2026-09-06)
 
+Every JSON endpoint in the published spec now has a client method and a command; the
+drift check watches what the spec leaves out.
+
+- `client.lista` (`areas`, `grupos`, `sublistas`, `consulta`) and `client.nome_tecnico`
+  (`search`, `iter_search`, `categorias`), with the commands `anvisa lista` and
+  `anvisa nome-tecnico`.
+  Recorded live on 2026-09-06 (4 requests): `POST /lista/consulta` requires the filter key
+  `subfila`, not `sublista`, and returns the whole sublista unpaginated like `fila/consulta`.
 - `spec/portal/` snapshots of the portal's documentation pages plus a twice-monthly `drift` workflow.
   The pages document 35 endpoints missing from the OpenAPI spec; four probed on 2026-09-06
   (`GET /empresa/{cnpj}`, `POST /consulta/saude`, `GET /empresa/tipoEmpresa`,
@@ -11,11 +19,6 @@
   recorded queue (subfila 161, 35 rows) alongside 167 (40) and a 555-row lista: no size cap.
 - Rate limit corrected: the bucket is shared per source address with the portal's
   unauthenticated endpoints, not per client id.
-- `client.lista` (`areas`, `grupos`, `sublistas`, `consulta`) and `client.nome_tecnico`
-  (`search`, `iter_search`, `categorias`), with the commands `anvisa lista` and
-  `anvisa nome-tecnico`.
-  Recorded live on 2026-09-06 (4 requests): `POST /lista/consulta` requires the filter key
-  `subfila`, not `sublista`, and returns the whole sublista unpaginated like `fila/consulta`.
 
 ## 0.1.0 (2026-09-06)
 
