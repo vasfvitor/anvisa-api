@@ -14,6 +14,8 @@ CASES = [
     ("nomeTecnico_p1.json", models.PageNomeTecnicoDTO, None),
     ("udi_detail_377.json", models.DetalheDispositivoDTO, None),
     ("gmdn_47852.json", models.TermoGMDNDTO, None),
+    ("assuntos.json", models.AssuntoDTO, 2595),
+    ("assunto_10013.json", models.DetalheAssunto, None),
     ("err_msg062.json", models.ErroApi, None),
     ("err_subfila.json", models.ErroApi, None),
     ("err_page_index.json", models.ErroApi, None),

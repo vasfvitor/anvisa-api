@@ -59,6 +59,8 @@ anvisa fila consulta 167                # the queue, in order, with protocol num
 anvisa udi search --nome cateter --size 5
 anvisa udi get 377
 anvisa udi gmdn 47852
+anvisa assunto lista --busca bioequival   # petition subject codes
+anvisa assunto get 10013                  # documents, forms, legal basis, fees by size
 anvisa --format json fila consulta 167 | jq length
 ```
 
@@ -90,8 +92,8 @@ make spec && make models  # at the repo root; a non-empty git diff means ANVISA 
 
 ## Scope
 
-v0.1 covers the **fila** and **udi** domains (10 endpoints). The other tags in the spec
-(listas, assuntos, nomes técnicos, downloads) are generated as models but have no client
-methods yet. The SNGPC API (a separate service for pharmacies) is out of scope.
+Covered: the **fila**, **udi** and **assunto** domains. The other tags in the spec (listas,
+nomes técnicos, downloads) are generated as models but have no client methods yet. The
+SNGPC API (a separate service for pharmacies) is out of scope.
 
 Not affiliated with ANVISA. MIT.

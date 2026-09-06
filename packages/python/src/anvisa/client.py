@@ -1,4 +1,4 @@
-"""The HTTP client and the two API domains shipped in 0.1: `fila` and `udi`."""
+"""The HTTP client and the API domains: `fila`, `udi` and `assunto`."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from .errors import InvalidPageError, MissingFilterError, raise_for_response
 from .throttle import Throttle
 
 BASE_URL = "https://api-gateway.prd.apps.anvisa.gov.br/consultas-externas-api"
-USER_AGENT = f"anvisa-python/{__version__} (+https://github.com/virtuaires/anvisa)"
+USER_AGENT = f"anvisa-python/{__version__} (+https://github.com/vasfvitor/anvisa-api)"
 
 
 class Client:
@@ -44,6 +44,7 @@ class Client:
         )
         self.fila = Fila(self)
         self.udi = Udi(self)
+        self.assunto = Assunto(self)
 
     @classmethod
     def from_env(cls, **kwargs: Any) -> Client:
@@ -182,3 +183,49 @@ class Udi:
         return models.TermoGMDNDTO.model_validate(
             self._client.get(f"/api/v1/udi/termoGmdn/{codigo}")
         )
+
+
+class Assunto:
+    """Assuntos de peticionamento: subject codes, and per code the required documents,
+    forms, legal basis and fees. `lista` and `detalhe` are verified live; the catalogs and
+    `busca` come from the spec only."""
+
+    def __init__(self, client: Client) -> None:
+        self._client = client
+
+    def lista(self) -> list[models.AssuntoDTO]:
+        """Every subject code with its description (~2,600 entries, one request)."""
+        data = self._client.get("/api/v1/assunto/assuntos")
+        return [models.AssuntoDTO.model_validate(x) for x in data]
+
+    def detalhe(self, codigo: int | str) -> models.DetalheAssunto:
+        """Full detail of one subject: system, services, forms, checklist, fees by company size."""
+        return models.DetalheAssunto.model_validate(self._client.get(f"/api/v1/assunto/{codigo}"))
+
+    def tipos_solicitacao(self) -> list[models.TipoSolicitacaoDTO]:
+        data = self._client.get("/api/v1/assunto/tiposSolicitacao")
+        return [models.TipoSolicitacaoDTO.model_validate(x) for x in data]
+
+    def tipos_produto(self) -> list[models.TipoProdutoDTO]:
+        data = self._client.get("/api/v1/assunto/tiposProduto")
+        return [models.TipoProdutoDTO.model_validate(x) for x in data]
+
+    def sistemas(self) -> list[models.SistemaDTO]:
+        data = self._client.get("/api/v1/assunto/sistemas")
+        return [models.SistemaDTO.model_validate(x) for x in data]
+
+    def servicos(self) -> list[models.ServicoDTO]:
+        data = self._client.get("/api/v1/assunto/servicos")
+        return [models.ServicoDTO.model_validate(x) for x in data]
+
+    def busca(
+        self,
+        page: int = 1,
+        size: int = 20,
+        sort: dict[str, str] | None = None,
+        **filters: Any,
+    ) -> models.PageConsultaAssunto:
+        """Paginated search. Filter keys from ANVISA's example, unverified: `codigosAssunto`,
+        `servicos`, `sistemas`, `tiposProduto`, `tiposSolicitacao`."""
+        data = self._client.post("/api/v1/assunto/", page_body(page, size, sort, filters))
+        return models.PageConsultaAssunto.model_validate(data)

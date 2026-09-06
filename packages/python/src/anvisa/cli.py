@@ -39,8 +39,12 @@ fila_app = typer.Typer(
     help="Fila de análise (posição dos processos por subfila).", no_args_is_help=True
 )
 udi_app = typer.Typer(help="UDI de dispositivos médicos e termos GMDN.", no_args_is_help=True)
+assunto_app = typer.Typer(
+    help="Assuntos de peticionamento (documentos, formulários, taxas).", no_args_is_help=True
+)
 app.add_typer(fila_app, name="fila")
 app.add_typer(udi_app, name="udi")
+app.add_typer(assunto_app, name="assunto")
 
 
 @app.callback()
@@ -213,3 +217,26 @@ def udi_gmdn(ctx: typer.Context, codigo: str) -> None:
     """Termo GMDN por código."""
     with handle_errors(), make_client() as client:
         emit(ctx, client.udi.termo_gmdn(codigo), f"GMDN {codigo}")
+
+
+# --- assunto ----------------------------------------------------------------
+
+
+@assunto_app.command("lista")
+def assunto_lista(
+    ctx: typer.Context,
+    busca: str | None = typer.Option(None, "--busca", "-b", help="filter locally by text"),
+) -> None:
+    """Todos os códigos de assunto de peticionamento (uma requisição, ~2.600 linhas)."""
+    with handle_errors(), make_client() as client:
+        rows = client.assunto.lista()
+        if busca:
+            rows = [r for r in rows if busca.lower() in (r.descricao or "").lower()]
+        emit(ctx, rows, "Assuntos")
+
+
+@assunto_app.command("get")
+def assunto_get(ctx: typer.Context, codigo: int) -> None:
+    """Detalhe de um assunto: sistema, serviços, formulários, checklist e taxas por porte."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.assunto.detalhe(codigo), f"Assunto {codigo}")

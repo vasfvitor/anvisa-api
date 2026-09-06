@@ -55,6 +55,16 @@ def test_udi_search_and_get(fake_cli_client):
     assert json.loads(result.output)["dispositivo"]["versaoModelo"] == "VCET-5110CK1"
 
 
+def test_assunto_get_and_local_filter(fake_cli_client):
+    result = runner.invoke(cli.app, ["-f", "json", "assunto", "get", "10013"])
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output)["fatoGerador"] == "4499"
+
+    result = runner.invoke(cli.app, ["-f", "json", "assunto", "lista", "--busca", "bioequival"])
+    assert result.exit_code == 0, result.output
+    assert all("BIOEQUIVAL" in row["descricao"].upper() for row in json.loads(result.output))
+
+
 def test_udi_search_without_filter_is_a_clean_error(fake_cli_client):
     result = runner.invoke(cli.app, ["udi", "search"])
     assert result.exit_code == 1

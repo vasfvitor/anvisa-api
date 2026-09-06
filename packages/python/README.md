@@ -32,4 +32,4 @@ of the gateway's rate limit (burst 25, 1 request/s) so loops never hit 429, 1-ba
 pages against 0-based responses, required filter keys, and typed exceptions for the
 validation errors ANVISA reports as HTTP 500.
 
-Full write-up, spec overlay and recorded fixtures: https://github.com/virtuaires/anvisa
+Full write-up, spec overlay and recorded fixtures: https://github.com/vasfvitor/anvisa-api

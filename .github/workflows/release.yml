@@ -1,0 +1,44 @@
+name: release
+
+# Publishes packages/python to PyPI when a tag like v0.1.0 is pushed.
+# Uses PyPI trusted publishing (no token stored anywhere): on pypi.org, add a
+# "pending publisher" for owner vasfvitor, repository anvisa-api, workflow
+# release.yml, environment pypi, before pushing the first tag.
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --python 3.12
+      - run: uv run pytest
+      - name: Check the tag matches the package version
+        run: |
+          version=$(uv run python -c 'import anvisa; print(anvisa.__version__)')
+          test "v$version" = "${GITHUB_REF_NAME}" || { echo "tag $GITHUB_REF_NAME != version $version"; exit 1; }
+      - run: uv build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: packages/python/dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

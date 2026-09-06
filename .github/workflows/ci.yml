@@ -1,0 +1,37 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    defaults:
+      run:
+        working-directory: packages/python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --python ${{ matrix.python }}
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
+      - run: uv run pytest   # fixture-only; never touches the live API
+
+  spec-drift:
+    # The resolved spec and the generated models are committed. Regenerating them must be a no-op;
+    # a diff means the overlay, the raw spec or the generator changed without the outputs.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: cd packages/python && uv sync --python 3.12
+      - run: make spec models
+      - run: git diff --exit-code -- spec/ packages/python/src/anvisa/models.py

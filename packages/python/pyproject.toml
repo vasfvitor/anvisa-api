@@ -27,7 +27,7 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/virtuaires/anvisa"
+Repository = "https://github.com/vasfvitor/anvisa-api"
 
 [project.scripts]
 anvisa = "anvisa.cli:app"

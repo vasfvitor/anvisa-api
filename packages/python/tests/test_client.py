@@ -69,6 +69,18 @@ def test_udi_get_and_gmdn(client):
     assert termo.nomeOriginal == "Temporary cardiac pacing catheter"
 
 
+def test_assunto_lista_and_detalhe(client):
+    assuntos = client.assunto.lista()
+    assert len(assuntos) == 2595
+    assert assuntos[0].id == 10013
+
+    detalhe = client.assunto.detalhe(10013)
+    assert detalhe.assunto.startswith("BIOEQUIVALÊNCIA")
+    assert detalhe.sistemas[0].codigoSistema == "SOLICITA"
+    assert len(detalhe.documentosRequeridos) == 5
+    assert [t.porte for t in detalhe.valoresTaxaEmpresa][0] == "Grande I"
+
+
 def test_iter_search_walks_pages_with_0_based_response_numbers():
     first = load("udi_filtro.json")
     second = dict(
