@@ -23,6 +23,7 @@ from anvisa.errors import (
     [
         ("err_msg062", MissingFilterError),
         ("err_subfila", MissingFilterError),
+        ("err_sublista", MissingFilterError),
         ("err_page_index", InvalidPageError),
         ("err_jackson", MalformedRequestError),
     ],
@@ -34,9 +35,11 @@ def test_validation_failures_reported_as_500_become_typed(fixture, exc):
     assert isinstance(info.value.data_hora, datetime)
 
 
-def test_missing_filter_names_the_key():
+@pytest.mark.parametrize("fixture", ["err_subfila", "err_sublista"])
+def test_missing_filter_names_the_key(fixture):
+    # lista/consulta asks for `subfila` too, not `sublista`
     with pytest.raises(MissingFilterError) as info:
-        raise_for_response(response_for("err_subfila"))
+        raise_for_response(response_for(fixture))
     assert info.value.filters == ["subfila"]
     assert "subfila" in str(info.value)
 

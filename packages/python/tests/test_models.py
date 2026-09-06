@@ -12,6 +12,9 @@ CASES = [
     ("fila_grupos.json", models.ChaveValorLong, 8),
     ("subfilas.json", models.ChaveValorInteger, 13),
     ("fila_consulta.json", models.FilaCalculadaDTO, 40),
+    ("lista_grupos.json", models.ChaveValorLong, 6),
+    ("lista_sublistas.json", models.ChaveValorInteger, 1),
+    ("lista_consulta.json", models.FilaCalculadaDTO, 555),
     ("udi_filtro.json", models.PageUdiDTO, None),
     ("nomeTecnico_p1.json", models.PageNomeTecnicoDTO, None),
     ("udi_detail_377.json", models.DetalheDispositivoDTO, None),
@@ -20,6 +23,7 @@ CASES = [
     ("assunto_10013.json", models.DetalheAssunto, None),
     ("err_msg062.json", models.ErroApi, None),
     ("err_subfila.json", models.ErroApi, None),
+    ("err_sublista.json", models.ErroApi, None),
     ("err_page_index.json", models.ErroApi, None),
     ("err_jackson.json", models.ErroApi, None),
 ]

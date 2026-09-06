@@ -1,4 +1,4 @@
-"""The HTTP client and the API domains: `fila`, `udi` and `assunto`."""
+"""The HTTP client and the API domains: `fila`, `lista`, `udi`, `nome_tecnico` and `assunto`."""
 
 from __future__ import annotations
 
@@ -43,7 +43,9 @@ class Client:
             auth=TokenAuth(self.credentials),
         )
         self.fila = Fila(self)
+        self.lista = Lista(self)
         self.udi = Udi(self)
+        self.nome_tecnico = NomeTecnico(self)
         self.assunto = Assunto(self)
 
     @classmethod
@@ -128,6 +130,68 @@ class Fila:
         """The whole calculated queue of a subfila, in order. Not paginated by the API."""
         data = self._client.post("/api/v1/fila/consulta", {"filter": {"subfila": subfila_id}})
         return [models.FilaCalculadaDTO.model_validate(x) for x in data]
+
+
+class Lista:
+    """Listas calculadas: the same structure as `fila` (área → grupo → sublista → rows) for
+    the "lista" reports. Rows share `FilaCalculadaDTO` with the queue."""
+
+    def __init__(self, client: Client) -> None:
+        self._client = client
+
+    def areas(self) -> list[models.TipoProduto]:
+        """Áreas with lists (Empresas=7, Insumo Farmacêutico=15, Medicamento=1, Toxicologia=9)."""
+        data = self._client.get("/api/v1/lista/arealista")
+        return [models.TipoProduto.model_validate(x) for x in data]
+
+    def grupos(self, area_id: int) -> list[models.ChaveValorLong]:
+        """Grupos de lista of an area."""
+        data = self._client.get(f"/api/v1/lista/{area_id}/lista")
+        return [models.ChaveValorLong.model_validate(x) for x in data]
+
+    def sublistas(self, grupo_id: int) -> list[models.ChaveValorInteger]:
+        """Sublistas of a grupo; their ids are what `consulta` takes."""
+        data = self._client.get(f"/api/v1/lista/{grupo_id}/sublista")
+        return [models.ChaveValorInteger.model_validate(x) for x in data]
+
+    def consulta(self, sublista_id: int) -> list[models.FilaCalculadaDTO]:
+        """The whole calculated list of a sublista. Not paginated by the API.
+
+        The filter key is `subfila` even here (the API answers "Filtro 'subfila' não
+        informado." to anything else)."""
+        data = self._client.post("/api/v1/lista/consulta", {"filter": {"subfila": sublista_id}})
+        return [models.FilaCalculadaDTO.model_validate(x) for x in data]
+
+
+class NomeTecnico:
+    """Nomes técnicos de produtos para saúde, with risk class and category."""
+
+    def __init__(self, client: Client) -> None:
+        self._client = client
+
+    def search(
+        self,
+        page: int = 1,
+        size: int = 20,
+        sort: dict[str, str] | None = None,
+        **filters: Any,
+    ) -> models.PageNomeTecnicoDTO:
+        """One page of technical names. Unlike `udi`, no filter is required (~2,700 rows).
+        Filter keys from ANVISA's example: `nomeTecnico`, `codigo`, `categoriaProduto`
+        (unverified)."""
+        data = self._client.post("/api/v1/nomeTecnico", page_body(page, size, sort, filters))
+        return models.PageNomeTecnicoDTO.model_validate(data)
+
+    def iter_search(
+        self, size: int = 100, sort: dict[str, str] | None = None, **filters: Any
+    ) -> Iterator[models.NomeTecnicoDTO]:
+        """Every technical name matching the filters, across pages."""
+        return iterate_pages(lambda page: self.search(page, size, sort, **filters))
+
+    def categorias(self) -> list[models.TipoProduto]:
+        """Categories (Equipamento ou Material=8, Diagnóstico in vitro=12)."""
+        data = self._client.get("/api/v1/nomeTecnico/categorias")
+        return [models.TipoProduto.model_validate(x) for x in data]
 
 
 class Udi:

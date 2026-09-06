@@ -181,3 +181,23 @@ actions:
       x-paginated: false
   - target: $.paths['/api/v1/fila/consulta'].post.requestBody.content['application/json'].examples['Consulta de fila calculada'].value
     update: {page: 1, filter: {subfila: 167}}
+
+  # POST /lista/consulta behaves like /fila/consulta, including the filter key name.
+  - target: $.paths['/api/v1/lista/consulta'].post
+    update:
+      description: >-
+        Returns the whole calculated list for one sublista (555 rows for sublista 2141 on
+        2026-09-06). The required filter key is `subfila`, not `sublista`: an integer id from
+        GET /api/v1/lista/{codigoGrupo}/sublista, otherwise HTTP 500 "Filtro 'subfila' não
+        informado.". `page` and `size` are ignored.
+      x-required-filters: {allOf: [subfila]}
+      x-paginated: false
+  - target: $.paths['/api/v1/lista/consulta'].post.requestBody.content['application/json'].examples['Consulta de fila calculada'].value
+    update: {page: 1, filter: {subfila: 2141}}
+  - target: $.paths['/api/v1/nomeTecnico'].post
+    update:
+      description: >-
+        Paginated technical names of health products (2,678 rows on 2026-09-06). Works with
+        an empty `filter`; the keys in ANVISA's example (`nomeTecnico`, `codigo`,
+        `categoriaProduto`) are unverified.
+      x-required-filters: {anyOf: []}

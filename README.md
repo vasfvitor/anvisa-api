@@ -16,9 +16,9 @@ ships a client that encodes it.
 | Auth | OAuth2 client credentials (Keycloak, realm `externo`). Token lasts **1740 s**, **no refresh token**. |
 | Rate limit | Token bucket per client: **burst 25, refill 1/s**, reported only in `X-RateLimit-*` headers. |
 | Pagination | Requests are **1-based** (`page: 0` → error); responses are Spring `Page` objects, **0-based**. |
-| Filters | `POST /udi` needs **at least one** `filter` key; `POST /fila/consulta` needs `filter.subfila`. |
+| Filters | `POST /udi` needs **at least one** `filter` key; `POST /fila/consulta` **and** `POST /lista/consulta` need `filter.subfila` (yes, also for listas). |
 | Errors | Validation failures come back as **HTTP 500** with `{status, mensagem, data_hora, mensagem_detalhada}`. |
-| `fila/consulta` | Returns the **whole** subqueue as an array; `page`/`size` are ignored. |
+| `fila/consulta`, `lista/consulta` | Return the **whole** subqueue/sublista as an array; `page`/`size` are ignored. |
 | Dates | Integer **epoch milliseconds**. |
 
 ## Layout
@@ -55,9 +55,13 @@ anvisa fila areas                       # Medicamento=1, Dispositivos Médicos=8
 anvisa fila grupos 8                    # Registros, Alterações, Revalidações, ...
 anvisa fila subfilas 285
 anvisa fila consulta 167                # the queue, in order, with protocol numbers
+anvisa lista areas && anvisa lista grupos 1 && anvisa lista sublistas 921
+anvisa lista consulta 2141              # same shape as fila consulta
 anvisa udi search --nome cateter --size 5
 anvisa udi get 377
 anvisa udi gmdn 47852
+anvisa nome-tecnico search --size 50    # nomes técnicos with risk class
+anvisa nome-tecnico categorias
 anvisa assunto lista --busca bioequival   # petition subject codes
 anvisa assunto get 10013                  # documents, forms, legal basis, fees by size
 anvisa --format json fila consulta 167 | jq length
@@ -91,8 +95,8 @@ make spec && make models  # at the repo root; a non-empty git diff means ANVISA 
 
 ## Scope
 
-Covered: the **fila**, **udi** and **assunto** domains. The other tags in the spec (listas,
-nomes técnicos, downloads) are generated as models but have no client methods yet. The
-SNGPC API (a separate service for pharmacies) is out of scope.
+Covered: every JSON endpoint of the API: the **fila**, **lista**, **udi**, **nome_tecnico**
+and **assunto** domains. The two XLS/XLSX download endpoints are not wrapped. The SNGPC API (a
+separate service for pharmacies) is out of scope.
 
 Not affiliated with ANVISA. MIT.

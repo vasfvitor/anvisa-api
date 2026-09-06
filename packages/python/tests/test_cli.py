@@ -65,6 +65,20 @@ def test_assunto_get_and_local_filter(fake_cli_client):
     assert all("BIOEQUIVAL" in row["descricao"].upper() for row in json.loads(result.output))
 
 
+def test_lista_and_nome_tecnico_commands(fake_cli_client):
+    result = runner.invoke(cli.app, ["-f", "json", "lista", "consulta", "2141"])
+    assert result.exit_code == 0, result.output
+    assert len(json.loads(result.output)) == 555
+
+    result = runner.invoke(cli.app, ["-f", "json", "nome-tecnico", "search", "--size", "2"])
+    assert result.exit_code == 0, result.output
+    assert [r["codigo"] for r in json.loads(result.output)] == ["43065", "42505"]
+
+    result = runner.invoke(cli.app, ["-f", "json", "nome-tecnico", "categorias"])
+    assert result.exit_code == 0, result.output
+    assert [r["id"] for r in json.loads(result.output)] == [8, 12]
+
+
 def test_udi_search_without_filter_is_a_clean_error(fake_cli_client):
     result = runner.invoke(cli.app, ["udi", "search"])
     assert result.exit_code == 1

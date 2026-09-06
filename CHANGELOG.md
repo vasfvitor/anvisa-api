@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- `client.lista` (áreas, grupos, sublistas, consulta) and `client.nome_tecnico` (search,
+  iter_search, categorias), with CLI commands `anvisa lista ...` and `anvisa nome-tecnico ...`.
+  Recorded live on 2026-09-06 (4 requests): `POST /lista/consulta` requires the filter key
+  `subfila`, not `sublista`, and returns the whole sublista unpaginated like `fila/consulta`.
+
 ## 0.1.0 — 2026-09-06
 
 First release. Python client and CLI for the `fila` (queue of analysis), `udi` (medical

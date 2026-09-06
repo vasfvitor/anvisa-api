@@ -33,7 +33,7 @@ class Format(str, Enum):
 
 
 app = typer.Typer(
-    help="ANVISA Consultas Externas: fila de análise, UDI de dispositivos médicos e assuntos.",
+    help="ANVISA Consultas Externas: filas, listas, UDI, nomes técnicos e assuntos.",
     no_args_is_help=True,
 )
 fila_app = typer.Typer(
@@ -43,8 +43,15 @@ udi_app = typer.Typer(help="UDI de dispositivos médicos e termos GMDN.", no_arg
 assunto_app = typer.Typer(
     help="Assuntos de peticionamento (documentos, formulários, taxas).", no_args_is_help=True
 )
+lista_app = typer.Typer(
+    help="Listas calculadas (mesma estrutura da fila: área → grupo → sublista).",
+    no_args_is_help=True,
+)
+nome_tecnico_app = typer.Typer(help="Nomes técnicos de produtos para saúde.", no_args_is_help=True)
 app.add_typer(fila_app, name="fila")
+app.add_typer(lista_app, name="lista")
 app.add_typer(udi_app, name="udi")
+app.add_typer(nome_tecnico_app, name="nome-tecnico")
 app.add_typer(assunto_app, name="assunto")
 
 
@@ -170,6 +177,44 @@ def fila_consulta(
         emit(ctx, client.fila.consulta(subfila_id), f"Fila da subfila {subfila_id}")
 
 
+# --- lista ------------------------------------------------------------------
+
+
+@lista_app.command("areas")
+def lista_areas(ctx: typer.Context) -> None:
+    """Áreas com listas (Empresas=7, Insumo Farmacêutico=15, Medicamento=1, Toxicologia=9)."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.lista.areas(), "Áreas")
+
+
+@lista_app.command("grupos")
+def lista_grupos(
+    ctx: typer.Context, area_id: int = typer.Argument(help="id from `anvisa lista areas`")
+) -> None:
+    """Grupos de lista de uma área."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.lista.grupos(area_id), f"Grupos da área {area_id}")
+
+
+@lista_app.command("sublistas")
+def lista_sublistas(
+    ctx: typer.Context, grupo_id: int = typer.Argument(help="id from `anvisa lista grupos`")
+) -> None:
+    """Sublistas de um grupo."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.lista.sublistas(grupo_id), f"Sublistas do grupo {grupo_id}")
+
+
+@lista_app.command("consulta")
+def lista_consulta(
+    ctx: typer.Context,
+    sublista_id: int = typer.Argument(help="id from `anvisa lista sublistas`"),
+) -> None:
+    """A lista calculada completa de uma sublista."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.lista.consulta(sublista_id), f"Lista da sublista {sublista_id}")
+
+
 # --- udi --------------------------------------------------------------------
 
 
@@ -227,6 +272,45 @@ def udi_gmdn(ctx: typer.Context, codigo: str) -> None:
     """Termo GMDN por código."""
     with handle_errors(), make_client() as client:
         emit(ctx, client.udi.termo_gmdn(codigo), f"GMDN {codigo}")
+
+
+# --- nome-tecnico -----------------------------------------------------------
+
+
+@nome_tecnico_app.command("search")
+def nome_tecnico_search(
+    ctx: typer.Context,
+    nome: str | None = typer.Option(None, "--nome", "-n", help="nomeTecnico (unverified)"),
+    codigo: str | None = typer.Option(None, "--codigo", help="codigo (unverified)"),
+    categoria: str | None = typer.Option(
+        None, "--categoria", help="categoriaProduto, see `categorias` (unverified)"
+    ),
+    page: int = typer.Option(1, "--page", min=1),
+    size: int = typer.Option(20, "--size", min=1),
+    all_pages: bool = typer.Option(
+        False, "--all", help="iterate every page (respects the rate limit)"
+    ),
+) -> None:
+    """Nomes técnicos, paginados. Sem filtro retorna todos (~2.700)."""
+    filters = {
+        k: v
+        for k, v in {"nomeTecnico": nome, "codigo": codigo, "categoriaProduto": categoria}.items()
+        if v
+    }
+    with handle_errors(), make_client() as client:
+        if all_pages:
+            emit(ctx, list(client.nome_tecnico.iter_search(size=size, **filters)), "Nomes técnicos")
+        else:
+            result = client.nome_tecnico.search(page=page, size=size, **filters)
+            total = f" (página {page} de {result.totalPages}, {result.totalElements} no total)"
+            emit(ctx, result.content or [], "Nomes técnicos" + total)
+
+
+@nome_tecnico_app.command("categorias")
+def nome_tecnico_categorias(ctx: typer.Context) -> None:
+    """Categorias (Equipamento ou Material=8, Diagnóstico in vitro=12)."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.nome_tecnico.categorias(), "Categorias")
 
 
 # --- assunto ----------------------------------------------------------------

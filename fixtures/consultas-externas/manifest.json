@@ -15,8 +15,12 @@
     {"name": "assunto_10013", "method": "GET", "path": "/api/v1/assunto/10013", "status": 200, "remaining": 20, "file": "assunto_10013.json"},
     {"name": "arealista", "method": "GET", "path": "/api/v1/lista/arealista", "status": 200, "remaining": 24, "file": "arealista.json"},
     {"name": "nomeTecnico_categorias", "method": "GET", "path": "/api/v1/nomeTecnico/categorias", "status": 200, "remaining": 22, "file": "nomeTecnico_categorias.json"},
+    {"name": "lista_grupos", "method": "GET", "path": "/api/v1/lista/1/lista", "status": 200, "remaining": 24, "file": "lista_grupos.json"},
+    {"name": "lista_sublistas", "method": "GET", "path": "/api/v1/lista/921/sublista", "status": 200, "remaining": 24, "file": "lista_sublistas.json"},
+    {"name": "lista_consulta", "method": "POST", "path": "/api/v1/lista/consulta", "status": 200, "remaining": 22, "file": "lista_consulta.json", "request": {"filter": {"subfila": 2141}}},
     {"name": "err_msg062", "method": "POST", "path": "/api/v1/udi", "status": 500, "remaining": 23, "file": "err_msg062.json", "request": {"page": 1, "size": 3, "sorting": {}, "filter": {}}},
     {"name": "err_subfila", "method": "POST", "path": "/api/v1/fila/consulta", "status": 500, "remaining": 23, "file": "err_subfila.json", "request": {"page": 0, "size": 2, "sorting": {}, "filter": {"areaFila": 8}}},
+    {"name": "err_sublista", "method": "POST", "path": "/api/v1/lista/consulta", "status": 500, "remaining": 23, "file": "err_sublista.json", "request": {"filter": {}}},
     {"name": "err_page_index", "method": "POST", "path": "/api/v1/nomeTecnico", "status": 500, "remaining": 24, "file": "err_page_index.json", "request": {"page": 0, "size": 2, "sorting": {}, "filter": {}}},
     {"name": "err_jackson", "method": "POST", "path": "/api/v1/udi", "status": 500, "remaining": 23, "file": "err_jackson.json", "request": {"page": 0, "size": 3, "sorting": [], "filter": ""}}
   ]

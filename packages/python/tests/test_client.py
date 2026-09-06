@@ -30,6 +30,27 @@ def test_fila_chain(client, fake_api):
     assert fake_api.json_bodies()[-1] == {"filter": {"subfila": 167}}
 
 
+def test_lista_chain_uses_the_subfila_key(client, fake_api):
+    areas = client.lista.areas()
+    assert [a.id for a in areas] == [7, 15, 1, 9]
+    grupos = client.lista.grupos(1)
+    assert grupos[0].descricao == "Bula, Rotulagem e Nome Comercial"
+    subs = client.lista.sublistas(921)
+    assert [s.id for s in subs] == [2141]
+    rows = client.lista.consulta(2141)
+    assert len(rows) == 555 and rows[0].numeroProcessoFormatado == "25351.459189/2024-70"
+    assert fake_api.json_bodies()[-1] == {"filter": {"subfila": 2141}}
+
+
+def test_nome_tecnico_search_and_categorias(client, fake_api):
+    page = client.nome_tecnico.search(size=2)
+    assert isinstance(page, models.PageNomeTecnicoDTO)
+    assert (page.totalElements, page.number, page.last) == (2678, 0, False)
+    assert page.content[0].classeRisco == "II"
+    assert fake_api.json_bodies()[-1] == {"page": 1, "size": 2, "sorting": {}, "filter": {}}
+    assert [c.id for c in client.nome_tecnico.categorias()] == [8, 12]
+
+
 def test_every_request_carries_ua_and_bearer(client, fake_api):
     client.fila.areas()
     api_calls = [r for r in fake_api.requests if "/api/v1/" in r.url.path]
