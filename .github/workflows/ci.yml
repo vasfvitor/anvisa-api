@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Install uv and Python ${{ matrix.python }}
-        uses: astral-sh/setup-uv@v10
+        uses: astral-sh/setup-uv@v10.0.1   # no floating major tag on this action
         with:
           python-version: ${{ matrix.python }}
           enable-cache: true
@@ -50,7 +50,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Install uv and Python 3.12
-        uses: astral-sh/setup-uv@v10
+        uses: astral-sh/setup-uv@v10.0.1   # no floating major tag on this action
         with:
           python-version: "3.12"
           enable-cache: true
