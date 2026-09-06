@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "anvisa"
 version = "0.1.0"
-description = "Client and CLI for ANVISA's official Consultas Externas API (fila de análise, UDI)"
+description = "Client and CLI for ANVISA's official Consultas Externas API (fila de análise, UDI, assuntos)"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
@@ -43,6 +43,10 @@ dev = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/anvisa"]
+
+[tool.hatch.build.targets.sdist]
+# tests and scripts need ../../fixtures and ../../spec from the repo, so they are not shipped
+only-include = ["src/anvisa", "README.md", "LICENSE", "pyproject.toml"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

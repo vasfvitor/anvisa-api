@@ -4,7 +4,7 @@ import httpx
 import pytest
 from typer.testing import CliRunner
 
-from anvisa import cli
+from anvisa import __version__, cli
 from anvisa.auth import Credentials
 from anvisa.client import Client
 from anvisa.errors import CredentialsError
@@ -79,3 +79,9 @@ def test_missing_credentials_exit_2(monkeypatch):
     result = runner.invoke(cli.app, ["fila", "areas"])
     assert result.exit_code == 2
     assert "no ANVISA credentials" in result.output
+
+
+def test_version_flag():
+    result = runner.invoke(cli.app, ["--version"])
+    assert result.exit_code == 0
+    assert result.output.strip() == f"anvisa {__version__}"

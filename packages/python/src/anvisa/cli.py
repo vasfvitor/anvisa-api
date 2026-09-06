@@ -1,4 +1,4 @@
-"""`anvisa` command line: fila de análise and UDI lookups."""
+"""`anvisa` command line: fila de análise, UDI and assunto lookups."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ from pydantic import BaseModel
 from rich.console import Console
 from rich.table import Table
 
+from . import __version__
 from .client import Client
 from .errors import AnvisaError, CredentialsError
 
@@ -32,7 +33,7 @@ class Format(str, Enum):
 
 
 app = typer.Typer(
-    help="ANVISA Consultas Externas: fila de análise e UDI de dispositivos médicos.",
+    help="ANVISA Consultas Externas: fila de análise, UDI de dispositivos médicos e assuntos.",
     no_args_is_help=True,
 )
 fila_app = typer.Typer(
@@ -47,6 +48,12 @@ app.add_typer(udi_app, name="udi")
 app.add_typer(assunto_app, name="assunto")
 
 
+def _version(value: bool) -> None:
+    if value:
+        typer.echo(f"anvisa {__version__}")
+        raise typer.Exit()
+
+
 @app.callback()
 def main(
     ctx: typer.Context,
@@ -55,6 +62,9 @@ def main(
         "--format",
         "-f",
         help="json or table (default: table on a terminal, json when piped).",
+    ),
+    version: bool = typer.Option(
+        False, "--version", callback=_version, is_eager=True, help="Print the version and exit."
     ),
 ) -> None:
     ctx.obj = format or (Format.table if sys.stdout.isatty() else Format.json)

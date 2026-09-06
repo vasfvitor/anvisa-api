@@ -1,7 +1,7 @@
 # anvisa
 
 Python client and CLI for ANVISA's official **Consultas Externas** API
-(fila de análise, UDI de dispositivos médicos, termos GMDN).
+(fila de análise, UDI de dispositivos médicos, termos GMDN, assuntos de peticionamento).
 
 ```bash
 uv tool install anvisa   # or: pipx install anvisa
@@ -16,6 +16,7 @@ anvisa fila areas
 anvisa fila consulta 167
 anvisa udi search --nome cateter
 anvisa --format json udi get 377
+anvisa assunto lista --busca bioequival
 ```
 
 ```python
