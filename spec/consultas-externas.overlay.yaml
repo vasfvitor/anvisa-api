@@ -190,9 +190,9 @@ actions:
       x-required-filters: {allOf: [subfila]}
       x-paginated: false
       x-observed-sizes: >-
-        Whole queues observed on 2026-09-06: subfila 167 → 40 rows, subfila 161 → 35 rows;
-        the sibling /lista/consulta returned 555 rows through the same DTO. No sign of a
-        silent cap.
+        Whole queues observed on 2026-09-06: subfila 167 → 40 rows, subfila 161 → 35 rows,
+        subfila 1742 → 71 rows; the sibling /lista/consulta returned 555 rows through the same
+        DTO. No size cap.
   - target: $.paths['/api/v1/fila/consulta'].post.requestBody.content['application/json'].examples['Consulta de fila calculada'].value
     update: {page: 1, filter: {subfila: 167}}
 

@@ -1382,7 +1382,7 @@
           ]
         },
         "x-paginated": false,
-        "x-observed-sizes": "Whole queues observed on 2026-09-06: subfila 167 → 40 rows, subfila 161 → 35 rows; the sibling /lista/consulta returned 555 rows through the same DTO. No sign of a silent cap."
+        "x-observed-sizes": "Whole queues observed on 2026-09-06: subfila 167 → 40 rows, subfila 161 → 35 rows, subfila 1742 → 71 rows; the sibling /lista/consulta returned 555 rows through the same DTO. No size cap."
       }
     },
     "/api/v1/assunto/download": {
