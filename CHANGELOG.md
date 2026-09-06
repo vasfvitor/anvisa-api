@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Dossiê probed too (3 requests): not deployed either, seven of the portal-only endpoints
+  confirmed as 404. README now points at the bulk CSV exports on dados.anvisa.gov.br for
+  those domains.
 - Verification session (17 requests, 2026-09-06): every `udi` filter key the command line exposes, both
   `nome_tecnico` filters, the GMDN text search (`conteudo`), the daily UDI snapshots
   (`historicos`) and the four `assunto` catalogs are now recorded as fixtures and tested.
