@@ -1,7 +1,7 @@
 # OpenAPI Overlay (https://spec.openapis.org/overlay/v1.0.0.html) for ANVISA's
 # "Consultas Externas" API. Every action encodes behavior we observed against the
 # live API on 2026-09-06 that the published spec gets wrong or leaves out.
-# Evidence for each action: fixtures/consultas-externas/ and notes/deep-dive-anvisa-apis-2026-09-06.md.
+# Evidence for each action: the recorded responses in fixtures/consultas-externas/.
 overlay: 1.0.0
 info:
   title: ANVISA Consultas Externas — observed-behavior corrections

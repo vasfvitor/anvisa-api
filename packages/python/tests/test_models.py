@@ -7,6 +7,8 @@ from anvisa import models
 
 CASES = [
     ("areafila.json", models.TipoProduto, 11),
+    ("arealista.json", models.TipoProduto, 4),
+    ("nomeTecnico_categorias.json", models.TipoProduto, 2),
     ("fila_grupos.json", models.ChaveValorLong, 8),
     ("subfilas.json", models.ChaveValorInteger, 13),
     ("fila_consulta.json", models.FilaCalculadaDTO, 40),

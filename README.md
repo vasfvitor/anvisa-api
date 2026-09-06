@@ -28,7 +28,6 @@ spec/       ANVISA's OpenAPI document (untouched) + an OpenAPI Overlay with the 
             above + the resolved spec. Language-neutral source of truth.
 fixtures/   Real responses recorded from the API, with a manifest. Shared test fixtures.
 packages/python/   The `anvisa` Python library and CLI.
-notes/      Research log.
 ```
 
 The overlay follows the [OpenAPI Overlay Specification 1.0](https://spec.openapis.org/overlay/v1.0.0.html),
