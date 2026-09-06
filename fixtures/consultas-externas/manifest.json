@@ -1,0 +1,19 @@
+{
+  "recorded": "2026-09-06",
+  "notes": "Real responses from the ANVISA Consultas Externas API. `request` documents the body that produced each response. Tokens redacted.",
+  "responses": [
+    {"name": "token", "method": "POST", "path": "/auth/realms/externo/protocol/openid-connect/token", "status": 200, "file": "token.json", "request": "grant_type=client_credentials&client_id=...&client_secret=..."},
+    {"name": "areafila", "method": "GET", "path": "/api/v1/fila/areafila", "status": 200, "remaining": 24, "file": "areafila.json"},
+    {"name": "fila_grupos", "method": "GET", "path": "/api/v1/fila/8/fila", "status": 200, "remaining": 21, "file": "fila_grupos.json"},
+    {"name": "subfilas", "method": "GET", "path": "/api/v1/fila/285/subfila", "status": 200, "remaining": 21, "file": "subfilas.json"},
+    {"name": "fila_consulta", "method": "POST", "path": "/api/v1/fila/consulta", "status": 200, "remaining": 20, "file": "fila_consulta.json", "request": {"page": 1, "size": 3, "sorting": {}, "filter": {"subfila": 167}}},
+    {"name": "udi_filtro", "method": "POST", "path": "/api/v1/udi", "status": 200, "remaining": 24, "file": "udi_filtro.json", "request": {"page": 1, "size": 2, "sorting": {}, "filter": {"nomeComercial": "cateter"}}},
+    {"name": "nomeTecnico_p1", "method": "POST", "path": "/api/v1/nomeTecnico", "status": 200, "remaining": 22, "file": "nomeTecnico_p1.json", "request": {"page": 1, "size": 2, "sorting": {}, "filter": {}}},
+    {"name": "udi_detail_377", "method": "GET", "path": "/api/v1/udi/377", "status": 200, "remaining": 24, "file": "udi_detail_377.json"},
+    {"name": "gmdn_47852", "method": "GET", "path": "/api/v1/udi/termoGmdn/47852", "status": 200, "remaining": 24, "file": "gmdn_47852.json"},
+    {"name": "err_msg062", "method": "POST", "path": "/api/v1/udi", "status": 500, "remaining": 23, "file": "err_msg062.json", "request": {"page": 1, "size": 3, "sorting": {}, "filter": {}}},
+    {"name": "err_subfila", "method": "POST", "path": "/api/v1/fila/consulta", "status": 500, "remaining": 23, "file": "err_subfila.json", "request": {"page": 0, "size": 2, "sorting": {}, "filter": {"areaFila": 8}}},
+    {"name": "err_page_index", "method": "POST", "path": "/api/v1/nomeTecnico", "status": 500, "remaining": 24, "file": "err_page_index.json", "request": {"page": 0, "size": 2, "sorting": {}, "filter": {}}},
+    {"name": "err_jackson", "method": "POST", "path": "/api/v1/udi", "status": 500, "remaining": 23, "file": "err_jackson.json", "request": {"page": 0, "size": 3, "sorting": [], "filter": ""}}
+  ]
+}

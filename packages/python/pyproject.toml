@@ -1,0 +1,61 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "anvisa"
+version = "0.1.0"
+description = "Client and CLI for ANVISA's official Consultas Externas API (fila de análise, UDI)"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "Vitor" }]
+keywords = ["anvisa", "udi", "regulatory", "brazil", "health"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Healthcare Industry",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+  "httpx>=0.27,<1",
+  "pydantic>=2.7,<3",
+  "typer>=0.12",
+]
+
+[project.urls]
+Repository = "https://github.com/virtuaires/anvisa"
+
+[project.scripts]
+anvisa = "anvisa.cli:app"
+
+[dependency-groups]
+dev = [
+  "pytest>=8",
+  "datamodel-code-generator>=0.30",
+  "jsonpath-ng>=1.6",
+  "pyyaml>=6",
+  "ruff>=0.6",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/anvisa"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-m 'not live'"
+markers = ["live: hits the real ANVISA API (needs credentials; run with -m live)"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+extend-exclude = ["src/anvisa/models.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"src/anvisa/cli.py" = ["B008"]  # typer.Option() in defaults is the typer idiom

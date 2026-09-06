@@ -1,0 +1,183 @@
+# OpenAPI Overlay (https://spec.openapis.org/overlay/v1.0.0.html) for ANVISA's
+# "Consultas Externas" API. Every action encodes behavior we observed against the
+# live API on 2026-09-06 that the published spec gets wrong or leaves out.
+# Evidence for each action: fixtures/consultas-externas/ and notes/deep-dive-anvisa-apis-2026-09-06.md.
+overlay: 1.0.0
+info:
+  title: ANVISA Consultas Externas — observed-behavior corrections
+  version: "2026-09-06"
+extends: ./consultas-externas.openapi.json
+
+actions:
+  # 1. The published info block has unresolved Maven placeholders.
+  - target: $.info
+    update:
+      title: ANVISA Consultas Externas API
+      version: "2026-09-06"
+      description: >-
+        Consultas públicas da ANVISA (UDI de dispositivos médicos, nomes técnicos, fila de
+        análise, listas e assuntos de peticionamento). Esta descrição foi corrigida por overlay
+        a partir do comportamento observado: veja `x-anvisa-client-requirements`.
+
+  # 2. Token lifetime and the absence of a refresh token are not documented.
+  - target: $.components.securitySchemes.Keycloak
+    update:
+      description: >-
+        Keycloak OAuth2 client credentials (realm `externo`). The access token expires in
+        1740 s and no refresh token is issued; request a new token with the same credentials.
+      x-token-lifetime-seconds: 1740
+
+  # 3. Client requirements the spec does not mention.
+  - target: $
+    update:
+      x-anvisa-client-requirements:
+        userAgent: >-
+          Required. Cloudflare answers HTTP 403 (HTML "Attention Required") to curl's default
+          User-Agent, even for this spec document. Send a descriptive User-Agent.
+        rateLimit:
+          type: token-bucket per client_id (Spring Cloud Gateway)
+          burstCapacity: 25
+          replenishRate: 1
+          headers:
+            - X-RateLimit-Remaining
+            - X-RateLimit-Burst-Capacity
+            - X-RateLimit-Replenish-Rate
+            - X-RateLimit-Requested-Tokens
+        dates: All date-time fields are sent as integer epoch milliseconds.
+        errors: >-
+          Request validation failures are returned as HTTP 500 with the `ErroApi` envelope,
+          not as 400.
+
+  # 4. Rate-limit response headers, reusable.
+  - target: $.components
+    update:
+      headers:
+        X-RateLimit-Remaining:
+          description: Tokens left in the per-client bucket after this request.
+          schema: {type: integer}
+        X-RateLimit-Burst-Capacity:
+          description: Bucket size (observed 25).
+          schema: {type: integer}
+        X-RateLimit-Replenish-Rate:
+          description: Tokens added per second (observed 1).
+          schema: {type: integer}
+
+  # 5. Every response carries them.
+  - target: $.paths.*.*.responses.*
+    update:
+      headers:
+        X-RateLimit-Remaining: {$ref: "#/components/headers/X-RateLimit-Remaining"}
+        X-RateLimit-Burst-Capacity: {$ref: "#/components/headers/X-RateLimit-Burst-Capacity"}
+        X-RateLimit-Replenish-Rate: {$ref: "#/components/headers/X-RateLimit-Replenish-Rate"}
+
+  # 6. The error envelope, absent from the spec.
+  - target: $.components.schemas
+    update:
+      ErroApi:
+        type: object
+        description: >-
+          Envelope returned with HTTP 500 for both internal errors and request validation
+          failures (missing required filter, page < 1, malformed body).
+        properties:
+          status: {type: string, example: INTERNAL_SERVER_ERROR}
+          mensagem:
+            type: string
+            description: >-
+              Human message, or an unresolved i18n key such as `mensagens.MSG-062`
+              (= at least one filter is required).
+          data_hora:
+            type: array
+            description: Server-local timestamp as [year, month, day, hour, minute, second, nanosecond].
+            items: {type: integer}
+            minItems: 7
+            maxItems: 7
+          mensagem_detalhada:
+            type: string
+            description: Detail text, e.g. "Filtro 'subfila' não informado." or a Java stack message.
+
+  # 7./8. Point every 500 response at it (drop the placeholder `type: object` first).
+  - target: $.paths.*.*.responses['500'].content['*/*'].schema.type
+    remove: true
+  - target: $.paths.*.*.responses['500'].content['*/*'].schema
+    update: {$ref: "#/components/schemas/ErroApi"}
+  - target: $.paths.*.*.responses['500']
+    update:
+      description: Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).
+
+  # 9./10./11. Pagination: request is 1-based, response is a 0-based Spring Page.
+  - target: $.components.schemas.PaginationBuilder.properties.page
+    update:
+      minimum: 1
+      description: >-
+        1-based page number. page=0 fails with "Page index must not be less than zero!".
+        Responses are Spring Page objects and report the page 0-based in `number` /
+        `pageable.pageNumber`.
+  - target: $.components.schemas.PaginationBuilder.properties.size
+    update: {minimum: 1}
+  - target: $.components.schemas.PaginationBuilder.properties.sorting
+    update:
+      description: Map of column name to ASC/DESC. Sending an array is rejected with a Jackson deserialization error.
+  - target: $.components.schemas.PaginationBuilder.properties.filter
+    update:
+      description: >-
+        Map of filter key to value. Required keys depend on the endpoint; see each
+        operation's `x-required-filters`.
+
+  # 12./13. FilaCalculadaDTO fields typed `object` are an integer and two epoch-ms dates.
+  - target: $.components.schemas.FilaCalculadaDTO.properties.nuOrdem
+    update: {type: integer, format: int32, description: Position in the queue (1 = next).}
+  - target: $.components.schemas.FilaCalculadaDTO.properties.dtEntrada
+    update: {type: string, format: date-time}
+  - target: $.components.schemas.FilaCalculadaDTO.properties.dtGeracaoFila
+    update: {type: string, format: date-time, description: When this queue snapshot was generated (daily).}
+
+  # 14. Wire format of every date-time field (listed explicitly: a JSONPath filter on
+  #     `properties` corrupts the dict in jsonpath-ng, and explicit targets are clearer anyway).
+  - &epoch_millis
+    target: $.components.schemas.UdiDTO.properties['dtPublicacao']
+    update:
+      x-wire-format: epoch-millis
+      description: Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values).
+  - {<<: *epoch_millis, target: "$.components.schemas.NomeTecnicoDTO.properties['dataAtualizacao']"}
+  - {<<: *epoch_millis, target: "$.components.schemas.ConsultaFuncionamento.properties['dataAutorizacao','dataAtualizacao']"}
+  - {<<: *epoch_millis, target: "$.components.schemas.DispositivoDTO.properties['dtDescontinuacao','dtPublicacao']"}
+  - {<<: *epoch_millis, target: "$.components.schemas.RegistroProdutoDTO.properties['dtVencimento','dtCancelamento']"}
+  - {<<: *epoch_millis, target: "$.components.schemas.RegistroProdutoView.properties['dtVencimento','dtCancelamento']"}
+  - {<<: *epoch_millis, target: "$.components.schemas.VersaoDispositivoDTO.properties['dtVersao']"}
+  - {<<: *epoch_millis, target: "$.components.schemas.HistoricoUdiDTO.properties['dtInicio','dtFim','dtGeracao']"}
+  - {<<: *epoch_millis, target: "$.components.schemas.FilaCalculadaDTO.properties['dtEntrada','dtGeracaoFila']"}
+
+  # 15./16. POST /udi needs at least one filter; fix the example (string page, bogus `count`).
+  - target: $.paths['/api/v1/udi'].post
+    update:
+      description: >-
+        Paginated UDI search. At least one `filter` key is required; an empty filter fails
+        with HTTP 500 and `mensagem: mensagens.MSG-062`. Only `nomeComercial` has been
+        verified live; the other keys come from the published example and are unverified.
+      x-required-filters:
+        anyOf: [nomeComercial, udiDi, cnpjDetentora, codigoGmdn, nuRegistro, razaoSocialFabLegal,
+                categoriaDispositivo, tipoCadastro, versaoModelo, usoLeigo, incorpora]
+        verified: [nomeComercial]
+  - target: $.paths['/api/v1/udi'].post.requestBody.content['application/json'].examples['Filtro completo de UDI'].value.count
+    remove: true
+  - target: $.paths['/api/v1/udi'].post.requestBody.content['application/json'].examples['Filtro completo de UDI'].value
+    update: {page: 1, size: 10, filter: {nomeComercial: cateter}}
+
+  # 19. The list view returns "N" for UdiDTO.desbloqueado while the detail view
+  #     (DispositivoDTO.desbloqueado, enumerated SIM/NAO) returns "NAO" for the same device.
+  #     The enums on DispositivoDTO were verified live (fixtures/udi_detail_377.json) and are kept.
+  - target: $.components.schemas.UdiDTO.properties.desbloqueado
+    update:
+      description: 'Observed value: "N" (the detail endpoint uses SIM/NAO for the same flag).'
+
+  # 17./18. POST /fila/consulta needs filter.subfila and is not paginated.
+  - target: $.paths['/api/v1/fila/consulta'].post
+    update:
+      description: >-
+        Returns the whole calculated queue for one subqueue. `filter.subfila` (integer id
+        from GET /api/v1/fila/{codigoGrupo}/subfila) is required, otherwise HTTP 500
+        "Filtro 'subfila' não informado.". `page` and `size` are ignored.
+      x-required-filters: {allOf: [subfila]}
+      x-paginated: false
+  - target: $.paths['/api/v1/fila/consulta'].post.requestBody.content['application/json'].examples['Consulta de fila calculada'].value
+    update: {page: 1, filter: {subfila: 167}}

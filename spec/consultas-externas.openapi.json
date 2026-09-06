@@ -1,0 +1,3839 @@
+{
+  "openapi" : "3.0.1",
+  "info" : {
+    "title" : "@project.artifactId@",
+    "description" : "Feito com Arquitetura Spring Boot da Anvisa",
+    "contact" : {
+      "name" : "Contato",
+      "email" : "arquitetura@anvisa.gov.br"
+    },
+    "version" : "@project.version@"
+  },
+  "servers" : [ {
+    "url" : "https://api-gateway.prd.apps.anvisa.gov.br/consultas-externas-api",
+    "description" : "Public API Gateway URL"
+  } ],
+  "security" : [ {
+    "Keycloak" : [ "*" ]
+  } ],
+  "tags" : [ {
+    "name" : "Consulta Fila",
+    "description" : "Operações relacionadas à fila de análise para Consultas Externas API e Portal de APIs"
+  }, {
+    "name" : "Consulta Assuntos",
+    "description" : "Operações relacionadas a consulta de Assuntos para Consultas Externas API e Portal de APIs"
+  }, {
+    "name" : "Consulta Lista",
+    "description" : "Operações relacionadas à lista de análise para Consultas Externas API e Portal de APIs"
+  }, {
+    "name" : "Consulta Nomes Técnicos de Produtos para Saúde",
+    "description" : "Nomes Técnicos de Produtos para Saúde para Consultas Externas API e Portal de APIs"
+  }, {
+    "name" : "Consulta UDI",
+    "description" : "Operações relacionadas a UDI para Consultas Externas API e Portal de APIs"
+  } ],
+  "paths" : {
+    "/api/v1/udi" : {
+      "post" : {
+        "tags" : [ "Consulta UDI" ],
+        "summary" : "Retorna UDI paginados",
+        "description" : "Recebe JSON com column, count, order, page e filtros em filter[...]. Use os filtros específicos como categoriaDispositivo, cnpjDetentora, codigoGmdn etc.",
+        "operationId" : "paginar",
+        "requestBody" : {
+          "description" : "Payload completo de PaginationBuilder",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PaginationBuilder"
+              },
+              "examples" : {
+                "Filtro completo de UDI" : {
+                  "description" : "Filtro completo de UDI",
+                  "value" : {
+                    "count" : "10",
+                    "page" : "1",
+                    "filter" : {
+                      "categoriaDispositivo" : "EQUIPAMENTO",
+                      "cnpjDetentora" : "11195731000156",
+                      "codigoGmdn" : "30259",
+                      "incorpora" : "S",
+                      "nomeComercial" : "a",
+                      "nuRegistro" : "80290080001",
+                      "razaoSocialFabLegal" : "as",
+                      "tipoCadastro" : "RECONDICIONADO",
+                      "udiDi" : "a",
+                      "usoLeigo" : "S",
+                      "versaoModelo" : "a"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageUdiDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/udi/termoGmdn" : {
+      "post" : {
+        "tags" : [ "Consulta UDI" ],
+        "summary" : "Retorna Termo Gmdn paginados",
+        "description" : "Recebe JSON com column, count, order, page e filtros em filter[...]. Use os filtros específicos como categoriaDispositivo, cnpjDetentora, codigoGmdn etc.",
+        "operationId" : "paginarTermoGmdn",
+        "requestBody" : {
+          "description" : "Payload completo de PaginationBuilder",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PaginationBuilder"
+              },
+              "examples" : {
+                "Filtro completo de UDI" : {
+                  "description" : "Filtro completo de UDI",
+                  "value" : {
+                    "count" : "10",
+                    "page" : "1",
+                    "filter" : {
+                      "codigo" : "1",
+                      "conteudo" : "dispositivo"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageTermoGMDNDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/nomeTecnico" : {
+      "post" : {
+        "tags" : [ "Consulta Nomes Técnicos de Produtos para Saúde" ],
+        "summary" : "Lista Nomes Técnicos de Produtos para Saúde",
+        "description" : "Retorna uma lista paginada de Nomes Técnicos de Produtos para Saúde com base nos filtros informados.",
+        "operationId" : "listar",
+        "requestBody" : {
+          "description" : "Payload completo de PaginationBuilder",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PaginationBuilder"
+              },
+              "examples" : {
+                "Empresas Internacionais" : {
+                  "description" : "Empresas Internacionais",
+                  "value" : {
+                    "size" : 10,
+                    "page" : "1",
+                    "filter" : {
+                      "categoriaProduto" : "8",
+                      "codigo" : "2501230",
+                      "nomeTecnico" : "Compressas"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageNomeTecnicoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/nomeTecnico/download" : {
+      "post" : {
+        "tags" : [ "Consulta Nomes Técnicos de Produtos para Saúde" ],
+        "summary" : "Faz download do relatório de dossiê",
+        "description" : "Recebe JSON com column, count, order, page e filtros em filter[...] e gera um arquivo XLS para download.",
+        "operationId" : "download",
+        "requestBody" : {
+          "description" : "Payload completo de PaginationBuilder para exportação",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PaginationBuilder"
+              },
+              "examples" : {
+                "Exportação de dossiê" : {
+                  "description" : "Exportação de dossiê",
+                  "value" : {
+                    "size" : 10,
+                    "page" : "1",
+                    "filter" : {
+                      "categoriaProduto" : "8",
+                      "codigo" : "2501230",
+                      "nomeTecnico" : "Compressas"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/lista/downloadlista" : {
+      "post" : {
+        "tags" : [ "Consulta Lista" ],
+        "summary" : "Faz download do relatório de lista",
+        "description" : "Recebe os filtros da consulta e gera um arquivo XLSX com o relatório de lista.",
+        "operationId" : "downloadLista",
+        "requestBody" : {
+          "description" : "Payload completo de PaginationBuilder para exportação de lista",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PaginationBuilder"
+              },
+              "examples" : {
+                "Download relatório lista" : {
+                  "description" : "Download relatório lista",
+                  "value" : {
+                    "count" : 10,
+                    "page" : "1",
+                    "order" : "ASC",
+                    "filter" : {
+                      "subfila" : "123"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/lista/consulta" : {
+      "post" : {
+        "tags" : [ "Consulta Lista" ],
+        "summary" : "Retorna a Lista calculada",
+        "description" : "Recebe os filtros da consulta e retorna os dados calculados da subfila informada.",
+        "operationId" : "findCalculada",
+        "requestBody" : {
+          "description" : "Payload completo de PaginationBuilder",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PaginationBuilder"
+              },
+              "examples" : {
+                "Consulta de fila calculada" : {
+                  "description" : "Consulta de fila calculada",
+                  "value" : {
+                    "count" : 10,
+                    "page" : "1",
+                    "order" : "ASC",
+                    "filter" : {
+                      "subfila" : "123"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/FilaCalculadaDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fila/downloadfila" : {
+      "post" : {
+        "tags" : [ "Consulta Fila" ],
+        "summary" : "Faz download do relatório de fila",
+        "description" : "Recebe os filtros da consulta e gera um arquivo XLSX com o relatório de fila.",
+        "operationId" : "downloadFila",
+        "requestBody" : {
+          "description" : "Payload completo de PaginationBuilder para exportação de fila",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PaginationBuilder"
+              },
+              "examples" : {
+                "Download relatório fila" : {
+                  "description" : "Download relatório fila",
+                  "value" : {
+                    "size" : 10,
+                    "page" : "1",
+                    "order" : "ASC",
+                    "filter" : {
+                      "subfila" : "123"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/fila/consulta" : {
+      "post" : {
+        "tags" : [ "Consulta Fila" ],
+        "summary" : "Retorna a fila calculada",
+        "description" : "Recebe os filtros da consulta e retorna os dados calculados da subfila informada.",
+        "operationId" : "findCalculada_1",
+        "requestBody" : {
+          "description" : "Payload completo de PaginationBuilder",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PaginationBuilder"
+              },
+              "examples" : {
+                "Consulta de fila calculada" : {
+                  "description" : "Consulta de fila calculada",
+                  "value" : {
+                    "size" : 10,
+                    "page" : "1",
+                    "order" : "ASC",
+                    "filter" : {
+                      "subfila" : "123"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/FilaCalculadaDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/assunto/download" : {
+      "post" : {
+        "tags" : [ "Consulta Assuntos" ],
+        "summary" : "Faz download do relatório de assunto",
+        "description" : "Recebe JSON com column, count, order, page e filtros em filter[...] e gera um arquivo XLS para download.",
+        "operationId" : "download_1",
+        "requestBody" : {
+          "description" : "Payload completo de PaginationBuilder para exportação",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PaginationBuilder"
+              },
+              "examples" : {
+                "Exportação de Assunto" : {
+                  "description" : "Exportação de Assunto",
+                  "value" : {
+                    "order" : "ASC",
+                    "filter" : {
+                      "codigosAssunto" : "108",
+                      "servicos" : "10038",
+                      "sistemas" : "COSMETICOS",
+                      "tiposProduto" : "6",
+                      "tiposSolicitacao" : "S"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/assunto/downloadAssuntoFormulario" : {
+      "post" : {
+        "tags" : [ "Consulta Assuntos" ],
+        "summary" : "Faz download do formulário de assunto",
+        "description" : "Recebe JSON codigo do formulário e gera um arquivo XLS para download.",
+        "operationId" : "downloadAssuntoFormulario",
+        "requestBody" : {
+          "description" : "Payload completo de PaginationBuilder para exportação",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PaginationBuilder"
+              },
+              "examples" : {
+                "Exportação do formulário de Assunto" : {
+                  "description" : "Exportação do formulário de Assunto",
+                  "value" : {
+                    "codigosAssunto" : "108"
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/assunto/" : {
+      "post" : {
+        "tags" : [ "Consulta Assuntos" ],
+        "summary" : "Retorna assuntos paginados",
+        "description" : "Recebe JSON com page, order, sorting e filtros em filter[...]. Use os filtros específicos como codigosAssunto, servicos, sistemas, tiposProduto, tiposSolicitacao, etc.",
+        "operationId" : "findAssunto",
+        "requestBody" : {
+          "description" : "Payload completo de PaginationBuilder",
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PaginationBuilder"
+              },
+              "examples" : {
+                "Assuntos" : {
+                  "description" : "Assuntos",
+                  "value" : {
+                    "count" : "10",
+                    "page" : "1",
+                    "column" : "idAssunto",
+                    "order" : "ASC",
+                    "filter" : {
+                      "codigosAssunto" : "108",
+                      "servicos" : "10038",
+                      "sistemas" : "COSMETICOS",
+                      "tiposProduto" : "6",
+                      "tiposSolicitacao" : "S"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageConsultaAssunto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/udi/{id}" : {
+      "get" : {
+        "tags" : [ "Consulta UDI" ],
+        "summary" : "Retorna o UDI detalhado",
+        "description" : "Retorna o UDI detalhado de acordo com o ID informado.",
+        "operationId" : "find",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DetalheDispositivoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/udi/{id}/download" : {
+      "get" : {
+        "tags" : [ "Consulta UDI" ],
+        "summary" : "Retorna o arquivo do detalhe do UDI",
+        "description" : "Retorna arquivo do Detalhe do UDI por ID.",
+        "operationId" : "download_2",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/udi/{idDispositivo}/{idHistorico}" : {
+      "get" : {
+        "tags" : [ "Consulta UDI" ],
+        "summary" : "Retorna o Historico do UDI",
+        "description" : "Retorna o  Historico do UDI de acordo com os IDs informados.",
+        "operationId" : "findHistorico",
+        "parameters" : [ {
+          "name" : "idDispositivo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "idHistorico",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DetalheDispositivoDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/udi/{idDispositivo}/{idHistorico}/download" : {
+      "get" : {
+        "tags" : [ "Consulta UDI" ],
+        "summary" : "Retorna o arquivo do detalhamento por id do dispositivo e id histórico do UDI",
+        "description" : "Retorna arquivo do Historico do UDI por ID.",
+        "operationId" : "downloadHistorico",
+        "parameters" : [ {
+          "name" : "idDispositivo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "idHistorico",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/udi/termoGmdn/{codigo}" : {
+      "get" : {
+        "tags" : [ "Consulta UDI" ],
+        "summary" : "Retorna o termo Gmdn do UDI",
+        "description" : "Retorna o termo Gmdn do UDI por codigo.",
+        "operationId" : "paginarTermoGmdn_1",
+        "parameters" : [ {
+          "name" : "codigo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TermoGMDNDTO"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/udi/historico" : {
+      "get" : {
+        "tags" : [ "Consulta UDI" ],
+        "summary" : "Retorna o Historico do UDI",
+        "description" : "Retorna o  Historico do UDI .",
+        "operationId" : "findHistorico_1",
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/HistoricoUdiDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/udi/historico/{id}/download" : {
+      "get" : {
+        "tags" : [ "Consulta UDI" ],
+        "summary" : "Retorna o arquivo do Historico do UDI",
+        "description" : "Retorna arquivo do Historico do UDI por ID.",
+        "operationId" : "downloadHistoricoUdi",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK"
+          }
+        }
+      }
+    },
+    "/api/v1/nomeTecnico/categorias" : {
+      "get" : {
+        "tags" : [ "Consulta Nomes Técnicos de Produtos para Saúde" ],
+        "summary" : "Grupo populacional indicado",
+        "description" : "Retorna consulta de Catégorias'",
+        "operationId" : "listar_1",
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/TipoProduto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/lista/{codigoGrupo}/sublista" : {
+      "get" : {
+        "tags" : [ "Consulta Lista" ],
+        "summary" : "Retorna sublistas por grupo",
+        "description" : "Retorna as sublistas associadas ao grupo informado.",
+        "operationId" : "findSelectSublista",
+        "parameters" : [ {
+          "name" : "codigoGrupo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ChaveValorInteger"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/lista/{areaLista}/lista" : {
+      "get" : {
+        "tags" : [ "Consulta Lista" ],
+        "summary" : "Retorna grupos de lista por area da lista",
+        "description" : "Retorna os grupos de lista associados a áreas de interesse da lista informada.",
+        "operationId" : "findSelectLista",
+        "parameters" : [ {
+          "name" : "areaLista",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ChaveValorLong"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/lista/arealista" : {
+      "get" : {
+        "tags" : [ "Consulta Lista" ],
+        "summary" : "Retorna áreas de interesse da lista",
+        "description" : "Retorna os tipos de produto disponíveis para consulta de lista.",
+        "operationId" : "findSelectAreaLista",
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/TipoProduto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fila/{codigoGrupo}/subfila" : {
+      "get" : {
+        "tags" : [ "Consulta Fila" ],
+        "summary" : "Retorna subfilas por grupo",
+        "description" : "Retorna as subfilas associadas ao grupo informado.",
+        "operationId" : "findSelectSubfila",
+        "parameters" : [ {
+          "name" : "codigoGrupo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ChaveValorInteger"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fila/{areaFila}/fila" : {
+      "get" : {
+        "tags" : [ "Consulta Fila" ],
+        "summary" : "Retorna grupos de fila por area de interesse da fila",
+        "description" : "Retorna os grupos de fila associados ao tipo de produto informado.",
+        "operationId" : "findSelectFila",
+        "parameters" : [ {
+          "name" : "areaFila",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ChaveValorLong"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/fila/areafila" : {
+      "get" : {
+        "tags" : [ "Consulta Fila" ],
+        "summary" : "Retorna áreas de interesse da fila",
+        "description" : "Retorna os tipos de produto disponíveis para consulta de fila.",
+        "operationId" : "findSelectAreaFila",
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/TipoProduto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/assunto/{codigoAssunto}" : {
+      "get" : {
+        "tags" : [ "Consulta Assuntos" ],
+        "summary" : "Retorna detalhe de um assunto",
+        "description" : "Retorna informações detalhadas do Assunto para o código do assunto informado.",
+        "operationId" : "detailAssunto",
+        "parameters" : [ {
+          "name" : "codigoAssunto",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DetalheAssunto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/assunto/tiposSolicitacao" : {
+      "get" : {
+        "tags" : [ "Consulta Assuntos" ],
+        "summary" : "Retorna lista de Tipo de solicitação",
+        "description" : "Retorna lista de Tipo de solicitação.",
+        "operationId" : "findSelectTiposSolicitacao",
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/TipoSolicitacaoDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/assunto/tiposProduto" : {
+      "get" : {
+        "tags" : [ "Consulta Assuntos" ],
+        "summary" : "Consulta de Atividade/Tipo de Produto ",
+        "description" : "Retorna consulta de Atividade/Tipo de Produto",
+        "operationId" : "findSelectTiposProduto",
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/TipoProdutoDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/assunto/sistemas" : {
+      "get" : {
+        "tags" : [ "Consulta Assuntos" ],
+        "summary" : "Consulta de Serviços ",
+        "description" : "Retorna consulta de Sistemas",
+        "operationId" : "findSelectSistemas",
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/SistemaDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/assunto/servicos" : {
+      "get" : {
+        "tags" : [ "Consulta Assuntos" ],
+        "summary" : "Consulta de Serviços ",
+        "description" : "Retorna consulta de Serviços",
+        "operationId" : "findSelectServicos",
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ServicoDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/assunto/servicosAssociados/{codigoServico}" : {
+      "get" : {
+        "tags" : [ "Consulta Assuntos" ],
+        "summary" : "Retorna lista de serviços associados.",
+        "description" : "Retorna lista com o código, descrição e link dos serviços associados",
+        "operationId" : "findServicosAssociados",
+        "parameters" : [ {
+          "name" : "codigoServico",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ServicoDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/assunto/assuntos" : {
+      "get" : {
+        "tags" : [ "Consulta Assuntos" ],
+        "summary" : "Retorna lista de Assuntos",
+        "description" : "Retorna lista com o código e descrição do assunto",
+        "operationId" : "findSelectAssuntos",
+        "responses" : {
+          "403" : {
+            "description" : "Forbidden",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad Request",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "object"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AssuntoDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "PaginationBuilder" : {
+        "type" : "object",
+        "properties" : {
+          "sorting" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string",
+              "enum" : [ "ASC", "DESC" ]
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "column" : {
+            "type" : "string"
+          },
+          "order" : {
+            "type" : "string",
+            "enum" : [ "ASC", "DESC" ]
+          },
+          "filter" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "object"
+            }
+          }
+        }
+      },
+      "PageUdiDTO" : {
+        "type" : "object",
+        "properties" : {
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "number" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/UdiDTO"
+            }
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/Sort"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "empty" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "PageableObject" : {
+        "type" : "object",
+        "properties" : {
+          "paged" : {
+            "type" : "boolean"
+          },
+          "unpaged" : {
+            "type" : "boolean"
+          },
+          "pageNumber" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "pageSize" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "offset" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/Sort"
+          }
+        }
+      },
+      "Sort" : {
+        "type" : "object",
+        "properties" : {
+          "sorted" : {
+            "type" : "boolean"
+          },
+          "empty" : {
+            "type" : "boolean"
+          },
+          "unsorted" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "UdiDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "udiDi" : {
+            "type" : "string"
+          },
+          "nomeComercial" : {
+            "type" : "string"
+          },
+          "razaoSocialFabLegal" : {
+            "type" : "string"
+          },
+          "termoGmdn" : {
+            "type" : "string"
+          },
+          "cnpjDetentora" : {
+            "type" : "string"
+          },
+          "razaoSocialDetentora" : {
+            "type" : "string"
+          },
+          "dtPublicacao" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "desbloqueado" : {
+            "type" : "string"
+          },
+          "estagio" : {
+            "type" : "string",
+            "enum" : [ "DESBLOQUEADO", "NAO_PUBLICADO", "EM_CARENCIA", "CONSOLIDADO" ]
+          }
+        }
+      },
+      "PageTermoGMDNDTO" : {
+        "type" : "object",
+        "properties" : {
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "number" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TermoGMDNDTO"
+            }
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/Sort"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "empty" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "TermoGMDNDTO" : {
+        "type" : "object",
+        "properties" : {
+          "codigo" : {
+            "type" : "string"
+          },
+          "nome" : {
+            "type" : "string"
+          },
+          "definicao" : {
+            "type" : "string"
+          },
+          "nomeOriginal" : {
+            "type" : "string"
+          },
+          "definicaoOriginal" : {
+            "type" : "string"
+          },
+          "ativo" : {
+            "type" : "string",
+            "enum" : [ "SIM", "NAO" ]
+          }
+        }
+      },
+      "NomeTecnicoDTO" : {
+        "type" : "object",
+        "properties" : {
+          "codigo" : {
+            "type" : "string"
+          },
+          "nomeTecnico" : {
+            "type" : "string"
+          },
+          "descricao" : {
+            "type" : "string"
+          },
+          "tipoProduto" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "descricaoTipoProduto" : {
+            "type" : "string"
+          },
+          "classeRisco" : {
+            "type" : "string"
+          },
+          "dataAtualizacao" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "PageNomeTecnicoDTO" : {
+        "type" : "object",
+        "properties" : {
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "number" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/NomeTecnicoDTO"
+            }
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/Sort"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "empty" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "FilaCalculadaDTO" : {
+        "type" : "object",
+        "properties" : {
+          "nuOrdem" : {
+            "type" : "object"
+          },
+          "dtEntrada" : {
+            "type" : "object"
+          },
+          "nuExpediente" : {
+            "type" : "string"
+          },
+          "codAssunto" : {
+            "type" : "string"
+          },
+          "dsAssunto" : {
+            "type" : "string"
+          },
+          "nuProcesso" : {
+            "type" : "string"
+          },
+          "dtGeracaoFila" : {
+            "type" : "object"
+          },
+          "numeroProcessoFormatado" : {
+            "type" : "string"
+          },
+          "expeditenteFormatado" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ConsultaAssunto" : {
+        "type" : "object",
+        "properties" : {
+          "idAssunto" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "descricao" : {
+            "type" : "string"
+          },
+          "tipoSolicitacao" : {
+            "type" : "string"
+          },
+          "tipoProduto" : {
+            "$ref" : "#/components/schemas/TipoProduto"
+          },
+          "sistemas" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Sistema"
+            }
+          },
+          "fatoGerador" : {
+            "type" : "string"
+          }
+        }
+      },
+      "PageConsultaAssunto" : {
+        "type" : "object",
+        "properties" : {
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "number" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "numberOfElements" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ConsultaAssunto"
+            }
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/Sort"
+          },
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
+          },
+          "empty" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "Sistema" : {
+        "type" : "object",
+        "properties" : {
+          "codigoAssunto" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "codigoSistema" : {
+            "type" : "string"
+          },
+          "nome" : {
+            "type" : "string"
+          },
+          "bloqueado" : {
+            "type" : "string"
+          },
+          "hiperlink" : {
+            "type" : "string"
+          }
+        }
+      },
+      "TipoProduto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "descricao" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ConsultaFuncionamento" : {
+        "type" : "object",
+        "properties" : {
+          "ordem" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "cnpj" : {
+            "type" : "string"
+          },
+          "razaoSocial" : {
+            "type" : "string"
+          },
+          "nomeFantasia" : {
+            "type" : "string"
+          },
+          "autorizacao" : {
+            "type" : "string"
+          },
+          "novaAutorizacao" : {
+            "type" : "string"
+          },
+          "numeroProcesso" : {
+            "type" : "string"
+          },
+          "tipoProduto" : {
+            "type" : "string"
+          },
+          "enderecoInternet" : {
+            "type" : "string"
+          },
+          "numeroSac" : {
+            "type" : "string"
+          },
+          "dataAutorizacao" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "dataAtualizacao" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "cadastro" : {
+            "type" : "boolean"
+          },
+          "ativa" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "DI" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "entidadeEmissora" : {
+            "type" : "string"
+          }
+        }
+      },
+      "DetalheDispositivoDTO" : {
+        "type" : "object",
+        "properties" : {
+          "dispositivo" : {
+            "$ref" : "#/components/schemas/DispositivoDTO"
+          },
+          "autorizacaoFuncionamento" : {
+            "$ref" : "#/components/schemas/ConsultaFuncionamento"
+          },
+          "versoes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/VersaoDispositivoDTO"
+            }
+          },
+          "versaoDetalhada" : {
+            "$ref" : "#/components/schemas/VersaoDispositivoDTO"
+          },
+          "sucessao" : {
+            "$ref" : "#/components/schemas/SucessaoDispositivoDTO"
+          },
+          "estagio" : {
+            "type" : "string",
+            "enum" : [ "DESBLOQUEADO", "NAO_PUBLICADO", "EM_CARENCIA", "CONSOLIDADO" ]
+          }
+        }
+      },
+      "DetalheEmpresaDTO" : {
+        "type" : "object",
+        "properties" : {
+          "razaoSocial" : {
+            "type" : "string"
+          },
+          "endereco" : {
+            "type" : "string"
+          },
+          "pais" : {
+            "type" : "string"
+          }
+        }
+      },
+      "DispositivoDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "udiDi" : {
+            "$ref" : "#/components/schemas/DI"
+          },
+          "udiDiOriginal" : {
+            "$ref" : "#/components/schemas/DI"
+          },
+          "registroProduto" : {
+            "$ref" : "#/components/schemas/RegistroProdutoDTO"
+          },
+          "tipoProduto" : {
+            "type" : "string"
+          },
+          "recondicionadora" : {
+            "$ref" : "#/components/schemas/DetalheEmpresaDTO"
+          },
+          "nomeComercial" : {
+            "type" : "string"
+          },
+          "versaoModelo" : {
+            "type" : "string"
+          },
+          "codigoCatalogo" : {
+            "type" : "string"
+          },
+          "fabricanteLegal" : {
+            "$ref" : "#/components/schemas/DetalheEmpresaDTO"
+          },
+          "qtdPorEmbalagem" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "categoria" : {
+            "type" : "string"
+          },
+          "isUsoUnico" : {
+            "type" : "string",
+            "enum" : [ "SIM", "NAO" ]
+          },
+          "isPassivelReutilizacao" : {
+            "type" : "string",
+            "enum" : [ "SIM", "NAO" ]
+          },
+          "isSemLimitePredefinido" : {
+            "type" : "string",
+            "enum" : [ "SIM", "NAO" ]
+          },
+          "qtdMaxReutilizacoes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "isDispositivoEsteril" : {
+            "type" : "string",
+            "enum" : [ "SIM", "NAO" ]
+          },
+          "isRequerEsterilizacao" : {
+            "type" : "string",
+            "enum" : [ "SIM", "NAO" ]
+          },
+          "isPossuiLatex" : {
+            "type" : "string",
+            "enum" : [ "SIM", "NAO" ]
+          },
+          "isUsoLeigo" : {
+            "type" : "string",
+            "enum" : [ "SIM", "NAO" ]
+          },
+          "isDispositivoCombinado" : {
+            "type" : "string",
+            "enum" : [ "SIM", "NAO" ]
+          },
+          "isMaterialBiologico" : {
+            "type" : "string",
+            "enum" : [ "SIM", "NAO" ]
+          },
+          "isIncorporaIA" : {
+            "type" : "string",
+            "enum" : [ "SIM", "NAO" ]
+          },
+          "compatibilidadeComRM" : {
+            "type" : "string"
+          },
+          "contraindicacoesCriticas" : {
+            "type" : "string"
+          },
+          "condicoesArmazenamentoManuseio" : {
+            "type" : "string"
+          },
+          "caracteristicasDimensionais" : {
+            "type" : "string"
+          },
+          "termoGmdn" : {
+            "$ref" : "#/components/schemas/TermoGMDNDTO"
+          },
+          "hasIdentificadorUnidadeUtilizacao" : {
+            "type" : "string",
+            "enum" : [ "SIM", "NAO" ]
+          },
+          "descIdentificadorUnidadeUtilizacao" : {
+            "type" : "string"
+          },
+          "hasNumeroLote" : {
+            "type" : "string",
+            "enum" : [ "SIM", "NAO" ]
+          },
+          "hasNumeroSerie" : {
+            "type" : "string",
+            "enum" : [ "SIM", "NAO" ]
+          },
+          "hasDtValidade" : {
+            "type" : "string",
+            "enum" : [ "SIM", "NAO" ]
+          },
+          "hasDtManufRecondReproc" : {
+            "type" : "string",
+            "enum" : [ "SIM", "NAO" ]
+          },
+          "hasDtLiberacaoSAMD" : {
+            "type" : "string",
+            "enum" : [ "SIM", "NAO" ]
+          },
+          "hasVersaoSoftware" : {
+            "type" : "string",
+            "enum" : [ "SIM", "NAO" ]
+          },
+          "informacoesSuplementares" : {
+            "type" : "string"
+          },
+          "informacoesAtendimentoConsumidor" : {
+            "type" : "string"
+          },
+          "dtDescontinuacao" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "dtPublicacao" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "ativo" : {
+            "type" : "string",
+            "enum" : [ "SIM", "NAO" ]
+          },
+          "desbloqueado" : {
+            "type" : "string",
+            "enum" : [ "SIM", "NAO" ]
+          },
+          "codigoVersao" : {
+            "type" : "string"
+          },
+          "nomeProdutoRegularizacao" : {
+            "type" : "string"
+          },
+          "embalagens" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/EmbalagemDTO"
+            }
+          },
+          "metodosEsterilizacao" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
+      },
+      "DispositivoIdDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "udiDi" : {
+            "type" : "string"
+          },
+          "udiDiEmissora" : {
+            "type" : "string"
+          },
+          "idDispositivoPrevio" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "tipoSucessao" : {
+            "type" : "string"
+          },
+          "registroProduto" : {
+            "$ref" : "#/components/schemas/RegistroProdutoView"
+          }
+        }
+      },
+      "EmbalagemDTO" : {
+        "type" : "object",
+        "properties" : {
+          "udiDi" : {
+            "$ref" : "#/components/schemas/DI"
+          },
+          "nivelEmbalagem" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "qtdPorEmbalagem" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "HistoricoIdDTO" : {
+        "type" : "object",
+        "properties" : {
+          "idHistorico" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "idEntity" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "RegistroProdutoDTO" : {
+        "type" : "object",
+        "properties" : {
+          "numeroRegistro" : {
+            "type" : "string"
+          },
+          "nomeProduto" : {
+            "type" : "string"
+          },
+          "tipoProduto" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "dtVencimento" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "dtCancelamento" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "nuCnpjEmpresa" : {
+            "type" : "string"
+          },
+          "razaoSocialEmpresa" : {
+            "type" : "string"
+          },
+          "enderecoEmpresa" : {
+            "type" : "string"
+          },
+          "nomeTecnico" : {
+            "type" : "string"
+          },
+          "classeRisco" : {
+            "type" : "string"
+          }
+        }
+      },
+      "RegistroProdutoView" : {
+        "type" : "object",
+        "properties" : {
+          "numeroRegistro" : {
+            "type" : "string"
+          },
+          "nomeProduto" : {
+            "type" : "string"
+          },
+          "tipoProduto" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "dtVencimento" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "dtCancelamento" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "nuCnpjEmpresa" : {
+            "type" : "string"
+          },
+          "razaoSocialEmpresa" : {
+            "type" : "string"
+          },
+          "enderecoEmpresa" : {
+            "type" : "string"
+          },
+          "nomeTecnico" : {
+            "type" : "string"
+          },
+          "classeRisco" : {
+            "type" : "string"
+          }
+        }
+      },
+      "SucessaoDispositivoDTO" : {
+        "type" : "object",
+        "properties" : {
+          "previo" : {
+            "$ref" : "#/components/schemas/DispositivoIdDTO"
+          },
+          "sucessor" : {
+            "$ref" : "#/components/schemas/DispositivoIdDTO"
+          }
+        }
+      },
+      "VersaoDispositivoDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "$ref" : "#/components/schemas/HistoricoIdDTO"
+          },
+          "codigoUdiDi" : {
+            "type" : "string"
+          },
+          "codigoVersao" : {
+            "type" : "string"
+          },
+          "dtVersao" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "numeroVersao" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "HistoricoUdiDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "tipoHistorico" : {
+            "type" : "string"
+          },
+          "totalRegistros" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "dtInicio" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "dtFim" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "dtGeracao" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "ChaveValorInteger" : {
+        "type" : "object",
+        "properties" : {
+          "descricao" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "ChaveValorLong" : {
+        "type" : "object",
+        "properties" : {
+          "descricao" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "DetalheAssunto" : {
+        "type" : "object",
+        "properties" : {
+          "idAssunto" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "descricao" : {
+            "type" : "string"
+          },
+          "tipoSolicitacao" : {
+            "type" : "string"
+          },
+          "tipoProduto" : {
+            "$ref" : "#/components/schemas/TipoProduto"
+          },
+          "sistemas" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Sistema"
+            }
+          },
+          "fatoGerador" : {
+            "type" : "string"
+          },
+          "assunto" : {
+            "type" : "string"
+          },
+          "servicos" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Servico"
+            }
+          },
+          "formularios" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Formulario"
+            }
+          },
+          "documentosRequeridos" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DocumentacaoRequerida"
+            }
+          },
+          "fundamentacaoLegal" : {
+            "type" : "string"
+          },
+          "valoresTaxaEmpresa" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ValorTaxaEmpresa"
+            }
+          },
+          "valoresTaxaEmbarcacao" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ValorTaxaEmbarcacao"
+            }
+          }
+        }
+      },
+      "DocumentacaoRequerida" : {
+        "type" : "object",
+        "properties" : {
+          "numeroOrdem" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "descricaoItemChecklist" : {
+            "type" : "string"
+          }
+        }
+      },
+      "Formulario" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "nome" : {
+            "type" : "string"
+          },
+          "nomeArquivo" : {
+            "type" : "string"
+          },
+          "tipoArquivo" : {
+            "type" : "string"
+          },
+          "conteudo" : {
+            "type" : "object",
+            "properties" : {
+              "binaryStream" : {
+                "type" : "object"
+              }
+            }
+          }
+        }
+      },
+      "Servico" : {
+        "type" : "object",
+        "properties" : {
+          "codigoServico" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "descricao" : {
+            "type" : "string"
+          },
+          "hiperlink" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ValorTaxaEmbarcacao" : {
+        "type" : "object",
+        "properties" : {
+          "codigoAssunto" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "classe" : {
+            "type" : "string"
+          },
+          "valorTaxa" : {
+            "type" : "string"
+          },
+          "valorTaxaEmbarcacaoFilhos" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ValorTaxaEmbarcacaoFilho"
+            }
+          }
+        }
+      },
+      "ValorTaxaEmbarcacaoFilho" : {
+        "type" : "object",
+        "properties" : {
+          "classe" : {
+            "type" : "string"
+          },
+          "valorTaxa" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ValorTaxaEmpresa" : {
+        "type" : "object",
+        "properties" : {
+          "codigoAssunto" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "codigoFatoGerador" : {
+            "type" : "string"
+          },
+          "porte" : {
+            "type" : "string"
+          },
+          "valorTaxa" : {
+            "type" : "string"
+          }
+        }
+      },
+      "TipoSolicitacaoDTO" : {
+        "type" : "object",
+        "properties" : {
+          "nome" : {
+            "type" : "string"
+          },
+          "valor" : {
+            "type" : "string"
+          }
+        }
+      },
+      "TipoProdutoDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "descricao" : {
+            "type" : "string"
+          }
+        }
+      },
+      "SistemaDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "nome" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ServicoDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "descricao" : {
+            "type" : "string"
+          },
+          "hiperlink" : {
+            "type" : "string"
+          }
+        }
+      },
+      "AssuntoDTO" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "descricao" : {
+            "type" : "string"
+          }
+        }
+      }
+    },
+    "securitySchemes" : {
+      "Keycloak" : {
+        "type" : "oauth2",
+        "description" : "Keycloak OAuth2 - Client Credentials",
+        "flows" : {
+          "clientCredentials" : {
+            "tokenUrl" : "https://acesso.prd.apps.anvisa.gov.br/auth/realms/externo/protocol/openid-connect/token",
+            "scopes" : { }
+          }
+        }
+      }
+    }
+  }
+}
