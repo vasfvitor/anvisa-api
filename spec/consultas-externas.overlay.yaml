@@ -192,7 +192,11 @@ actions:
       x-observed-sizes: >-
         Whole queues observed on 2026-09-06: subfila 167 → 40 rows, subfila 161 → 35 rows,
         subfila 1742 → 71 rows; the sibling /lista/consulta returned 555 rows through the same
-        DTO. No size cap.
+        DTO. No size cap. A full crawl of all 314 subfilas listed by the catalogs held 10,390
+        rows.
+      x-empty-queue: >-
+        A subfila with nothing queued answers HTTP 404 with an empty body, not an empty array
+        (88 of 314 subfilas on 2026-09-06, e.g. 1721 and 2609). An unknown id gets the same.
   - target: $.paths['/api/v1/fila/consulta'].post.requestBody.content['application/json'].examples['Consulta de fila calculada'].value
     update: {page: 1, filter: {subfila: 167}}
 

@@ -9,7 +9,7 @@ import httpx
 
 from . import __version__, models
 from .auth import Credentials, TokenAuth
-from .errors import InvalidPageError, MissingFilterError, raise_for_response
+from .errors import InvalidPageError, MissingFilterError, NotFoundError, raise_for_response
 from .throttle import Throttle
 
 BASE_URL = "https://api-gateway.prd.apps.anvisa.gov.br/consultas-externas-api"
@@ -127,8 +127,14 @@ class Fila:
         return [models.ChaveValorInteger.model_validate(x) for x in data]
 
     def consulta(self, subfila_id: int) -> list[models.FilaCalculadaDTO]:
-        """The whole calculated queue of a subfila, in order. Not paginated by the API."""
-        data = self._client.post("/api/v1/fila/consulta", {"filter": {"subfila": subfila_id}})
+        """The whole calculated queue of a subfila, in order. Not paginated by the API.
+
+        A subfila with nothing queued answers HTTP 404 with an empty body (88 of 314 subfilas
+        on 2026-09-06); that is returned as `[]`. The API gives an unknown id the same answer."""
+        try:
+            data = self._client.post("/api/v1/fila/consulta", {"filter": {"subfila": subfila_id}})
+        except NotFoundError:
+            return []
         return [models.FilaCalculadaDTO.model_validate(x) for x in data]
 
 
@@ -158,8 +164,12 @@ class Lista:
         """The whole calculated list of a sublista. Not paginated by the API.
 
         The filter key is `subfila` even here (the API answers "Filtro 'subfila' não
-        informado." to anything else)."""
-        data = self._client.post("/api/v1/lista/consulta", {"filter": {"subfila": sublista_id}})
+        informado." to anything else). An empty 404 is returned as `[]`, as for `fila`
+        (observed there, assumed here)."""
+        try:
+            data = self._client.post("/api/v1/lista/consulta", {"filter": {"subfila": sublista_id}})
+        except NotFoundError:
+            return []
         return [models.FilaCalculadaDTO.model_validate(x) for x in data]
 
 

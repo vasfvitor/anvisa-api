@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `fila.consulta` and `lista.consulta` return `[]` for the empty-bodied 404 the API gives a
+  subfila with nothing queued (88 of 314 subfilas in a full crawl on 2026-09-06).
 - Dossiê probed too (3 requests): not deployed either, seven of the portal-only endpoints
   confirmed as 404. README now points at the bulk CSV exports on dados.anvisa.gov.br for
   those domains.

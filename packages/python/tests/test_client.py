@@ -7,7 +7,7 @@ from conftest import load
 from anvisa import models
 from anvisa.auth import Credentials
 from anvisa.client import Client, iterate_pages, page_body
-from anvisa.errors import InvalidPageError, MissingFilterError
+from anvisa.errors import InvalidPageError, MissingFilterError, NotFoundError
 from anvisa.throttle import Throttle
 
 
@@ -29,6 +29,23 @@ def test_fila_chain(client, fake_api):
     assert fila[0].nuOrdem == 1
     assert fake_api.json_bodies()[-1] == {"filter": {"subfila": 167}}
     assert len(client.fila.consulta(161)) == 35  # a second recorded queue; sizes vary, no cap
+
+
+def test_empty_queue_is_an_empty_404_returned_as_a_list(fake_api):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/token"):
+            return httpx.Response(200, json=load("token.json"))
+        return httpx.Response(404, headers={"X-RateLimit-Remaining": "24"})  # no body at all
+
+    with Client(
+        Credentials("id", "s"),
+        transport=httpx.MockTransport(handler),
+        throttle=Throttle(sleep=lambda s: None),
+    ) as c:
+        assert c.fila.consulta(1721) == []
+        assert c.lista.consulta(1721) == []
+        with pytest.raises(NotFoundError):  # other endpoints keep raising
+            c.udi.get(999999)
 
 
 def test_lista_chain_uses_the_subfila_key(client, fake_api):
