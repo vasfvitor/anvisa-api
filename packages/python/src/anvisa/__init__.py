@@ -1,6 +1,6 @@
 """Client for ANVISA's official Consultas Externas API."""
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 from .auth import Credentials  # noqa: E402  (client.py reads __version__ at import time)
 from .client import Client  # noqa: E402

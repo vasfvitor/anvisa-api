@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 (2026-09-06)
+
+Every filter key is now verified live, and an empty subfila no longer raises.
 
 - `fila.consulta` and `lista.consulta` return `[]` for the empty-bodied 404 the API gives a
   subfila with nothing queued (88 of 314 subfilas in a full crawl on 2026-09-06).
