@@ -17,6 +17,7 @@ from rich.table import Table
 
 from . import __version__
 from .client import Client
+from .download import Download
 from .errors import AnvisaError, CredentialsError
 
 try:
@@ -123,6 +124,22 @@ def emit(ctx: typer.Context, data: BaseModel | list[BaseModel], title: str = "")
     console.print(table)
 
 
+OUT = typer.Option(
+    ".", "--out", "-o", help="file or directory to write to; `-` writes the bytes to stdout"
+)
+
+
+def write(download: Download, out: str, default_name: str) -> None:
+    """Save a download, or stream it to stdout for `-`. The path goes to stderr so that
+    piping `--format json` output stays clean."""
+    if out == "-":
+        sys.stdout.buffer.write(download.content)
+        sys.stdout.buffer.flush()
+        return
+    path = download.save(out, default_name)
+    typer.echo(f"saved {path} ({len(download.content)} bytes)", err=True)
+
+
 def render(value: Any) -> str:
     if value is None:
         return ""
@@ -177,6 +194,16 @@ def fila_consulta(
         emit(ctx, client.fila.consulta(subfila_id), f"Fila da subfila {subfila_id}")
 
 
+@fila_app.command("download")
+def fila_download(
+    subfila_id: int = typer.Argument(help="id from `anvisa fila subfilas`"),
+    out: str = OUT,
+) -> None:
+    """Exporta a fila de uma subfila como planilha (consulta_fila.xlsx)."""
+    with handle_errors(), make_client() as client:
+        write(client.fila.download(subfila_id), out, f"consulta_fila_{subfila_id}.xlsx")
+
+
 # --- lista ------------------------------------------------------------------
 
 
@@ -213,6 +240,16 @@ def lista_consulta(
     """A lista calculada completa de uma sublista."""
     with handle_errors(), make_client() as client:
         emit(ctx, client.lista.consulta(sublista_id), f"Lista da sublista {sublista_id}")
+
+
+@lista_app.command("download")
+def lista_download(
+    sublista_id: int = typer.Argument(help="id from `anvisa lista sublistas`"),
+    out: str = OUT,
+) -> None:
+    """Exporta a lista de uma sublista como planilha (consulta_lista.xlsx)."""
+    with handle_errors(), make_client() as client:
+        write(client.lista.download(sublista_id), out, f"consulta_lista_{sublista_id}.xlsx")
 
 
 # --- udi --------------------------------------------------------------------
@@ -265,6 +302,32 @@ def udi_historico(ctx: typer.Context, id_dispositivo: int, id_historico: int) ->
     """Uma versão histórica de um dispositivo."""
     with handle_errors(), make_client() as client:
         emit(ctx, client.udi.get_historico(id_dispositivo, id_historico), "UDI (histórico)")
+
+
+@udi_app.command("download")
+def udi_download(id: int, out: str = OUT) -> None:
+    """Exporta o detalhe de um dispositivo como planilha (udi.xlsx)."""
+    with handle_errors(), make_client() as client:
+        write(client.udi.download(id), out, f"udi_{id}.xlsx")
+
+
+@udi_app.command("download-historico")
+def udi_download_historico(id_dispositivo: int, id_historico: int, out: str = OUT) -> None:
+    """Exporta uma versão histórica de um dispositivo como planilha."""
+    with handle_errors(), make_client() as client:
+        download = client.udi.download_historico(id_dispositivo, id_historico)
+        write(download, out, f"udi_{id_dispositivo}_{id_historico}.xlsx")
+
+
+@udi_app.command("snapshot")
+def udi_snapshot(
+    id_historico: int = typer.Argument(help="snapshot id, from GET /api/v1/udi/historico"),
+    out: str = typer.Option(".", "--out", "-o", help="file or directory to write the zip to"),
+) -> None:
+    """Baixa o zip de um snapshot do UDI (streamed; ~230 KB, sem Content-Length)."""
+    with handle_errors(), make_client() as client:
+        path = client.udi.download_snapshot(id_historico, out)
+        typer.echo(f"saved {path} ({path.stat().st_size} bytes)", err=True)
 
 
 @udi_app.command("gmdn-search")
@@ -327,6 +390,24 @@ def nome_tecnico_categorias(ctx: typer.Context) -> None:
         emit(ctx, client.nome_tecnico.categorias(), "Categorias")
 
 
+@nome_tecnico_app.command("download")
+def nome_tecnico_download(
+    nome: str | None = typer.Option(None, "--nome", "-n", help="nomeTecnico, substring"),
+    categoria: str | None = typer.Option(
+        None, "--categoria", help="categoriaProduto, id from `categorias`"
+    ),
+    out: str = OUT,
+) -> None:
+    """Exporta nomes técnicos como planilha (.xls). Sem filtro exporta todos."""
+    filters = {k: v for k, v in {"nomeTecnico": nome, "categoriaProduto": categoria}.items() if v}
+    with handle_errors(), make_client() as client:
+        write(
+            client.nome_tecnico.download(**filters),
+            out,
+            "consulta_nomes_tecnicos_produto_saude.xls",
+        )
+
+
 # --- assunto ----------------------------------------------------------------
 
 
@@ -348,3 +429,33 @@ def assunto_get(ctx: typer.Context, codigo: int) -> None:
     """Detalhe de um assunto: sistema, serviços, formulários, checklist e taxas por porte."""
     with handle_errors(), make_client() as client:
         emit(ctx, client.assunto.detalhe(codigo), f"Assunto {codigo}")
+
+
+@assunto_app.command("servicos-associados")
+def assunto_servicos_associados(ctx: typer.Context, codigo: str) -> None:
+    """Serviços do gov.br associados a um código de serviço."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.assunto.servicos_associados(codigo), f"Serviços de {codigo}")
+
+
+@assunto_app.command("download")
+def assunto_download(
+    codigo: list[int] = typer.Option(
+        None, "--codigo", "-c", help="codigosAssunto; repeat for more than one"
+    ),
+    out: str = OUT,
+) -> None:
+    """Exporta assuntos como planilha (.xls). Sem --codigo exporta os ~2.600 (cerca de 5 MB)."""
+    filters = {"codigosAssunto": list(codigo)} if codigo else {}
+    with handle_errors(), make_client() as client:
+        write(client.assunto.download(**filters), out, "consulta_assuntos.xls")
+
+
+@assunto_app.command("formulario")
+def assunto_formulario(
+    id: int = typer.Argument(help="formulários[].id from `anvisa assunto get`"),
+    out: str = OUT,
+) -> None:
+    """Baixa o arquivo de um formulário de assunto (a resposta não traz nome nem tipo)."""
+    with handle_errors(), make_client() as client:
+        write(client.assunto.formulario(id), out, f"formulario_{id}")

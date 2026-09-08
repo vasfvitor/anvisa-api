@@ -1,0 +1,6 @@
+HTTP/1.1 200
+Content-Type: application/zip
+Content-Disposition: attachment; filename=BR_UDIDI_semanal_atualizacao_20260831_20260906.zip
+Transfer-Encoding: chunked
+
+body: 232,435 bytes, magic b'PK\x03\x04' (not kept); a zip whose first entry is BR_UDIDI_diario_atualizacao_20...: the week's daily files

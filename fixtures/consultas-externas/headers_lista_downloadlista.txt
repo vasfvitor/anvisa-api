@@ -1,0 +1,5 @@
+HTTP/1.1 200
+Content-Type: application/vnd.ms-excel
+Content-Disposition: attachment; filename=consulta_lista.xlsx
+
+body: 22785 bytes, magic b'PK\x03\x04-\x00\x08\x00' (not kept); OOXML, 555 rows + header block

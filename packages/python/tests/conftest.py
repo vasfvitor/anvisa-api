@@ -20,10 +20,29 @@ def load(name: str):
     return json.loads((FIXTURES / name).read_text(encoding="utf-8"))
 
 
+def headers_only(path: Path) -> tuple[dict[str, str], bytes]:
+    """A `headers_*.txt` fixture: too big a body to keep, so only its headers were saved.
+
+    The status line and the note after the blank line are dropped; the body is empty, which
+    is enough to test the headers-driven parts (file name, content type, streaming)."""
+    block = path.read_text(encoding="utf-8").split("\n\n")[0].splitlines()[1:]
+    fields = (line.split(":", 1) for line in block if ":" in line)
+    headers = {k.strip(): v.strip() for k, v in fields}
+    headers.pop("Transfer-Encoding", None)  # httpx frames the body itself
+    return {k: v for k, v in headers.items() if v != "(absent)"}, b""
+
+
 def response_for(name: str) -> httpx.Response:
     """An httpx.Response rebuilt from one manifest entry (status, rate-limit headers, body)."""
     entry = next(e for e in MANIFEST["responses"] if e["name"] == name)
-    headers = {"Content-Type": "application/json"}
+    file = FIXTURES / entry["file"]
+    if file.name.startswith("headers_"):
+        headers, content = headers_only(file)
+    else:
+        headers, content = {"Content-Type": "application/json"}, file.read_bytes()
+        for key in ("content_type", "content_disposition"):
+            if key in entry:
+                headers[key.replace("_", "-").title()] = entry[key]
     if "remaining" in entry:
         headers.update(
             {
@@ -35,7 +54,7 @@ def response_for(name: str) -> httpx.Response:
     return httpx.Response(
         entry["status"],
         headers=headers,
-        content=(FIXTURES / entry["file"]).read_bytes(),
+        content=content,
         request=httpx.Request(entry["method"], "https://example" + entry["path"]),
     )
 

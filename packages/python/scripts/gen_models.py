@@ -42,4 +42,6 @@ generate(
         "# Do not edit by hand: change the overlay in spec/ and run `make models`."
     ),
 )
+# datamodel-codegen writes with the platform newline; the repo (and CI's drift check) expect LF
+OUT.write_bytes(OUT.read_bytes().replace(b"\r\n", b"\n"))
 print(f"wrote {OUT.relative_to(HERE)}")

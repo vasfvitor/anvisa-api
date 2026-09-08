@@ -8,7 +8,7 @@ ANVISA publishes an OpenAPI document for this API, but it is wrong or silent abo
 what you need to call it successfully. This repository records what the API actually does and
 ships a client that encodes it.
 
-## What the spec doesn't tell you (all verified live, 2026-09-06)
+## What the spec doesn't tell you (all verified live, 2026-09-06 and 2026-09-08)
 
 | Behavior | Reality |
 |---|---|
@@ -20,6 +20,7 @@ ships a client that encodes it.
 | Errors | Validation failures come back as **HTTP 500** with `{status, mensagem, data_hora, mensagem_detalhada}`. |
 | `fila/consulta`, `lista/consulta` | Return the **whole** subqueue/sublista as an array (40, 35, 71 and 555 rows observed); `page`/`size` are ignored. A subfila with nothing queued is an empty-bodied **404**, which the client returns as `[]`. |
 | Dates | Integer **epoch milliseconds**. |
+| Downloads | The spec says `200 OK` with no content and nothing about `Accept`. Every download answers **500 "Could not find acceptable representation"** to `Accept: application/json` (all but `GET /udi/{id}/download`); send `Accept: */*`. `Content-Type` is always `application/vnd.ms-excel` even when the bytes are OOXML or a zip. `POST /assunto/downloadAssuntoFormulario` takes a **bare JSON integer** body, not the declared `PaginationBuilder`, and returns the file with **no `Content-Type` and no `Content-Disposition`**. An empty subfila is a **500** here, not the empty 404 `fila/consulta` gives. |
 | Filter keys | Verified live: `udi` accepts `nomeComercial` (substring), `udiDi` (exact), `cnpjDetentora`, `codigoGmdn`, `nuRegistro`; `nomeTecnico` accepts `nomeTecnico` (substring) and `categoriaProduto`; `termoGmdn` accepts `conteudo`. `POST /assunto/` is **broken** (500, body not bound). |
 | Coverage | The spec has 32 endpoints. The portal's doc pages describe **35 more** (certificados, empresa nacional/internacional, dossiê, alimentos, produtos de saúde) on the same base path, but all seven probed answer a plain Spring **404**: documented, not deployed. The same datasets exist as bulk CSV on [`dados.anvisa.gov.br/dados/CONSULTAS/`](https://dados.anvisa.gov.br/dados/CONSULTAS/) (for example `TA_CONSULTA_PRODUTOS_IRREGULARES_RESULTADO.CSV`, refreshed on weekdays). |
 
@@ -68,7 +69,21 @@ anvisa nome-tecnico search --size 50    # nomes técnicos with risk class
 anvisa nome-tecnico categorias
 anvisa assunto lista --busca bioequival   # petition subject codes
 anvisa assunto get 10013                  # documents, forms, legal basis, fees by size
+anvisa assunto servicos-associados 13497  # gov.br services behind a serviço code
 anvisa --format json fila consulta 167 | jq length
+```
+
+Downloads. `-o` takes a file or a directory (default `.`, filled in with the name the server
+sent) and `-o -` writes the bytes to stdout; the saved path is printed to stderr:
+
+```bash
+anvisa fila download 167 -o ./exports      # consulta_fila.xlsx, the whole subfila
+anvisa lista download 2141
+anvisa nome-tecnico download --nome cateter
+anvisa assunto download -c 10013 -c 10014  # no --codigo exports all ~2,600 (≈5 MB)
+anvisa assunto formulario 8016             # formulários[].id, from `assunto get`
+anvisa udi download 377 -o - > udi.xlsx
+anvisa udi snapshot 173 -o ./exports       # the week's zip, streamed to disk
 ```
 
 ```python
@@ -81,28 +96,31 @@ with Client.from_env() as anvisa:
     page = anvisa.udi.search(nomeComercial="cateter", size=50)
     for device in anvisa.udi.iter_search(nomeComercial="cateter"):   # every page, throttled
         print(device.udiDi, device.nomeComercial)
+
+    anvisa.fila.download(167).save("exports/")        # consulta_fila.xlsx
+    anvisa.udi.download_snapshot(173, "exports/")     # streamed, never buffered
 ```
 
 The client sends a User-Agent, caches the token and renews it before expiry, mirrors the
-gateway's token bucket so a loop never hits 429, and raises typed exceptions
-(`MissingFilterError`, `InvalidPageError`, `MalformedRequestError`, `BlockedError`, and
-others) instead of a bare 500.
+gateway's token bucket so a loop never hits 429, sends `Accept: */*` on every download, and
+raises typed exceptions (`MissingFilterError`, `InvalidPageError`, `MalformedRequestError`,
+`BlockedError`, `EmptyExportError`, `NoResultError`, and others) instead of a bare 500.
 
 ### Development
 
 ```bash
 cd packages/python && uv sync
 uv run pytest             # fixture-only, no network
-uv run pytest -m live     # 3 real requests; needs credentials
+uv run pytest -m live     # 4 real requests; needs credentials
 make spec && make models  # at the repo root; a non-empty git diff means the overlay drifted
 make snapshot             # re-download the spec and portal docs; a diff means ANVISA changed them
 ```
 
 ## Scope
 
-Covered: every JSON endpoint in the published spec, as the `fila`, `lista`, `udi`,
-`nome_tecnico`, and `assunto` domains. The two XLS/XLSX download endpoints are not wrapped.
-The domains the portal documents but the gateway does not serve yet (see the table) are
+Covered: all 32 endpoints of the published spec, as the `fila`, `lista`, `udi`,
+`nome_tecnico`, and `assunto` domains. That includes the eight file downloads and
+`servicosAssociados`, wrapped on 2026-09-08. The domains the portal documents but the gateway does not serve yet (see the table) are
 saved under `spec/portal/`; a workflow re-fetches them twice a month, so the day ANVISA deploys
 them shows up as a diff. The SNGPC API (a
 separate service for pharmacies) is out of scope.

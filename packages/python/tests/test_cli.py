@@ -2,6 +2,7 @@ import json
 
 import httpx
 import pytest
+from conftest import FIXTURES
 from typer.testing import CliRunner
 
 from anvisa import __version__, cli
@@ -87,6 +88,26 @@ def test_udi_search_without_filter_is_a_clean_error(fake_cli_client):
     result = runner.invoke(cli.app, ["udi", "search"])
     assert result.exit_code == 1
     assert "at least one filter" in result.output
+
+
+def test_fila_download_writes_the_file(fake_cli_client, tmp_path):
+    result = runner.invoke(cli.app, ["fila", "download", "167", "-o", str(tmp_path)])
+    assert result.exit_code == 0, result.output
+    written = tmp_path / "consulta_fila.xlsx"  # the name the server sent
+    assert written.read_bytes() == (FIXTURES / "fila_downloadfila.xlsx").read_bytes()
+    assert str(written) in result.output  # the path goes to stderr, not into JSON output
+
+
+def test_download_to_stdout(fake_cli_client):
+    result = runner.invoke(cli.app, ["udi", "download", "377", "-o", "-"])
+    assert result.exit_code == 0, result.output
+    assert result.stdout_bytes.startswith(b"PK\x03\x04")
+
+
+def test_assunto_servicos_associados(fake_cli_client):
+    result = runner.invoke(cli.app, ["-f", "json", "assunto", "servicos-associados", "13497"])
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output)[0]["id"] == 2611
 
 
 def test_missing_credentials_exit_2(monkeypatch):

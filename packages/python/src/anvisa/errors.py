@@ -78,6 +78,28 @@ class MalformedRequestError(RequestRejectedError):
     """The server could not deserialize the body (e.g. `sorting` sent as an array)."""
 
 
+class NotAcceptableError(RequestRejectedError):
+    """A download endpoint was asked for a representation it cannot produce.
+
+    Every download but `GET /udi/{id}/download` refuses `Accept: application/json`. The
+    client sends `Accept: */*` on downloads, so this only reaches callers who build their
+    own request."""
+
+
+class EmptyExportError(RequestRejectedError):
+    """There was nothing to export (an empty subfila or sublista).
+
+    The JSON siblings answer an empty-bodied 404 for the same id; the download endpoints
+    raise instead."""
+
+
+class NoResultError(RequestRejectedError):
+    """The id in the request matches no row (`javax.persistence.NoResultException`).
+
+    Observed for an unknown formulário id on `POST /assunto/downloadAssuntoFormulario`.
+    A plain HTTP 404 stays `NotFoundError`; this is ANVISA's 500-shaped version."""
+
+
 _MISSING_FILTER = re.compile(r"Filtro '(\w+)' não informado")
 
 
@@ -136,4 +158,14 @@ def raise_for_response(response: httpx.Response) -> None:
         raise InvalidPageError(mensagem, **common)
     if detail.startswith("com.fasterxml.jackson"):
         raise MalformedRequestError(mensagem, **common)
+    if detail == "Could not find acceptable representation":
+        raise NotAcceptableError(
+            "this endpoint does not produce JSON; send Accept: */* "
+            "(the client already does for every download)",
+            **common,
+        )
+    if detail == "Nenhum resultado encontrado para exportação.":
+        raise EmptyExportError("nothing to export for these filters", **common)
+    if detail.startswith("javax.persistence.NoResultException"):
+        raise NoResultError("no row matches that id", **common)
     raise ApiError(mensagem or "unknown error", **common)

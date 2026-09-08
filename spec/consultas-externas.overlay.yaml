@@ -1,11 +1,12 @@
 # OpenAPI Overlay (https://spec.openapis.org/overlay/v1.0.0.html) for ANVISA's
 # "Consultas Externas" API. Every action encodes behavior we observed against the
-# live API on 2026-09-06 that the published spec gets wrong or leaves out.
+# live API on 2026-09-06 (JSON endpoints) and 2026-09-08 (the downloads) that the
+# published spec gets wrong or leaves out.
 # Evidence for each action: the recorded responses in fixtures/consultas-externas/.
 overlay: 1.0.0
 info:
   title: ANVISA Consultas Externas — observed-behavior corrections
-  version: "2026-09-06"
+  version: "2026-09-08"
 extends: ./consultas-externas.openapi.json
 
 actions:
@@ -248,3 +249,158 @@ actions:
         the path without the trailing slash is a 404. Use GET /api/v1/assunto/assuntos and
         filter client-side.
       x-observed-status: broken
+
+  # --- Downloads (probed 2026-09-08) ---------------------------------------------------
+  # The spec declares `200: OK` with no content for all six download operations and says
+  # nothing about the Accept header. Every one of them answers HTTP 500 "Could not find
+  # acceptable representation" to `Accept: application/json` (fixture err_not_acceptable);
+  # only GET /udi/{id}/download also accepts it. Send `Accept: */*`.
+
+  # 20. Spreadsheet exports: the body is a file, whatever the operation's filters.
+  - &spreadsheet_download
+    target: $.paths['/api/v1/fila/downloadfila'].post.responses['200']
+    update:
+      description: >-
+        The spreadsheet itself. `Content-Type: application/vnd.ms-excel` and the file name in
+        `Content-Disposition: attachment; filename=...`. Requires `Accept: */*`.
+      content:
+        application/vnd.ms-excel:
+          schema: {type: string, format: binary}
+  - {<<: *spreadsheet_download, target: "$.paths['/api/v1/lista/downloadlista'].post.responses['200']"}
+  - {<<: *spreadsheet_download, target: "$.paths['/api/v1/nomeTecnico/download'].post.responses['200']"}
+  - {<<: *spreadsheet_download, target: "$.paths['/api/v1/assunto/download'].post.responses['200']"}
+  - {<<: *spreadsheet_download, target: "$.paths['/api/v1/udi/{id}/download'].get.responses['200']"}
+  - {<<: *spreadsheet_download, target: "$.paths['/api/v1/udi/{idDispositivo}/{idHistorico}/download'].get.responses['200']"}
+
+  # 21. POST /fila/downloadfila (fixtures fila_downloadfila, err_export_vazia, err_not_acceptable).
+  - target: $.paths['/api/v1/fila/downloadfila'].post
+    update:
+      description: >-
+        Exports one whole subqueue as a spreadsheet (`consulta_fila.xlsx`, 40 rows after a
+        7-row header block for subfila 167 on 2026-09-08). The file is OOXML (magic `PK`)
+        despite the `application/vnd.ms-excel` content type. `filter.subfila` is required and
+        `page`/`size` are ignored, as in /fila/consulta. A subfila with nothing queued is
+        HTTP 500 "Nenhum resultado encontrado para exportação." here, not the empty 404 that
+        /fila/consulta gives.
+      x-required-filters: {allOf: [subfila]}
+      x-paginated: false
+      x-accept: "*/*"
+
+  # 22. POST /lista/downloadlista (fixture lista_downloadlista): same shape, `subfila` again.
+  - target: $.paths['/api/v1/lista/downloadlista'].post
+    update:
+      description: >-
+        Exports one whole sublista as a spreadsheet (`consulta_lista.xlsx`, OOXML, 555 rows
+        for sublista 2141 on 2026-09-08). The required filter key is `subfila`, not
+        `sublista`, and `page`/`size` are ignored.
+      x-required-filters: {allOf: [subfila]}
+      x-paginated: false
+      x-accept: "*/*"
+
+  # 23. POST /nomeTecnico/download (fixture nomeTecnico_download). The published summary says
+  #     "dossiê"; this endpoint exports nomes técnicos.
+  - target: $.paths['/api/v1/nomeTecnico/download'].post
+    update:
+      summary: Faz download do relatório de nomes técnicos
+      description: >-
+        Exports nomes técnicos as `consulta_nomes_tecnicos_produto_saude.xls` (BIFF .xls, magic
+        `D0 CF 11 E0`). No filter is required; the verified filter keys are those of
+        POST /nomeTecnico. `size` is ignored: `{"page": 1, "size": 5, "filter":
+        {"nomeTecnico": "cateter"}}` returned all 71 matching rows on 2026-09-08.
+      x-paginated: false
+      x-accept: "*/*"
+
+  # 24. POST /assunto/download (fixtures assunto_download, assunto_download_codigos).
+  - target: $.paths['/api/v1/assunto/download'].post
+    update:
+      description: >-
+        Exports assuntos as `consulta_assuntos.xls` (BIFF .xls). An empty `filter` exports all
+        2,599 assuntos, about 5 MB. `filter.codigosAssunto` (an array of ids) does bind here,
+        unlike POST /api/v1/assunto/ which cannot bind its body at all:
+        `{"filter": {"codigosAssunto": [10013]}}` returned a 13 KB file on 2026-09-08.
+      x-paginated: false
+      x-accept: "*/*"
+
+  # 25. POST /assunto/downloadAssuntoFormulario: the body is a bare JSON integer, not a
+  #     PaginationBuilder (fixtures assunto_formulario, err_formulario_body,
+  #     err_formulario_inexistente), and the response carries no headers describing the file.
+  - target: $.paths['/api/v1/assunto/downloadAssuntoFormulario'].post.requestBody.content['application/json'].schema['$ref']
+    remove: true
+  - target: $.paths['/api/v1/assunto/downloadAssuntoFormulario'].post.requestBody.content['application/json'].examples
+    remove: true
+  - target: $.paths['/api/v1/assunto/downloadAssuntoFormulario'].post.requestBody
+    update:
+      description: >-
+        The formulário id as a bare JSON integer. Sending an object fails with HTTP 500
+        "com.fasterxml.jackson...: Cannot deserialize value of type `java.lang.Long` from
+        Object value"; an unknown id fails with
+        "javax.persistence.NoResultException: No entity found for query".
+      content:
+        application/json:
+          schema:
+            type: integer
+            format: int64
+            description: Formulário id, from `DetalheAssunto.formularios[].id`.
+            example: 8016
+  - target: $.paths['/api/v1/assunto/downloadAssuntoFormulario'].post
+    update:
+      description: >-
+        Returns the form file attached to an assunto. Not a spreadsheet: formulário 8016 of
+        assunto 10013 came back as a 66,350-byte .docx on 2026-09-08. The response has neither
+        `Content-Type` nor `Content-Disposition`, so the file name has to come from
+        `DetalheAssunto.formularios[].nomeArquivo`.
+      x-accept: "*/*"
+  - target: $.paths['/api/v1/assunto/downloadAssuntoFormulario'].post.responses['200']
+    update:
+      description: >-
+        The raw file bytes, with no `Content-Type` and no `Content-Disposition`. Requires
+        `Accept: */*`.
+      content:
+        '*/*':
+          schema: {type: string, format: binary}
+
+  # 26. GET /udi/{id}/download and the historico variant (fixtures udi_download,
+  #     err_udi_download_historico).
+  - target: $.paths['/api/v1/udi/{id}/download'].get
+    update:
+      description: >-
+        The device detail as `udi.xlsx` (OOXML, one sheet "UDI-DI - Dispositivo": a header row
+        plus one row). The only download that also works with `Accept: application/json`.
+      x-accept: "*/*"
+  - target: $.paths['/api/v1/udi/{idDispositivo}/{idHistorico}/download'].get
+    update:
+      description: >-
+        The device as recorded in one snapshot, as a spreadsheet. When the device is not part
+        of that snapshot the export throws instead of 404ing: HTTP 500 with
+        `Cannot invoke "...DetalheDispositivoDTO.getDispositivo()" because "item" is null`
+        (device 377, snapshot 173, 2026-09-08), where the JSON sibling
+        GET /udi/{idDispositivo}/{idHistorico} answers an empty 404. The success case has not
+        been observed.
+      x-accept: "*/*"
+
+  # 27. GET /udi/historico/{id}/download is a zip, not a spreadsheet (fixture
+  #     udi_historico_download): stream it, there is no Content-Length.
+  - target: $.paths['/api/v1/udi/historico/{id}/download'].get
+    update:
+      description: >-
+        The snapshot as a zip of the week's daily UDI files, e.g.
+        `BR_UDIDI_semanal_atualizacao_20260831_20260906.zip`, 232,435 bytes for snapshot 173
+        on 2026-09-08. Sent with `Transfer-Encoding: chunked` and no `Content-Length`, so it
+        should be streamed to disk rather than buffered.
+      x-accept: "*/*"
+  - target: $.paths['/api/v1/udi/historico/{id}/download'].get.responses['200']
+    update:
+      description: >-
+        The zip. `Content-Type: application/zip`, file name in `Content-Disposition`, body
+        chunked. Requires `Accept: */*`.
+      content:
+        application/zip:
+          schema: {type: string, format: binary}
+
+  # 28. GET /assunto/servicosAssociados/{codigoServico} (fixture assunto_servicosAssociados):
+  #     the spec's schema is right; only the description was missing.
+  - target: $.paths['/api/v1/assunto/servicosAssociados/{codigoServico}'].get.responses['200']
+    update:
+      description: >-
+        An array of `ServicoDTO` (`id`, `descricao`, `hiperlink` to the gov.br service page).
+        One entry for codigoServico 13497 on 2026-09-08.

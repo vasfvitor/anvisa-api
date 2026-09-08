@@ -1,0 +1,5 @@
+HTTP/1.1 200
+Content-Type: application/vnd.ms-excel
+Content-Disposition: attachment; filename=consulta_assuntos.xls
+
+body: 5045248 bytes, magic b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1' (not kept); BIFF .xls, 2,599 rows: every assunto

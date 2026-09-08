@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "anvisa"
-version = "0.3.0"
+version = "0.4.0"
 description = "Client and CLI for ANVISA's official Consultas Externas API (fila de análise, UDI, assuntos)"
 readme = "README.md"
 license = "MIT"

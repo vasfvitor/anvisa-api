@@ -2,11 +2,12 @@ import json
 
 import httpx
 import pytest
-from conftest import load
+from conftest import FIXTURES, load
 
 from anvisa import models
 from anvisa.auth import Credentials
 from anvisa.client import Client, iterate_pages, page_body
+from anvisa.download import Download, filename_from
 from anvisa.errors import InvalidPageError, MissingFilterError, NotFoundError
 from anvisa.throttle import Throttle
 
@@ -181,6 +182,111 @@ def test_iter_search_walks_pages_with_0_based_response_numbers():
         ids = [d.id for d in c.udi.iter_search(size=2, nomeComercial="cateter")]
     assert ids == [377, 378, 999]
     assert [b["page"] for b in bodies] == [1, 2]
+
+
+def test_fila_download_returns_the_recorded_spreadsheet(client, fake_api):
+    download = client.fila.download(167)
+    assert download.content == (FIXTURES / "fila_downloadfila.xlsx").read_bytes()
+    assert download.content[:2] == b"PK"  # OOXML, whatever the content type claims
+    assert download.filename == "consulta_fila.xlsx"
+    assert download.content_type == "application/vnd.ms-excel"
+    assert fake_api.json_bodies()[-1] == {"filter": {"subfila": 167}}
+
+
+def test_udi_download_returns_the_recorded_spreadsheet(client):
+    download = client.udi.download(377)
+    assert download.content == (FIXTURES / "udi_download_377.xlsx").read_bytes()
+    assert download.filename == "udi.xlsx"
+
+
+@pytest.mark.parametrize(
+    ("call", "filename", "body"),
+    [
+        (lambda c: c.lista.download(2141), "consulta_lista.xlsx", {"filter": {"subfila": 2141}}),
+        (
+            lambda c: c.nome_tecnico.download(nomeTecnico="cateter"),
+            "consulta_nomes_tecnicos_produto_saude.xls",
+            {"filter": {"nomeTecnico": "cateter"}},
+        ),
+        (lambda c: c.assunto.download(), "consulta_assuntos.xls", {"filter": {}}),
+        (
+            lambda c: c.assunto.download(codigosAssunto=[10013]),
+            "consulta_assuntos.xls",
+            {"filter": {"codigosAssunto": [10013]}},
+        ),
+    ],
+)
+def test_download_names_and_bodies(client, fake_api, call, filename, body):
+    # the three big exports were recorded as headers only, so only the metadata is asserted
+    download = call(client)
+    assert download.filename == filename
+    assert download.content_type == "application/vnd.ms-excel"
+    assert fake_api.json_bodies()[-1] == body
+
+
+def test_every_download_asks_for_any_representation(client, fake_api):
+    client.fila.download(167)
+    client.udi.download(377)
+    client.assunto.formulario(8016)
+    accepts = {r.headers["Accept"] for r in fake_api.requests if "/download" in r.url.path}
+    assert accepts == {"*/*"}  # application/json is a 500 on all but udi/{id}/download
+
+
+def test_assunto_formulario_sends_a_bare_integer_and_names_the_file(client, fake_api):
+    download = client.assunto.formulario(8016)
+    assert json.loads(fake_api.requests[-1].content) == 8016
+    assert download.filename == "formulario_8016"  # the response carries no headers for it
+    assert download.content_type is None
+    assert client.assunto.formulario(8016, "FORM_BIOEQ.docx").filename == "FORM_BIOEQ.docx"
+
+
+def test_servicos_associados(client, fake_api):
+    servicos = client.assunto.servicos_associados(13497)
+    assert [type(s) for s in servicos] == [models.ServicoDTO]
+    assert servicos[0].id == 2611
+    assert servicos[0].hiperlink.startswith("https://www.gov.br/")
+    assert fake_api.requests[-1].url.path.endswith("/assunto/servicosAssociados/13497")
+
+
+def test_download_snapshot_streams_to_disk(tmp_path):
+    zip_bytes = b"PK\x03\x04" + b"\x00" * 5000
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/token"):
+            return httpx.Response(200, json=load("token.json"))
+        assert request.headers["Accept"] == "*/*"
+        return httpx.Response(
+            200,
+            headers={
+                "Content-Type": "application/zip",
+                "Content-Disposition": (
+                    "attachment; filename=BR_UDIDI_semanal_atualizacao_20260831_20260906.zip"
+                ),
+                "X-RateLimit-Remaining": "20",
+            },
+            content=zip_bytes,  # the live response is chunked, with no Content-Length
+        )
+
+    with Client(
+        Credentials("id", "s"),
+        transport=httpx.MockTransport(handler),
+        throttle=Throttle(sleep=lambda s: None),
+    ) as c:
+        path = c.udi.download_snapshot(173, tmp_path)
+    assert path.name == "BR_UDIDI_semanal_atualizacao_20260831_20260906.zip"
+    assert path.read_bytes() == zip_bytes
+    assert path.parent == tmp_path
+
+
+def test_download_save_and_filename_parsing(tmp_path):
+    assert filename_from("attachment; filename=consulta_fila.xlsx") == "consulta_fila.xlsx"
+    assert filename_from('attachment; filename="a b.xls"; size=1') == "a b.xls"
+    assert filename_from(None) is None
+
+    named = Download(b"x", "server.xlsx", "application/vnd.ms-excel")
+    assert named.save(tmp_path).name == "server.xlsx"
+    assert named.save(tmp_path / "mine.xlsx").read_bytes() == b"x"
+    assert Download(b"x").save(tmp_path, "fallback.bin").name == "fallback.bin"
 
 
 def test_iterate_pages_stops_on_empty_content():

@@ -1,0 +1,4 @@
+HTTP/1.1 200
+Content-Type: (absent)
+
+body: 66350 bytes, magic b'PK\x03\x04\x14\x00\x06\x00' (not kept); a .docx (word/document.xml inside); the response carries neither Content-Type nor Content-Disposition, the name comes from DetalheAssunto.formularios[].nomeArquivo

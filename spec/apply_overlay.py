@@ -57,7 +57,10 @@ def main(overlay_path):
     doc = json.loads(spec_path.read_text(encoding="utf-8"))
     resolved = apply(doc, overlay)
     out = overlay_path.with_name(overlay_path.name.replace(".overlay.yaml", ".resolved.json"))
-    out.write_text(json.dumps(resolved, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    # newline="\n": on Windows write_text would emit CRLF and the drift check would go red
+    out.write_text(
+        json.dumps(resolved, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n"
+    )
     print(f"{len(overlay['actions'])} actions applied -> {out}")
 
 

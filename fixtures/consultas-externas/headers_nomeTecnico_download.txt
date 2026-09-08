@@ -1,0 +1,5 @@
+HTTP/1.1 200
+Content-Type: application/vnd.ms-excel
+Content-Disposition: attachment; filename=consulta_nomes_tecnicos_produto_saude.xls
+
+body: 91648 bytes, magic b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1' (not kept); BIFF .xls, 71 rows for nomeTecnico=cateter (= totalElements) with size=5 sent: pagination ignored

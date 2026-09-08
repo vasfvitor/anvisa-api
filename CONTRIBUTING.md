@@ -34,6 +34,10 @@ guessed.
    including nulls and odd values, is the point.
 5. Add the body to `fixtures/consultas-externas/` and an entry to `manifest.json` with the
    exact request you sent.
+   A binary response goes in whole when it is small (a few tens of KB), with
+   `content_type` and `content_disposition` in its manifest entry; when it is large, keep
+   only a `headers_<name>.txt` holding the status line, the headers, a blank line and a note
+   giving the byte count and the magic bytes. `response_for` rebuilds either one.
 6. If the response disagrees with the spec, add an overlay action with a comment naming the
    fixture, run `make spec models`, and commit the regenerated files with the change.
 7. Write a test that parses the fixture into the generated model. That test is the gate
@@ -52,7 +56,7 @@ comes only from the spec.
 ```bash
 cd packages/python && uv sync
 uv run pytest             # fixture-only; safe to run on a loop
-uv run pytest -m live     # 3 real requests; needs credentials
+uv run pytest -m live     # 4 real requests; needs credentials
 uv run ruff check . && uv run ruff format .
 make spec models          # from the repo root; commit the diff if any
 make snapshot             # re-download ANVISA's spec and portal docs (12 unauthenticated requests)

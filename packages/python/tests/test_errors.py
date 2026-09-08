@@ -8,9 +8,12 @@ from anvisa.errors import (
     ApiError,
     AuthError,
     BlockedError,
+    EmptyExportError,
     InvalidPageError,
     MalformedRequestError,
     MissingFilterError,
+    NoResultError,
+    NotAcceptableError,
     NotFoundError,
     RateLimitError,
     RequestRejectedError,
@@ -27,6 +30,10 @@ from anvisa.errors import (
         ("err_sublista", MissingFilterError),
         ("err_page_index", InvalidPageError),
         ("err_jackson", MalformedRequestError),
+        ("err_formulario_body", MalformedRequestError),
+        ("err_not_acceptable", NotAcceptableError),
+        ("err_export_vazia", EmptyExportError),
+        ("err_formulario_inexistente", NoResultError),
     ],
 )
 def test_validation_failures_reported_as_500_become_typed(fixture, exc):
@@ -63,6 +70,21 @@ def test_assunto_busca_is_a_plain_api_error():
         raise_for_response(response_for("err_assunto_busca"))
     assert not isinstance(info.value, RequestRejectedError)
     assert "filtro" in (info.value.mensagem_detalhada or "")
+
+
+def test_download_errors_explain_themselves():
+    with pytest.raises(NotAcceptableError, match=r"Accept: \*/\*"):
+        raise_for_response(response_for("err_not_acceptable"))
+    with pytest.raises(EmptyExportError, match="nothing to export"):
+        raise_for_response(response_for("err_export_vazia"))
+
+
+def test_udi_download_historico_npe_stays_a_plain_api_error():
+    # the export dereferences a null instead of 404ing; nothing to map, keep the message
+    with pytest.raises(ApiError) as info:
+        raise_for_response(response_for("err_udi_download_historico"))
+    assert not isinstance(info.value, RequestRejectedError)
+    assert "getDispositivo()" in info.value.mensagem_detalhada
 
 
 def test_success_is_silent():

@@ -581,8 +581,8 @@
         "tags": [
           "Consulta Nomes Técnicos de Produtos para Saúde"
         ],
-        "summary": "Faz download do relatório de dossiê",
-        "description": "Recebe JSON com column, count, order, page e filtros em filter[...] e gera um arquivo XLS para download.",
+        "summary": "Faz download do relatório de nomes técnicos",
+        "description": "Exports nomes técnicos as `consulta_nomes_tecnicos_produto_saude.xls` (BIFF .xls, magic `D0 CF 11 E0`). No filter is required; the verified filter keys are those of POST /nomeTecnico. `size` is ignored: `{\"page\": 1, \"size\": 5, \"filter\": {\"nomeTecnico\": \"cateter\"}}` returned all 71 matching rows on 2026-09-08.",
         "operationId": "download",
         "requestBody": {
           "description": "Payload completo de PaginationBuilder para exportação",
@@ -716,7 +716,7 @@
             }
           },
           "200": {
-            "description": "OK",
+            "description": "The spreadsheet itself. `Content-Type: application/vnd.ms-excel` and the file name in `Content-Disposition: attachment; filename=...`. Requires `Accept: */*`.",
             "headers": {
               "X-RateLimit-Remaining": {
                 "$ref": "#/components/headers/X-RateLimit-Remaining"
@@ -727,9 +727,19 @@
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
               }
+            },
+            "content": {
+              "application/vnd.ms-excel": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
             }
           }
-        }
+        },
+        "x-paginated": false,
+        "x-accept": "*/*"
       }
     },
     "/api/v1/lista/downloadlista": {
@@ -738,7 +748,7 @@
           "Consulta Lista"
         ],
         "summary": "Faz download do relatório de lista",
-        "description": "Recebe os filtros da consulta e gera um arquivo XLSX com o relatório de lista.",
+        "description": "Exports one whole sublista as a spreadsheet (`consulta_lista.xlsx`, OOXML, 555 rows for sublista 2141 on 2026-09-08). The required filter key is `subfila`, not `sublista`, and `page`/`size` are ignored.",
         "operationId": "downloadLista",
         "requestBody": {
           "description": "Payload completo de PaginationBuilder para exportação de lista",
@@ -871,7 +881,7 @@
             }
           },
           "200": {
-            "description": "OK",
+            "description": "The spreadsheet itself. `Content-Type: application/vnd.ms-excel` and the file name in `Content-Disposition: attachment; filename=...`. Requires `Accept: */*`.",
             "headers": {
               "X-RateLimit-Remaining": {
                 "$ref": "#/components/headers/X-RateLimit-Remaining"
@@ -882,9 +892,24 @@
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
               }
+            },
+            "content": {
+              "application/vnd.ms-excel": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
             }
           }
-        }
+        },
+        "x-required-filters": {
+          "allOf": [
+            "subfila"
+          ]
+        },
+        "x-paginated": false,
+        "x-accept": "*/*"
       }
     },
     "/api/v1/lista/consulta": {
@@ -1064,7 +1089,7 @@
           "Consulta Fila"
         ],
         "summary": "Faz download do relatório de fila",
-        "description": "Recebe os filtros da consulta e gera um arquivo XLSX com o relatório de fila.",
+        "description": "Exports one whole subqueue as a spreadsheet (`consulta_fila.xlsx`, 40 rows after a 7-row header block for subfila 167 on 2026-09-08). The file is OOXML (magic `PK`) despite the `application/vnd.ms-excel` content type. `filter.subfila` is required and `page`/`size` are ignored, as in /fila/consulta. A subfila with nothing queued is HTTP 500 \"Nenhum resultado encontrado para exportação.\" here, not the empty 404 that /fila/consulta gives.",
         "operationId": "downloadFila",
         "requestBody": {
           "description": "Payload completo de PaginationBuilder para exportação de fila",
@@ -1197,7 +1222,7 @@
             }
           },
           "200": {
-            "description": "OK",
+            "description": "The spreadsheet itself. `Content-Type: application/vnd.ms-excel` and the file name in `Content-Disposition: attachment; filename=...`. Requires `Accept: */*`.",
             "headers": {
               "X-RateLimit-Remaining": {
                 "$ref": "#/components/headers/X-RateLimit-Remaining"
@@ -1208,9 +1233,24 @@
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
               }
+            },
+            "content": {
+              "application/vnd.ms-excel": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
             }
           }
-        }
+        },
+        "x-required-filters": {
+          "allOf": [
+            "subfila"
+          ]
+        },
+        "x-paginated": false,
+        "x-accept": "*/*"
       }
     },
     "/api/v1/fila/consulta": {
@@ -1392,7 +1432,7 @@
           "Consulta Assuntos"
         ],
         "summary": "Faz download do relatório de assunto",
-        "description": "Recebe JSON com column, count, order, page e filtros em filter[...] e gera um arquivo XLS para download.",
+        "description": "Exports assuntos as `consulta_assuntos.xls` (BIFF .xls). An empty `filter` exports all 2,599 assuntos, about 5 MB. `filter.codigosAssunto` (an array of ids) does bind here, unlike POST /api/v1/assunto/ which cannot bind its body at all: `{\"filter\": {\"codigosAssunto\": [10013]}}` returned a 13 KB file on 2026-09-08.",
         "operationId": "download_1",
         "requestBody": {
           "description": "Payload completo de PaginationBuilder para exportação",
@@ -1527,7 +1567,7 @@
             }
           },
           "200": {
-            "description": "OK",
+            "description": "The spreadsheet itself. `Content-Type: application/vnd.ms-excel` and the file name in `Content-Disposition: attachment; filename=...`. Requires `Accept: */*`.",
             "headers": {
               "X-RateLimit-Remaining": {
                 "$ref": "#/components/headers/X-RateLimit-Remaining"
@@ -1538,9 +1578,19 @@
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
               }
+            },
+            "content": {
+              "application/vnd.ms-excel": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
             }
           }
-        }
+        },
+        "x-paginated": false,
+        "x-accept": "*/*"
       }
     },
     "/api/v1/assunto/downloadAssuntoFormulario": {
@@ -1549,22 +1599,17 @@
           "Consulta Assuntos"
         ],
         "summary": "Faz download do formulário de assunto",
-        "description": "Recebe JSON codigo do formulário e gera um arquivo XLS para download.",
+        "description": "Returns the form file attached to an assunto. Not a spreadsheet: formulário 8016 of assunto 10013 came back as a 66,350-byte .docx on 2026-09-08. The response has neither `Content-Type` nor `Content-Disposition`, so the file name has to come from `DetalheAssunto.formularios[].nomeArquivo`.",
         "operationId": "downloadAssuntoFormulario",
         "requestBody": {
-          "description": "Payload completo de PaginationBuilder para exportação",
+          "description": "The formulário id as a bare JSON integer. Sending an object fails with HTTP 500 \"com.fasterxml.jackson...: Cannot deserialize value of type `java.lang.Long` from Object value\"; an unknown id fails with \"javax.persistence.NoResultException: No entity found for query\".",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PaginationBuilder"
-              },
-              "examples": {
-                "Exportação do formulário de Assunto": {
-                  "description": "Exportação do formulário de Assunto",
-                  "value": {
-                    "codigosAssunto": "108"
-                  }
-                }
+                "type": "integer",
+                "format": "int64",
+                "description": "Formulário id, from `DetalheAssunto.formularios[].id`.",
+                "example": 8016
               }
             }
           },
@@ -1677,7 +1722,7 @@
             }
           },
           "200": {
-            "description": "OK",
+            "description": "The raw file bytes, with no `Content-Type` and no `Content-Disposition`. Requires `Accept: */*`.",
             "headers": {
               "X-RateLimit-Remaining": {
                 "$ref": "#/components/headers/X-RateLimit-Remaining"
@@ -1688,9 +1733,18 @@
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
               }
+            },
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
             }
           }
-        }
+        },
+        "x-accept": "*/*"
       }
     },
     "/api/v1/assunto/": {
@@ -2016,7 +2070,7 @@
           "Consulta UDI"
         ],
         "summary": "Retorna o arquivo do detalhe do UDI",
-        "description": "Retorna arquivo do Detalhe do UDI por ID.",
+        "description": "The device detail as `udi.xlsx` (OOXML, one sheet \"UDI-DI - Dispositivo\": a header row plus one row). The only download that also works with `Accept: application/json`.",
         "operationId": "download_2",
         "parameters": [
           {
@@ -2136,7 +2190,7 @@
             }
           },
           "200": {
-            "description": "OK",
+            "description": "The spreadsheet itself. `Content-Type: application/vnd.ms-excel` and the file name in `Content-Disposition: attachment; filename=...`. Requires `Accept: */*`.",
             "headers": {
               "X-RateLimit-Remaining": {
                 "$ref": "#/components/headers/X-RateLimit-Remaining"
@@ -2147,9 +2201,18 @@
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
               }
+            },
+            "content": {
+              "application/vnd.ms-excel": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
             }
           }
-        }
+        },
+        "x-accept": "*/*"
       }
     },
     "/api/v1/udi/{idDispositivo}/{idHistorico}": {
@@ -2316,7 +2379,7 @@
           "Consulta UDI"
         ],
         "summary": "Retorna o arquivo do detalhamento por id do dispositivo e id histórico do UDI",
-        "description": "Retorna arquivo do Historico do UDI por ID.",
+        "description": "The device as recorded in one snapshot, as a spreadsheet. When the device is not part of that snapshot the export throws instead of 404ing: HTTP 500 with `Cannot invoke \"...DetalheDispositivoDTO.getDispositivo()\" because \"item\" is null` (device 377, snapshot 173, 2026-09-08), where the JSON sibling GET /udi/{idDispositivo}/{idHistorico} answers an empty 404. The success case has not been observed.",
         "operationId": "downloadHistorico",
         "parameters": [
           {
@@ -2445,7 +2508,7 @@
             }
           },
           "200": {
-            "description": "OK",
+            "description": "The spreadsheet itself. `Content-Type: application/vnd.ms-excel` and the file name in `Content-Disposition: attachment; filename=...`. Requires `Accept: */*`.",
             "headers": {
               "X-RateLimit-Remaining": {
                 "$ref": "#/components/headers/X-RateLimit-Remaining"
@@ -2456,9 +2519,18 @@
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
               }
+            },
+            "content": {
+              "application/vnd.ms-excel": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
             }
           }
-        }
+        },
+        "x-accept": "*/*"
       }
     },
     "/api/v1/udi/termoGmdn/{codigo}": {
@@ -2756,7 +2828,7 @@
           "Consulta UDI"
         ],
         "summary": "Retorna o arquivo do Historico do UDI",
-        "description": "Retorna arquivo do Historico do UDI por ID.",
+        "description": "The snapshot as a zip of the week's daily UDI files, e.g. `BR_UDIDI_semanal_atualizacao_20260831_20260906.zip`, 232,435 bytes for snapshot 173 on 2026-09-08. Sent with `Transfer-Encoding: chunked` and no `Content-Length`, so it should be streamed to disk rather than buffered.",
         "operationId": "downloadHistoricoUdi",
         "parameters": [
           {
@@ -2876,7 +2948,7 @@
             }
           },
           "200": {
-            "description": "OK",
+            "description": "The zip. `Content-Type: application/zip`, file name in `Content-Disposition`, body chunked. Requires `Accept: */*`.",
             "headers": {
               "X-RateLimit-Remaining": {
                 "$ref": "#/components/headers/X-RateLimit-Remaining"
@@ -2887,9 +2959,18 @@
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
               }
+            },
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
             }
           }
-        }
+        },
+        "x-accept": "*/*"
       }
     },
     "/api/v1/nomeTecnico/categorias": {
@@ -4760,7 +4841,7 @@
             }
           },
           "200": {
-            "description": "OK",
+            "description": "An array of `ServicoDTO` (`id`, `descricao`, `hiperlink` to the gov.br service page). One entry for codigoServico 13497 on 2026-09-08.",
             "content": {
               "*/*": {
                 "schema": {

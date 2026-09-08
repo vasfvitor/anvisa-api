@@ -1,0 +1,14 @@
+{
+  "status": "INTERNAL_SERVER_ERROR",
+  "mensagem": "Erro interno no servidor",
+  "data_hora": [
+    2026,
+    9,
+    8,
+    15,
+    12,
+    21,
+    991304634
+  ],
+  "mensagem_detalhada": "Cannot invoke \"br.gov.anvisa.module.consultas.dto.udi.DetalheDispositivoDTO.getDispositivo()\" because \"item\" is null"
+}

@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.4.0 (unreleased)
+
+The nine endpoints left out of 0.3.0 are wrapped, so all 32 in the published spec are covered.
+Eight of them return files, and the spec describes none of that.
+
+- Downloads need `Accept: */*`. With the `Accept: application/json` the client sends by
+  default, every one of them but `GET /udi/{id}/download` answers HTTP 500 "Could not find
+  acceptable representation" (fixture `err_not_acceptable`). The client now sets `*/*` on
+  every download request, and `NotAcceptableError` names the header for anyone building
+  requests by hand.
+- New methods returning a `Download` (bytes, the name from `Content-Disposition`, the content
+  type, and `save(path)`): `fila.download`, `lista.download`, `nome_tecnico.download`,
+  `assunto.download`, `assunto.formulario`, `udi.download`, `udi.download_historico`. Plus
+  `udi.download_snapshot`, which streams the weekly zip to disk (chunked, no
+  `Content-Length`, 232,435 bytes for snapshot 173), and `assunto.servicos_associados`.
+- `POST /assunto/downloadAssuntoFormulario` takes a **bare JSON integer**, the formulário id
+  from `DetalheAssunto.formularios[].id`, not the `PaginationBuilder` the spec declares: an
+  object is a Jackson "Cannot deserialize value of type `java.lang.Long`" 500. Its response
+  carries neither `Content-Type` nor `Content-Disposition`, so the client falls back to
+  `formulario_<id>` and takes an optional name.
+- `filter.codigosAssunto` binds on `POST /assunto/download` (13 KB for `[10013]` against 5 MB
+  for the whole catalog) even though `POST /assunto/` still cannot bind its body at all.
+  `size` is ignored on `nomeTecnico/download`, as on the paginated siblings.
+- Exporting an empty subfila is HTTP 500 "Nenhum resultado encontrado para exportação.", not
+  the empty 404 `fila/consulta` gives for the same id; that is now `EmptyExportError`. An
+  unknown formulário id is `NoResultError` (`javax.persistence.NoResultException`).
+  `GET /udi/{idDispositivo}/{idHistorico}/download` throws a NullPointerException when the
+  device is not in the snapshot; it stays a plain `ApiError` and is documented.
+- Commands: `anvisa fila download`, `lista download`, `nome-tecnico download`,
+  `assunto download`, `assunto formulario`, `assunto servicos-associados`, `udi download`,
+  `udi download-historico` and `udi snapshot`. `-o` takes a file or a directory, `-o -`
+  writes to stdout, and the saved path goes to stderr so piped output stays clean.
+
 ## 0.3.0 (2026-09-06)
 
 Every filter key is now verified live, and an empty subfila no longer raises.

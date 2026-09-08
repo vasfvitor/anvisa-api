@@ -1,0 +1,14 @@
+{
+  "status": "INTERNAL_SERVER_ERROR",
+  "mensagem": "Erro interno no servidor",
+  "data_hora": [
+    2026,
+    9,
+    8,
+    15,
+    13,
+    20,
+    971862083
+  ],
+  "mensagem_detalhada": "com.fasterxml.jackson.databind.exc.MismatchedInputException: Cannot deserialize value of type `java.lang.Long` from Object value (token `JsonToken.START_OBJECT`)\n at [Source: (org.springframework.util.StreamUtils$NonClosingInputStream); line: 1, column: 1]"
+}

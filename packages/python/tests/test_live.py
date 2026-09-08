@@ -1,4 +1,4 @@
-"""Opt-in smoke test against the real API: 3 requests + 1 token. Run with `pytest -m live`."""
+"""Opt-in smoke test against the real API: 4 requests + 1 token. Run with `pytest -m live`."""
 
 import pytest
 
@@ -29,3 +29,9 @@ def test_live_fila_and_udi(live: Client):
 
     page = live.udi.search(nomeComercial="cateter", size=1)
     assert page.content and page.totalElements >= 1
+
+
+def test_live_download_is_a_spreadsheet(live: Client):
+    download = live.fila.download(167)
+    assert download.filename == "consulta_fila.xlsx"
+    assert download.content[:2] == b"PK"  # OOXML, whatever the content type says
