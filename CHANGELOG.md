@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.0 (unreleased)
+## 0.4.0 (2026-09-08)
 
 The nine endpoints left out of 0.3.0 are wrapped, so all 32 in the published spec are covered.
 Eight of them return files, and the spec describes none of that.
