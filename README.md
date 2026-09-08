@@ -125,4 +125,6 @@ saved under `spec/portal/`; a workflow re-fetches them twice a month, so the day
 them shows up as a diff. The SNGPC API (a
 separate service for pharmacies) is out of scope.
 
+What comes next, and what was ruled out and why, is in [ROADMAP.md](ROADMAP.md).
+
 Not affiliated with ANVISA. MIT.
