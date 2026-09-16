@@ -9,141 +9,19 @@ from typing import Annotated, Any
 from pydantic import AwareDatetime, BaseModel, Field
 
 
-class Sorting(Enum):
-    ASC = "ASC"
-    DESC = "DESC"
-
-
-class Order(Enum):
-    ASC = "ASC"
-    DESC = "DESC"
-
-
-class PaginationBuilder(BaseModel):
-    sorting: Annotated[
-        dict[str, Sorting] | None,
-        Field(
-            description="Map of column name to ASC/DESC. Sending an array is rejected with a Jackson deserialization error."
-        ),
-    ] = None
-    page: Annotated[
-        int | None,
-        Field(
-            description='1-based page number. page=0 fails with "Page index must not be less than zero!". Responses are Spring Page objects and report the page 0-based in `number` / `pageable.pageNumber`.',
-            ge=1,
-        ),
-    ] = None
-    size: Annotated[int | None, Field(ge=1)] = None
-    column: str | None = None
-    order: Order | None = None
-    filter: Annotated[
-        dict[str, dict[str, Any]] | None,
-        Field(
-            description="Map of filter key to value. Required keys depend on the endpoint; see each operation's `x-required-filters`."
-        ),
-    ] = None
-
-
-class Sort(BaseModel):
-    sorted: bool | None = None
-    empty: bool | None = None
-    unsorted: bool | None = None
-
-
-class Estagio(Enum):
-    DESBLOQUEADO = "DESBLOQUEADO"
-    NAO_PUBLICADO = "NAO_PUBLICADO"
-    EM_CARENCIA = "EM_CARENCIA"
-    CONSOLIDADO = "CONSOLIDADO"
-
-
-class UdiDTO(BaseModel):
-    id: int | None = None
-    udiDi: str | None = None
-    nomeComercial: str | None = None
-    razaoSocialFabLegal: str | None = None
-    termoGmdn: str | None = None
-    cnpjDetentora: str | None = None
-    razaoSocialDetentora: str | None = None
-    dtPublicacao: Annotated[
-        AwareDatetime | None,
-        Field(
-            description="Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
-        ),
-    ] = None
-    desbloqueado: Annotated[
-        str | None,
-        Field(
-            description='Observed value: "N" (the detail endpoint uses SIM/NAO for the same flag).'
-        ),
-    ] = None
-    estagio: Estagio | None = None
-
-
-class Ativo(Enum):
-    SIM = "SIM"
-    NAO = "NAO"
-
-
-class TermoGMDNDTO(BaseModel):
-    codigo: str | None = None
-    nome: str | None = None
-    definicao: str | None = None
-    nomeOriginal: str | None = None
-    definicaoOriginal: str | None = None
-    ativo: Ativo | None = None
-
-
-class NomeTecnicoDTO(BaseModel):
-    codigo: str | None = None
-    nomeTecnico: str | None = None
-    descricao: str | None = None
-    tipoProduto: int | None = None
-    descricaoTipoProduto: str | None = None
-    classeRisco: str | None = None
-    dataAtualizacao: Annotated[
-        AwareDatetime | None,
-        Field(
-            description="Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
-        ),
-    ] = None
-
-
-class FilaCalculadaDTO(BaseModel):
-    nuOrdem: Annotated[
-        int | None, Field(description="Position in the queue (1 = next).")
-    ] = None
-    dtEntrada: Annotated[
-        AwareDatetime | None,
-        Field(
-            description="Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
-        ),
-    ] = None
-    nuExpediente: str | None = None
-    codAssunto: str | None = None
-    dsAssunto: str | None = None
-    nuProcesso: str | None = None
-    dtGeracaoFila: Annotated[
-        AwareDatetime | None,
-        Field(
-            description="Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
-        ),
-    ] = None
-    numeroProcessoFormatado: str | None = None
-    expeditenteFormatado: str | None = None
-
-
-class Sistema(BaseModel):
-    codigoAssunto: int | None = None
-    codigoSistema: str | None = None
-    nome: str | None = None
-    bloqueado: str | None = None
-    hiperlink: str | None = None
-
-
-class TipoProduto(BaseModel):
+class AssuntoDTO(BaseModel):
     id: int | None = None
     descricao: str | None = None
+
+
+class ChaveValorInteger(BaseModel):
+    descricao: str | None = None
+    id: int | None = None
+
+
+class ChaveValorLong(BaseModel):
+    descricao: str | None = None
+    id: int | None = None
 
 
 class ConsultaFuncionamento(BaseModel):
@@ -176,6 +54,13 @@ class ConsultaFuncionamento(BaseModel):
 class DI(BaseModel):
     id: str | None = None
     entidadeEmissora: str | None = None
+
+
+class Estagio(Enum):
+    DESBLOQUEADO = "DESBLOQUEADO"
+    NAO_PUBLICADO = "NAO_PUBLICADO"
+    EM_CARENCIA = "EM_CARENCIA"
+    CONSOLIDADO = "CONSOLIDADO"
 
 
 class DetalheEmpresaDTO(BaseModel):
@@ -269,9 +154,19 @@ class HasVersaoSoftware(Enum):
     NAO = "NAO"
 
 
+class Ativo(Enum):
+    SIM = "SIM"
+    NAO = "NAO"
+
+
 class Desbloqueado(Enum):
     SIM = "SIM"
     NAO = "NAO"
+
+
+class DocumentacaoRequerida(BaseModel):
+    numeroOrdem: int | None = None
+    descricaoItemChecklist: str | None = None
 
 
 class EmbalagemDTO(BaseModel):
@@ -280,9 +175,119 @@ class EmbalagemDTO(BaseModel):
     qtdPorEmbalagem: int | None = None
 
 
+class FilaCalculadaDTO(BaseModel):
+    nuOrdem: Annotated[
+        int | None, Field(description="Position in the queue (1 = next).")
+    ] = None
+    dtEntrada: Annotated[
+        AwareDatetime | None,
+        Field(
+            description="Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
+        ),
+    ] = None
+    nuExpediente: str | None = None
+    codAssunto: str | None = None
+    dsAssunto: str | None = None
+    nuProcesso: str | None = None
+    dtGeracaoFila: Annotated[
+        AwareDatetime | None,
+        Field(
+            description="Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
+        ),
+    ] = None
+    numeroProcessoFormatado: str | None = None
+    expeditenteFormatado: str | None = None
+
+
+class Conteudo(BaseModel):
+    binaryStream: dict[str, Any] | None = None
+
+
+class Formulario(BaseModel):
+    id: int | None = None
+    nome: str | None = None
+    nomeArquivo: str | None = None
+    tipoArquivo: str | None = None
+    conteudo: Conteudo | None = None
+
+
 class HistoricoIdDTO(BaseModel):
     idHistorico: int | None = None
     idEntity: int | None = None
+
+
+class HistoricoUdiDTO(BaseModel):
+    id: int | None = None
+    tipoHistorico: str | None = None
+    totalRegistros: int | None = None
+    dtInicio: Annotated[
+        AwareDatetime | None,
+        Field(
+            description="Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
+        ),
+    ] = None
+    dtFim: Annotated[
+        AwareDatetime | None,
+        Field(
+            description="Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
+        ),
+    ] = None
+    dtGeracao: Annotated[
+        AwareDatetime | None,
+        Field(
+            description="Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
+        ),
+    ] = None
+
+
+class NomeTecnicoDTO(BaseModel):
+    codigo: str | None = None
+    nomeTecnico: str | None = None
+    descricao: str | None = None
+    tipoProduto: int | None = None
+    descricaoTipoProduto: str | None = None
+    classeRisco: str | None = None
+    dataAtualizacao: Annotated[
+        AwareDatetime | None,
+        Field(
+            description="Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
+        ),
+    ] = None
+
+
+class Sorting(Enum):
+    ASC = "ASC"
+    DESC = "DESC"
+
+
+class Order(Enum):
+    ASC = "ASC"
+    DESC = "DESC"
+
+
+class PaginationBuilder(BaseModel):
+    sorting: Annotated[
+        dict[str, Sorting] | None,
+        Field(
+            description="Map of column name to ASC/DESC. Sending an array is rejected with a Jackson deserialization error."
+        ),
+    ] = None
+    page: Annotated[
+        int | None,
+        Field(
+            description='1-based page number. page=0 fails with "Page index must not be less than zero!". Responses are Spring Page objects and report the page 0-based in `number` / `pageable.pageNumber`.',
+            ge=1,
+        ),
+    ] = None
+    size: Annotated[int | None, Field(ge=1)] = None
+    column: str | None = None
+    order: Order | None = None
+    filter: Annotated[
+        dict[str, dict[str, Any]] | None,
+        Field(
+            description="Map of filter key to value. Required keys depend on the endpoint; see each operation's `x-required-filters`."
+        ),
+    ] = None
 
 
 class RegistroProdutoDTO(BaseModel):
@@ -331,74 +336,82 @@ class RegistroProdutoView(BaseModel):
     classeRisco: str | None = None
 
 
-class VersaoDispositivoDTO(BaseModel):
-    id: HistoricoIdDTO | None = None
-    codigoUdiDi: str | None = None
-    codigoVersao: str | None = None
-    dtVersao: Annotated[
-        AwareDatetime | None,
-        Field(
-            description="Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
-        ),
-    ] = None
-    numeroVersao: int | None = None
-
-
-class HistoricoUdiDTO(BaseModel):
-    id: int | None = None
-    tipoHistorico: str | None = None
-    totalRegistros: int | None = None
-    dtInicio: Annotated[
-        AwareDatetime | None,
-        Field(
-            description="Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
-        ),
-    ] = None
-    dtFim: Annotated[
-        AwareDatetime | None,
-        Field(
-            description="Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
-        ),
-    ] = None
-    dtGeracao: Annotated[
-        AwareDatetime | None,
-        Field(
-            description="Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
-        ),
-    ] = None
-
-
-class ChaveValorInteger(BaseModel):
-    descricao: str | None = None
-    id: int | None = None
-
-
-class ChaveValorLong(BaseModel):
-    descricao: str | None = None
-    id: int | None = None
-
-
-class DocumentacaoRequerida(BaseModel):
-    numeroOrdem: int | None = None
-    descricaoItemChecklist: str | None = None
-
-
-class Conteudo(BaseModel):
-    binaryStream: dict[str, Any] | None = None
-
-
-class Formulario(BaseModel):
-    id: int | None = None
-    nome: str | None = None
-    nomeArquivo: str | None = None
-    tipoArquivo: str | None = None
-    conteudo: Conteudo | None = None
-
-
 class Servico(BaseModel):
     codigoServico: int | None = None
     descricao: str | None = None
     hiperlink: str | None = None
+
+
+class ServicoDTO(BaseModel):
+    id: int | None = None
+    descricao: str | None = None
+    hiperlink: str | None = None
+
+
+class Sistema(BaseModel):
+    codigoAssunto: int | None = None
+    codigoSistema: str | None = None
+    nome: str | None = None
+    bloqueado: str | None = None
+    hiperlink: str | None = None
+
+
+class SistemaDTO(BaseModel):
+    id: str | None = None
+    nome: str | None = None
+
+
+class Sort(BaseModel):
+    sorted: bool | None = None
+    empty: bool | None = None
+    unsorted: bool | None = None
+
+
+class TermoGMDNDTO(BaseModel):
+    codigo: str | None = None
+    nome: str | None = None
+    definicao: str | None = None
+    nomeOriginal: str | None = None
+    definicaoOriginal: str | None = None
+    ativo: Ativo | None = None
+
+
+class TipoProduto(BaseModel):
+    id: int | None = None
+    descricao: str | None = None
+
+
+class TipoProdutoDTO(BaseModel):
+    id: int | None = None
+    descricao: str | None = None
+
+
+class TipoSolicitacaoDTO(BaseModel):
+    nome: str | None = None
+    valor: str | None = None
+
+
+class UdiDTO(BaseModel):
+    id: int | None = None
+    udiDi: str | None = None
+    nomeComercial: str | None = None
+    razaoSocialFabLegal: str | None = None
+    termoGmdn: str | None = None
+    cnpjDetentora: str | None = None
+    razaoSocialDetentora: str | None = None
+    dtPublicacao: Annotated[
+        AwareDatetime | None,
+        Field(
+            description="Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
+        ),
+    ] = None
+    desbloqueado: Annotated[
+        str | None,
+        Field(
+            description='Observed value: "N" (the detail endpoint uses SIM/NAO for the same flag).'
+        ),
+    ] = None
+    estagio: Estagio | None = None
 
 
 class ValorTaxaEmbarcacaoFilho(BaseModel):
@@ -413,30 +426,17 @@ class ValorTaxaEmpresa(BaseModel):
     valorTaxa: str | None = None
 
 
-class TipoSolicitacaoDTO(BaseModel):
-    nome: str | None = None
-    valor: str | None = None
-
-
-class TipoProdutoDTO(BaseModel):
-    id: int | None = None
-    descricao: str | None = None
-
-
-class SistemaDTO(BaseModel):
-    id: str | None = None
-    nome: str | None = None
-
-
-class ServicoDTO(BaseModel):
-    id: int | None = None
-    descricao: str | None = None
-    hiperlink: str | None = None
-
-
-class AssuntoDTO(BaseModel):
-    id: int | None = None
-    descricao: str | None = None
+class VersaoDispositivoDTO(BaseModel):
+    id: HistoricoIdDTO | None = None
+    codigoUdiDi: str | None = None
+    codigoVersao: str | None = None
+    dtVersao: Annotated[
+        AwareDatetime | None,
+        Field(
+            description="Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
+        ),
+    ] = None
+    numeroVersao: int | None = None
 
 
 class ErroApi(BaseModel):
@@ -467,43 +467,6 @@ class ErroApi(BaseModel):
     ] = None
 
 
-class PageableObject(BaseModel):
-    paged: bool | None = None
-    unpaged: bool | None = None
-    pageNumber: int | None = None
-    pageSize: int | None = None
-    offset: int | None = None
-    sort: Sort | None = None
-
-
-class PageTermoGMDNDTO(BaseModel):
-    totalPages: int | None = None
-    totalElements: int | None = None
-    number: int | None = None
-    size: int | None = None
-    numberOfElements: int | None = None
-    content: list[TermoGMDNDTO] | None = None
-    sort: Sort | None = None
-    first: bool | None = None
-    last: bool | None = None
-    pageable: PageableObject | None = None
-    empty: bool | None = None
-
-
-class PageNomeTecnicoDTO(BaseModel):
-    totalPages: int | None = None
-    totalElements: int | None = None
-    number: int | None = None
-    size: int | None = None
-    numberOfElements: int | None = None
-    content: list[NomeTecnicoDTO] | None = None
-    sort: Sort | None = None
-    first: bool | None = None
-    last: bool | None = None
-    pageable: PageableObject | None = None
-    empty: bool | None = None
-
-
 class ConsultaAssunto(BaseModel):
     idAssunto: int | None = None
     descricao: str | None = None
@@ -511,20 +474,6 @@ class ConsultaAssunto(BaseModel):
     tipoProduto: TipoProduto | None = None
     sistemas: list[Sistema] | None = None
     fatoGerador: str | None = None
-
-
-class PageConsultaAssunto(BaseModel):
-    totalPages: int | None = None
-    totalElements: int | None = None
-    number: int | None = None
-    size: int | None = None
-    numberOfElements: int | None = None
-    content: list[ConsultaAssunto] | None = None
-    sort: Sort | None = None
-    first: bool | None = None
-    last: bool | None = None
-    pageable: PageableObject | None = None
-    empty: bool | None = None
 
 
 class DispositivoDTO(BaseModel):
@@ -595,6 +544,15 @@ class DispositivoIdDTO(BaseModel):
     registroProduto: RegistroProdutoView | None = None
 
 
+class PageableObject(BaseModel):
+    paged: bool | None = None
+    unpaged: bool | None = None
+    pageNumber: int | None = None
+    pageSize: int | None = None
+    offset: int | None = None
+    sort: Sort | None = None
+
+
 class SucessaoDispositivoDTO(BaseModel):
     previo: DispositivoIdDTO | None = None
     sucessor: DispositivoIdDTO | None = None
@@ -605,29 +563,6 @@ class ValorTaxaEmbarcacao(BaseModel):
     classe: str | None = None
     valorTaxa: str | None = None
     valorTaxaEmbarcacaoFilhos: list[ValorTaxaEmbarcacaoFilho] | None = None
-
-
-class PageUdiDTO(BaseModel):
-    totalPages: int | None = None
-    totalElements: int | None = None
-    number: int | None = None
-    size: int | None = None
-    numberOfElements: int | None = None
-    content: list[UdiDTO] | None = None
-    sort: Sort | None = None
-    first: bool | None = None
-    last: bool | None = None
-    pageable: PageableObject | None = None
-    empty: bool | None = None
-
-
-class DetalheDispositivoDTO(BaseModel):
-    dispositivo: DispositivoDTO | None = None
-    autorizacaoFuncionamento: ConsultaFuncionamento | None = None
-    versoes: list[VersaoDispositivoDTO] | None = None
-    versaoDetalhada: VersaoDispositivoDTO | None = None
-    sucessao: SucessaoDispositivoDTO | None = None
-    estagio: Estagio | None = None
 
 
 class DetalheAssunto(BaseModel):
@@ -644,3 +579,68 @@ class DetalheAssunto(BaseModel):
     fundamentacaoLegal: str | None = None
     valoresTaxaEmpresa: list[ValorTaxaEmpresa] | None = None
     valoresTaxaEmbarcacao: list[ValorTaxaEmbarcacao] | None = None
+
+
+class DetalheDispositivoDTO(BaseModel):
+    dispositivo: DispositivoDTO | None = None
+    autorizacaoFuncionamento: ConsultaFuncionamento | None = None
+    versoes: list[VersaoDispositivoDTO] | None = None
+    versaoDetalhada: VersaoDispositivoDTO | None = None
+    sucessao: SucessaoDispositivoDTO | None = None
+    estagio: Estagio | None = None
+
+
+class PageConsultaAssunto(BaseModel):
+    totalPages: int | None = None
+    totalElements: int | None = None
+    number: int | None = None
+    size: int | None = None
+    numberOfElements: int | None = None
+    content: list[ConsultaAssunto] | None = None
+    sort: Sort | None = None
+    first: bool | None = None
+    last: bool | None = None
+    pageable: PageableObject | None = None
+    empty: bool | None = None
+
+
+class PageNomeTecnicoDTO(BaseModel):
+    totalPages: int | None = None
+    totalElements: int | None = None
+    number: int | None = None
+    size: int | None = None
+    numberOfElements: int | None = None
+    content: list[NomeTecnicoDTO] | None = None
+    sort: Sort | None = None
+    first: bool | None = None
+    last: bool | None = None
+    pageable: PageableObject | None = None
+    empty: bool | None = None
+
+
+class PageTermoGMDNDTO(BaseModel):
+    totalPages: int | None = None
+    totalElements: int | None = None
+    number: int | None = None
+    size: int | None = None
+    numberOfElements: int | None = None
+    content: list[TermoGMDNDTO] | None = None
+    sort: Sort | None = None
+    first: bool | None = None
+    last: bool | None = None
+    pageable: PageableObject | None = None
+    empty: bool | None = None
+
+
+class PageUdiDTO(BaseModel):
+    totalPages: int | None = None
+    totalElements: int | None = None
+    number: int | None = None
+    size: int | None = None
+    numberOfElements: int | None = None
+    content: list[UdiDTO] | None = None
+    sort: Sort | None = None
+    first: bool | None = None
+    last: bool | None = None
+    pageable: PageableObject | None = None
+    empty: bool | None = None

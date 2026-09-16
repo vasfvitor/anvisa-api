@@ -36,28 +36,18 @@
         ],
         "operationId": "createClient",
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/CreateClientResponse"
                 }
               }
             }
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -76,8 +66,8 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
@@ -86,12 +76,22 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/CreateClientResponse"
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
                 }
               }
             }
@@ -106,28 +106,18 @@
         ],
         "operationId": "updateClientSecret",
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/GenerateSecretResponse"
                 }
               }
             }
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -146,8 +136,8 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
@@ -156,12 +146,22 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/GenerateSecretResponse"
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
                 }
               }
             }
@@ -191,28 +191,18 @@
           }
         ],
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "Pagina encontrada",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/PortalPaginaDTO"
                 }
               }
             }
           },
           "400": {
             "description": "Parâmetro rota ausente ou inválido",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiError"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Página não encontrada para a rota informada",
             "content": {
               "application/json": {
                 "schema": {
@@ -231,8 +221,18 @@
               }
             }
           },
-          "500": {
-            "description": "Erro interno ao buscar a página",
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Página não encontrada para a rota informada",
             "content": {
               "application/json": {
                 "schema": {
@@ -251,12 +251,12 @@
               }
             }
           },
-          "200": {
-            "description": "Pagina encontrada",
+          "500": {
+            "description": "Erro interno ao buscar a página",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PortalPaginaDTO"
+                  "$ref": "#/components/schemas/ApiError"
                 }
               }
             }
@@ -273,12 +273,15 @@
         "summary": "Lista a árvore publica de menus do portal",
         "operationId": "getMenu",
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "Menus retornados com sucesso",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "type": "object"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MenuItemDTO"
+                  }
                 }
               }
             }
@@ -293,8 +296,8 @@
               }
             }
           },
-          "404": {
-            "description": "Not Found",
+          "401": {
+            "description": "Unauthorized",
             "content": {
               "*/*": {
                 "schema": {
@@ -303,8 +306,18 @@
               }
             }
           },
-          "401": {
-            "description": "Unauthorized",
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -322,19 +335,6 @@
                 }
               }
             }
-          },
-          "200": {
-            "description": "Menus retornados com sucesso",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/MenuItemDTO"
-                  }
-                }
-              }
-            }
           }
         },
         "security": []
@@ -347,28 +347,18 @@
         ],
         "operationId": "clientExists",
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "type": "boolean"
                 }
               }
             }
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -387,8 +377,8 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
@@ -397,12 +387,22 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "boolean"
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
                 }
               }
             }
@@ -417,28 +417,21 @@
         ],
         "operationId": "deleteClient",
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
                 }
               }
             }
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -457,8 +450,8 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
@@ -467,15 +460,22 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "string"
-                  }
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
                 }
               }
             }
@@ -486,34 +486,6 @@
   },
   "components": {
     "schemas": {
-      "CreateClientResponse": {
-        "type": "object",
-        "properties": {
-          "clientId": {
-            "type": "string"
-          },
-          "clientUuid": {
-            "type": "string"
-          },
-          "clientSecret": {
-            "type": "string"
-          }
-        }
-      },
-      "GenerateSecretResponse": {
-        "type": "object",
-        "properties": {
-          "clientUuid": {
-            "type": "string"
-          },
-          "clientId": {
-            "type": "string"
-          },
-          "clientSecret": {
-            "type": "string"
-          }
-        }
-      },
       "ApiError": {
         "type": "object",
         "properties": {
@@ -610,22 +582,30 @@
         },
         "description": "Objeto que descreve detalhes de um erro genérico da API"
       },
-      "PortalPaginaDTO": {
+      "CreateClientResponse": {
         "type": "object",
         "properties": {
-          "slug": {
+          "clientId": {
             "type": "string"
           },
-          "rota": {
+          "clientUuid": {
             "type": "string"
           },
-          "titulo": {
+          "clientSecret": {
+            "type": "string"
+          }
+        }
+      },
+      "GenerateSecretResponse": {
+        "type": "object",
+        "properties": {
+          "clientUuid": {
             "type": "string"
           },
-          "formato": {
+          "clientId": {
             "type": "string"
           },
-          "conteudo": {
+          "clientSecret": {
             "type": "string"
           }
         }
@@ -666,6 +646,26 @@
             }
           }
         }
+      },
+      "PortalPaginaDTO": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string"
+          },
+          "rota": {
+            "type": "string"
+          },
+          "titulo": {
+            "type": "string"
+          },
+          "formato": {
+            "type": "string"
+          },
+          "conteudo": {
+            "type": "string"
+          }
+        }
       }
     },
     "securitySchemes": {
@@ -674,7 +674,7 @@
         "description": "Keycloak OAuth2 - OpenID Connect",
         "flows": {
           "implicit": {
-            "authorizationUrl": "https://acesso.prd.apps.anvisa.gov.br/auth/realms/externo/protocol/openid-connect/auth?nonce=ce975341-a7c3-4c52-824b-9a2eef5ed495&kc_idp_hint=govbr",
+            "authorizationUrl": "https://acesso.prd.apps.anvisa.gov.br/auth/realms/externo/protocol/openid-connect/auth?kc_idp_hint=govbr",
             "tokenUrl": "https://acesso.prd.apps.anvisa.gov.br/auth/realms/externo/protocol/openid-connect/token",
             "refreshUrl": "https://acesso.prd.apps.anvisa.gov.br/auth/realms/externo/protocol/openid-connect/token",
             "scopes": {}

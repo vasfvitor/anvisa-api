@@ -15,6 +15,13 @@ backend's own spec and every page of type PAGINA under spec/portal/ in the same 
 `git diff` shows exactly what ANVISA changed. No credentials needed; ~12 requests. Note that
 the gateway's rate limit (burst 25, refill 1/s) applies to these unauthenticated requests
 too, from the same bucket as the authenticated API.
+
+The OpenAPI documents are normalized before being written: each operation's `responses` map and
+`components.schemas` are sorted by key, and the `nonce` query parameter is stripped from the
+OAuth2 flow URLs. All three are server runtime state, not API surface (springdoc serializes those
+maps in hash order, which differs between requests, and the Keycloak nonce is regenerated on
+every restart), and they made the drift check go red with nothing to look at. Everything else,
+in particular the property order inside each schema, keeps ANVISA's key order.
 """
 
 from __future__ import annotations
@@ -45,6 +52,31 @@ def dump(path: Path, data) -> None:
     print(f"wrote {path.relative_to(SPEC_DIR.parent)}")
 
 
+def _strip_nonce(url: str) -> str:
+    parts = urllib.parse.urlsplit(url)
+    pairs = urllib.parse.parse_qsl(parts.query, keep_blank_values=True)
+    query = [(k, v) for k, v in pairs if k != "nonce"]
+    return urllib.parse.urlunsplit(parts._replace(query=urllib.parse.urlencode(query)))
+
+
+def normalize_openapi(doc: dict) -> dict:
+    """Drop the parts of an OpenAPI document that change without the API changing."""
+    for item in (doc.get("paths") or {}).values():
+        for op in item.values():
+            if isinstance(op, dict) and isinstance(op.get("responses"), dict):
+                op["responses"] = {code: op["responses"][code] for code in sorted(op["responses"])}
+    components = doc.get("components") or {}
+    if isinstance(components.get("schemas"), dict):
+        schemas = components["schemas"]
+        components["schemas"] = {name: schemas[name] for name in sorted(schemas)}
+    for scheme in (components.get("securitySchemes") or {}).values():
+        for flow in (scheme.get("flows") or {}).values():
+            for key in ("authorizationUrl", "tokenUrl", "refreshUrl"):
+                if isinstance(flow.get(key), str):
+                    flow[key] = _strip_nonce(flow[key])
+    return doc
+
+
 def pages(tree) -> list[dict]:
     """Every node of tipo PAGINA, depth-first, in menu order."""
     found = []
@@ -59,9 +91,12 @@ def main() -> int:
     OUT.mkdir(exist_ok=True)
     menus = get_json(f"{PORTAL}/api/v1/public/portal/menus")
     dump(OUT / "menus.json", menus)
-    dump(OUT / "portal-apis.openapi.json", get_json(f"{PORTAL}/v3/api-docs"))
-    dump(OUT / "sngpc.openapi.json", get_json(SNGPC_SPEC))
-    dump(SPEC_DIR / "consultas-externas.openapi.json", get_json(f"{GATEWAY}/consultas-externas-api/v3/api-docs"))
+    dump(OUT / "portal-apis.openapi.json", normalize_openapi(get_json(f"{PORTAL}/v3/api-docs")))
+    dump(OUT / "sngpc.openapi.json", normalize_openapi(get_json(SNGPC_SPEC)))
+    dump(
+        SPEC_DIR / "consultas-externas.openapi.json",
+        normalize_openapi(get_json(f"{GATEWAY}/consultas-externas-api/v3/api-docs")),
+    )
     tree = menus if isinstance(menus, list) else menus.get("menus") or menus.get("content") or []
     for node in pages(tree):
         rota = node["rota"]

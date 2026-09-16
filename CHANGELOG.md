@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- `spec/snapshot.py` normalizes the OpenAPI documents before writing them: `responses` and
+  `components.schemas` sorted by key, Keycloak `nonce` stripped from the OAuth 2.0 URLs. The 2026-09-15
+  `drift` run went red on exactly that noise. Snapshots, `resolved.json` and `models.py` are
+  re-recorded in the new order; no schema changed.
+
 ## 0.4.0 (2026-09-08)
 
 The nine endpoints left out of 0.3.0 are wrapped, so all 32 in the published spec are covered.

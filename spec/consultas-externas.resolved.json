@@ -87,12 +87,12 @@
           "required": true
         },
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/PageUdiDTO"
                 }
               }
             },
@@ -110,27 +110,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -171,12 +150,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -192,12 +171,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/PageUdiDTO"
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -271,12 +271,12 @@
           "required": true
         },
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/PageTermoGMDNDTO"
                 }
               }
             },
@@ -294,27 +294,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -355,12 +334,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -376,12 +355,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/PageTermoGMDNDTO"
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -440,12 +440,12 @@
           "required": true
         },
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/PageNomeTecnicoDTO"
                 }
               }
             },
@@ -463,27 +463,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -524,12 +503,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -545,12 +524,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/PageNomeTecnicoDTO"
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -610,15 +610,8 @@
           "required": true
         },
         "responses": {
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
+          "200": {
+            "description": "The spreadsheet itself. `Content-Type: application/vnd.ms-excel` and the file name in `Content-Disposition: attachment; filename=...`. Requires `Accept: */*`.",
             "headers": {
               "X-RateLimit-Remaining": {
                 "$ref": "#/components/headers/X-RateLimit-Remaining"
@@ -628,32 +621,19 @@
               },
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            },
+            "content": {
+              "application/vnd.ms-excel": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
               }
             }
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -694,6 +674,48 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
           "500": {
             "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
             "content": {
@@ -712,28 +734,6 @@
               },
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "200": {
-            "description": "The spreadsheet itself. `Content-Type: application/vnd.ms-excel` and the file name in `Content-Disposition: attachment; filename=...`. Requires `Accept: */*`.",
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            },
-            "content": {
-              "application/vnd.ms-excel": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
               }
             }
           }
@@ -775,15 +775,8 @@
           "required": true
         },
         "responses": {
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
+          "200": {
+            "description": "The spreadsheet itself. `Content-Type: application/vnd.ms-excel` and the file name in `Content-Disposition: attachment; filename=...`. Requires `Accept: */*`.",
             "headers": {
               "X-RateLimit-Remaining": {
                 "$ref": "#/components/headers/X-RateLimit-Remaining"
@@ -793,32 +786,19 @@
               },
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            },
+            "content": {
+              "application/vnd.ms-excel": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
               }
             }
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -859,6 +839,48 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
           "500": {
             "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
             "content": {
@@ -877,28 +899,6 @@
               },
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "200": {
-            "description": "The spreadsheet itself. `Content-Type: application/vnd.ms-excel` and the file name in `Content-Disposition: attachment; filename=...`. Requires `Accept: */*`.",
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            },
-            "content": {
-              "application/vnd.ms-excel": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
               }
             }
           }
@@ -945,12 +945,15 @@
           "required": true
         },
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "type": "object"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FilaCalculadaDTO"
+                  }
                 }
               }
             },
@@ -968,27 +971,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -1029,12 +1011,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -1050,15 +1032,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
-              "application/json": {
+              "*/*": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/FilaCalculadaDTO"
-                  }
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -1116,15 +1116,8 @@
           "required": true
         },
         "responses": {
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
+          "200": {
+            "description": "The spreadsheet itself. `Content-Type: application/vnd.ms-excel` and the file name in `Content-Disposition: attachment; filename=...`. Requires `Accept: */*`.",
             "headers": {
               "X-RateLimit-Remaining": {
                 "$ref": "#/components/headers/X-RateLimit-Remaining"
@@ -1134,32 +1127,19 @@
               },
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            },
+            "content": {
+              "application/vnd.ms-excel": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
               }
             }
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -1200,6 +1180,48 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
           "500": {
             "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
             "content": {
@@ -1218,28 +1240,6 @@
               },
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "200": {
-            "description": "The spreadsheet itself. `Content-Type: application/vnd.ms-excel` and the file name in `Content-Disposition: attachment; filename=...`. Requires `Accept: */*`.",
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            },
-            "content": {
-              "application/vnd.ms-excel": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
               }
             }
           }
@@ -1286,12 +1286,15 @@
           "required": true
         },
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
-                  "type": "object"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FilaCalculadaDTO"
+                  }
                 }
               }
             },
@@ -1309,27 +1312,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -1370,12 +1352,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -1391,15 +1373,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
-              "application/json": {
+              "*/*": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/FilaCalculadaDTO"
-                  }
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -1461,15 +1461,8 @@
           "required": true
         },
         "responses": {
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
+          "200": {
+            "description": "The spreadsheet itself. `Content-Type: application/vnd.ms-excel` and the file name in `Content-Disposition: attachment; filename=...`. Requires `Accept: */*`.",
             "headers": {
               "X-RateLimit-Remaining": {
                 "$ref": "#/components/headers/X-RateLimit-Remaining"
@@ -1479,32 +1472,19 @@
               },
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            },
+            "content": {
+              "application/vnd.ms-excel": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
               }
             }
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -1545,6 +1525,48 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
           "500": {
             "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
             "content": {
@@ -1563,28 +1585,6 @@
               },
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "200": {
-            "description": "The spreadsheet itself. `Content-Type: application/vnd.ms-excel` and the file name in `Content-Disposition: attachment; filename=...`. Requires `Accept: */*`.",
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            },
-            "content": {
-              "application/vnd.ms-excel": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
               }
             }
           }
@@ -1616,15 +1616,8 @@
           "required": true
         },
         "responses": {
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
+          "200": {
+            "description": "The raw file bytes, with no `Content-Type` and no `Content-Disposition`. Requires `Accept: */*`.",
             "headers": {
               "X-RateLimit-Remaining": {
                 "$ref": "#/components/headers/X-RateLimit-Remaining"
@@ -1634,32 +1627,19 @@
               },
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            },
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
               }
             }
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -1700,6 +1680,48 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
           "500": {
             "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
             "content": {
@@ -1718,28 +1740,6 @@
               },
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "200": {
-            "description": "The raw file bytes, with no `Content-Type` and no `Content-Disposition`. Requires `Accept: */*`.",
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            },
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
               }
             }
           }
@@ -1785,12 +1785,12 @@
           "required": true
         },
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/PageConsultaAssunto"
                 }
               }
             },
@@ -1808,27 +1808,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -1869,12 +1848,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -1890,12 +1869,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/PageConsultaAssunto"
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -1935,12 +1935,12 @@
           }
         ],
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/DetalheDispositivoDTO"
                 }
               }
             },
@@ -1958,27 +1958,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -2019,12 +1998,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -2040,12 +2019,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/DetalheDispositivoDTO"
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -2084,15 +2084,8 @@
           }
         ],
         "responses": {
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
+          "200": {
+            "description": "The spreadsheet itself. `Content-Type: application/vnd.ms-excel` and the file name in `Content-Disposition: attachment; filename=...`. Requires `Accept: */*`.",
             "headers": {
               "X-RateLimit-Remaining": {
                 "$ref": "#/components/headers/X-RateLimit-Remaining"
@@ -2102,32 +2095,19 @@
               },
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            },
+            "content": {
+              "application/vnd.ms-excel": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
               }
             }
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -2168,6 +2148,48 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
           "500": {
             "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
             "content": {
@@ -2186,28 +2208,6 @@
               },
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "200": {
-            "description": "The spreadsheet itself. `Content-Type: application/vnd.ms-excel` and the file name in `Content-Disposition: attachment; filename=...`. Requires `Accept: */*`.",
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            },
-            "content": {
-              "application/vnd.ms-excel": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
               }
             }
           }
@@ -2244,12 +2244,12 @@
           }
         ],
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/DetalheDispositivoDTO"
                 }
               }
             },
@@ -2267,27 +2267,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -2328,12 +2307,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -2349,12 +2328,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/DetalheDispositivoDTO"
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -2402,15 +2402,8 @@
           }
         ],
         "responses": {
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
+          "200": {
+            "description": "The spreadsheet itself. `Content-Type: application/vnd.ms-excel` and the file name in `Content-Disposition: attachment; filename=...`. Requires `Accept: */*`.",
             "headers": {
               "X-RateLimit-Remaining": {
                 "$ref": "#/components/headers/X-RateLimit-Remaining"
@@ -2420,32 +2413,19 @@
               },
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            },
+            "content": {
+              "application/vnd.ms-excel": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
               }
             }
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -2486,6 +2466,48 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
           "500": {
             "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
             "content": {
@@ -2504,28 +2526,6 @@
               },
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "200": {
-            "description": "The spreadsheet itself. `Content-Type: application/vnd.ms-excel` and the file name in `Content-Disposition: attachment; filename=...`. Requires `Accept: */*`.",
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            },
-            "content": {
-              "application/vnd.ms-excel": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
               }
             }
           }
@@ -2552,12 +2552,12 @@
           }
         ],
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/TermoGMDNDTO"
                 }
               }
             },
@@ -2575,27 +2575,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -2636,12 +2615,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -2657,12 +2636,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/TermoGMDNDTO"
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -2690,12 +2690,15 @@
         "description": "The daily UDI snapshots (`tipoHistorico` DIARIO, newest first) with `totalRegistros` per snapshot; 171 entries on 2026-09-06. Dates are epoch milliseconds.",
         "operationId": "findHistorico_1",
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HistoricoUdiDTO"
+                  }
                 }
               }
             },
@@ -2713,27 +2716,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -2774,12 +2756,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -2795,15 +2777,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/HistoricoUdiDTO"
-                  }
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -2842,111 +2842,6 @@
           }
         ],
         "responses": {
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
           "200": {
             "description": "The zip. `Content-Type: application/zip`, file name in `Content-Disposition`, body chunked. Requires `Accept: */*`.",
             "headers": {
@@ -2968,64 +2863,9 @@
                 }
               }
             }
-          }
-        },
-        "x-accept": "*/*"
-      }
-    },
-    "/api/v1/nomeTecnico/categorias": {
-      "get": {
-        "tags": [
-          "Consulta Nomes Técnicos de Produtos para Saúde"
-        ],
-        "summary": "Grupo populacional indicado",
-        "description": "Retorna consulta de Catégorias'",
-        "operationId": "listar_1",
-        "responses": {
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -3066,6 +2906,48 @@
               }
             }
           },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
           "500": {
             "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
             "content": {
@@ -3086,7 +2968,20 @@
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
               }
             }
-          },
+          }
+        },
+        "x-accept": "*/*"
+      }
+    },
+    "/api/v1/nomeTecnico/categorias": {
+      "get": {
+        "tags": [
+          "Consulta Nomes Técnicos de Produtos para Saúde"
+        ],
+        "summary": "Grupo populacional indicado",
+        "description": "Retorna consulta de Catégorias'",
+        "operationId": "listar_1",
+        "responses": {
           "200": {
             "description": "OK",
             "content": {
@@ -3096,6 +2991,111 @@
                   "items": {
                     "$ref": "#/components/schemas/TipoProduto"
                   }
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -3134,12 +3134,15 @@
           }
         ],
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChaveValorInteger"
+                  }
                 }
               }
             },
@@ -3157,27 +3160,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -3218,12 +3200,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -3239,15 +3221,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ChaveValorInteger"
-                  }
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -3286,12 +3286,15 @@
           }
         ],
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChaveValorLong"
+                  }
                 }
               }
             },
@@ -3309,27 +3312,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -3370,12 +3352,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -3391,15 +3373,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ChaveValorLong"
-                  }
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -3427,12 +3427,15 @@
         "description": "Retorna os tipos de produto disponíveis para consulta de lista.",
         "operationId": "findSelectAreaLista",
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TipoProduto"
+                  }
                 }
               }
             },
@@ -3450,27 +3453,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -3511,12 +3493,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -3532,15 +3514,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TipoProduto"
-                  }
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -3579,12 +3579,15 @@
           }
         ],
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChaveValorInteger"
+                  }
                 }
               }
             },
@@ -3602,27 +3605,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -3663,12 +3645,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -3684,15 +3666,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ChaveValorInteger"
-                  }
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -3731,12 +3731,15 @@
           }
         ],
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChaveValorLong"
+                  }
                 }
               }
             },
@@ -3754,27 +3757,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -3815,12 +3797,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -3836,15 +3818,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ChaveValorLong"
-                  }
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -3872,12 +3872,15 @@
         "description": "Retorna os tipos de produto disponíveis para consulta de fila.",
         "operationId": "findSelectAreaFila",
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TipoProduto"
+                  }
                 }
               }
             },
@@ -3895,27 +3898,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -3956,12 +3938,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -3977,15 +3959,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TipoProduto"
-                  }
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -4023,12 +4023,12 @@
           }
         ],
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "$ref": "#/components/schemas/DetalheAssunto"
                 }
               }
             },
@@ -4046,27 +4046,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -4107,12 +4086,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -4128,12 +4107,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/DetalheAssunto"
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -4161,12 +4161,15 @@
         "description": "Retorna lista de Tipo de solicitação.",
         "operationId": "findSelectTiposSolicitacao",
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TipoSolicitacaoDTO"
+                  }
                 }
               }
             },
@@ -4184,27 +4187,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -4245,12 +4227,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -4266,15 +4248,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TipoSolicitacaoDTO"
-                  }
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -4302,12 +4302,15 @@
         "description": "Retorna consulta de Atividade/Tipo de Produto",
         "operationId": "findSelectTiposProduto",
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TipoProdutoDTO"
+                  }
                 }
               }
             },
@@ -4325,27 +4328,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -4386,12 +4368,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -4407,15 +4389,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/TipoProdutoDTO"
-                  }
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -4443,12 +4443,15 @@
         "description": "Retorna consulta de Sistemas",
         "operationId": "findSelectSistemas",
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SistemaDTO"
+                  }
                 }
               }
             },
@@ -4466,27 +4469,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -4527,12 +4509,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -4548,15 +4530,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/SistemaDTO"
-                  }
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -4584,12 +4584,15 @@
         "description": "Retorna consulta de Serviços",
         "operationId": "findSelectServicos",
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ServicoDTO"
+                  }
                 }
               }
             },
@@ -4607,27 +4610,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -4668,12 +4650,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -4689,15 +4671,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ServicoDTO"
-                  }
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -4735,12 +4735,15 @@
           }
         ],
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "An array of `ServicoDTO` (`id`, `descricao`, `hiperlink` to the gov.br service page). One entry for codigoServico 13497 on 2026-09-08.",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ServicoDTO"
+                  }
                 }
               }
             },
@@ -4758,27 +4761,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -4819,12 +4801,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -4840,15 +4822,33 @@
               }
             }
           },
-          "200": {
-            "description": "An array of `ServicoDTO` (`id`, `descricao`, `hiperlink` to the gov.br service page). One entry for codigoServico 13497 on 2026-09-08.",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ServicoDTO"
-                  }
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -4876,12 +4876,15 @@
         "description": "Retorna lista com o código e descrição do assunto",
         "operationId": "findSelectAssuntos",
         "responses": {
-          "403": {
-            "description": "Forbidden",
+          "200": {
+            "description": "OK",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AssuntoDTO"
+                  }
                 }
               }
             },
@@ -4899,27 +4902,6 @@
           },
           "400": {
             "description": "Bad Request",
-            "content": {
-              "*/*": {
-                "schema": {
-                  "type": "object"
-                }
-              }
-            },
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
@@ -4960,12 +4942,12 @@
               }
             }
           },
-          "500": {
-            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+          "403": {
+            "description": "Forbidden",
             "content": {
               "*/*": {
                 "schema": {
-                  "$ref": "#/components/schemas/ErroApi"
+                  "type": "object"
                 }
               }
             },
@@ -4981,15 +4963,33 @@
               }
             }
           },
-          "200": {
-            "description": "OK",
+          "404": {
+            "description": "Not Found",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/AssuntoDTO"
-                  }
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
                 }
               }
             },
@@ -5011,368 +5011,39 @@
   },
   "components": {
     "schemas": {
-      "PaginationBuilder": {
-        "type": "object",
-        "properties": {
-          "sorting": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "string",
-              "enum": [
-                "ASC",
-                "DESC"
-              ]
-            },
-            "description": "Map of column name to ASC/DESC. Sending an array is rejected with a Jackson deserialization error."
-          },
-          "page": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 1,
-            "description": "1-based page number. page=0 fails with \"Page index must not be less than zero!\". Responses are Spring Page objects and report the page 0-based in `number` / `pageable.pageNumber`."
-          },
-          "size": {
-            "type": "integer",
-            "format": "int32",
-            "minimum": 1
-          },
-          "column": {
-            "type": "string"
-          },
-          "order": {
-            "type": "string",
-            "enum": [
-              "ASC",
-              "DESC"
-            ]
-          },
-          "filter": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "object"
-            },
-            "description": "Map of filter key to value. Required keys depend on the endpoint; see each operation's `x-required-filters`."
-          }
-        }
-      },
-      "PageUdiDTO": {
-        "type": "object",
-        "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "number": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "size": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "numberOfElements": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/UdiDTO"
-            }
-          },
-          "sort": {
-            "$ref": "#/components/schemas/Sort"
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "empty": {
-            "type": "boolean"
-          }
-        }
-      },
-      "PageableObject": {
-        "type": "object",
-        "properties": {
-          "paged": {
-            "type": "boolean"
-          },
-          "unpaged": {
-            "type": "boolean"
-          },
-          "pageNumber": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "offset": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "sort": {
-            "$ref": "#/components/schemas/Sort"
-          }
-        }
-      },
-      "Sort": {
-        "type": "object",
-        "properties": {
-          "sorted": {
-            "type": "boolean"
-          },
-          "empty": {
-            "type": "boolean"
-          },
-          "unsorted": {
-            "type": "boolean"
-          }
-        }
-      },
-      "UdiDTO": {
+      "AssuntoDTO": {
         "type": "object",
         "properties": {
           "id": {
             "type": "integer",
-            "format": "int64"
-          },
-          "udiDi": {
-            "type": "string"
-          },
-          "nomeComercial": {
-            "type": "string"
-          },
-          "razaoSocialFabLegal": {
-            "type": "string"
-          },
-          "termoGmdn": {
-            "type": "string"
-          },
-          "cnpjDetentora": {
-            "type": "string"
-          },
-          "razaoSocialDetentora": {
-            "type": "string"
-          },
-          "dtPublicacao": {
-            "type": "string",
-            "format": "date-time",
-            "x-wire-format": "epoch-millis",
-            "description": "Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
-          },
-          "desbloqueado": {
-            "type": "string",
-            "description": "Observed value: \"N\" (the detail endpoint uses SIM/NAO for the same flag)."
-          },
-          "estagio": {
-            "type": "string",
-            "enum": [
-              "DESBLOQUEADO",
-              "NAO_PUBLICADO",
-              "EM_CARENCIA",
-              "CONSOLIDADO"
-            ]
-          }
-        }
-      },
-      "PageTermoGMDNDTO": {
-        "type": "object",
-        "properties": {
-          "totalPages": {
-            "type": "integer",
             "format": "int32"
-          },
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "number": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "size": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "numberOfElements": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/TermoGMDNDTO"
-            }
-          },
-          "sort": {
-            "$ref": "#/components/schemas/Sort"
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "empty": {
-            "type": "boolean"
-          }
-        }
-      },
-      "TermoGMDNDTO": {
-        "type": "object",
-        "properties": {
-          "codigo": {
-            "type": "string"
-          },
-          "nome": {
-            "type": "string"
-          },
-          "definicao": {
-            "type": "string"
-          },
-          "nomeOriginal": {
-            "type": "string"
-          },
-          "definicaoOriginal": {
-            "type": "string"
-          },
-          "ativo": {
-            "type": "string",
-            "enum": [
-              "SIM",
-              "NAO"
-            ]
-          }
-        }
-      },
-      "NomeTecnicoDTO": {
-        "type": "object",
-        "properties": {
-          "codigo": {
-            "type": "string"
-          },
-          "nomeTecnico": {
-            "type": "string"
           },
           "descricao": {
             "type": "string"
-          },
-          "tipoProduto": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "descricaoTipoProduto": {
-            "type": "string"
-          },
-          "classeRisco": {
-            "type": "string"
-          },
-          "dataAtualizacao": {
-            "type": "string",
-            "format": "date-time",
-            "x-wire-format": "epoch-millis",
-            "description": "Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
           }
         }
       },
-      "PageNomeTecnicoDTO": {
+      "ChaveValorInteger": {
         "type": "object",
         "properties": {
-          "totalPages": {
+          "descricao": {
+            "type": "string"
+          },
+          "id": {
             "type": "integer",
             "format": "int32"
-          },
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "number": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "size": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "numberOfElements": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/NomeTecnicoDTO"
-            }
-          },
-          "sort": {
-            "$ref": "#/components/schemas/Sort"
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "empty": {
-            "type": "boolean"
           }
         }
       },
-      "FilaCalculadaDTO": {
+      "ChaveValorLong": {
         "type": "object",
         "properties": {
-          "nuOrdem": {
+          "descricao": {
+            "type": "string"
+          },
+          "id": {
             "type": "integer",
-            "format": "int32",
-            "description": "Position in the queue (1 = next)."
-          },
-          "dtEntrada": {
-            "type": "string",
-            "format": "date-time",
-            "x-wire-format": "epoch-millis",
-            "description": "Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
-          },
-          "nuExpediente": {
-            "type": "string"
-          },
-          "codAssunto": {
-            "type": "string"
-          },
-          "dsAssunto": {
-            "type": "string"
-          },
-          "nuProcesso": {
-            "type": "string"
-          },
-          "dtGeracaoFila": {
-            "type": "string",
-            "format": "date-time",
-            "description": "Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values).",
-            "x-wire-format": "epoch-millis"
-          },
-          "numeroProcessoFormatado": {
-            "type": "string"
-          },
-          "expeditenteFormatado": {
-            "type": "string"
+            "format": "int64"
           }
         }
       },
@@ -5399,85 +5070,6 @@
             }
           },
           "fatoGerador": {
-            "type": "string"
-          }
-        }
-      },
-      "PageConsultaAssunto": {
-        "type": "object",
-        "properties": {
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalElements": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "number": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "size": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "numberOfElements": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "content": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ConsultaAssunto"
-            }
-          },
-          "sort": {
-            "$ref": "#/components/schemas/Sort"
-          },
-          "first": {
-            "type": "boolean"
-          },
-          "last": {
-            "type": "boolean"
-          },
-          "pageable": {
-            "$ref": "#/components/schemas/PageableObject"
-          },
-          "empty": {
-            "type": "boolean"
-          }
-        }
-      },
-      "Sistema": {
-        "type": "object",
-        "properties": {
-          "codigoAssunto": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "codigoSistema": {
-            "type": "string"
-          },
-          "nome": {
-            "type": "string"
-          },
-          "bloqueado": {
-            "type": "string"
-          },
-          "hiperlink": {
-            "type": "string"
-          }
-        }
-      },
-      "TipoProduto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "descricao": {
             "type": "string"
           }
         }
@@ -5544,6 +5136,69 @@
           },
           "entidadeEmissora": {
             "type": "string"
+          }
+        }
+      },
+      "DetalheAssunto": {
+        "type": "object",
+        "properties": {
+          "idAssunto": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "tipoSolicitacao": {
+            "type": "string"
+          },
+          "tipoProduto": {
+            "$ref": "#/components/schemas/TipoProduto"
+          },
+          "sistemas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Sistema"
+            }
+          },
+          "fatoGerador": {
+            "type": "string"
+          },
+          "assunto": {
+            "type": "string"
+          },
+          "servicos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Servico"
+            }
+          },
+          "formularios": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Formulario"
+            }
+          },
+          "documentosRequeridos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentacaoRequerida"
+            }
+          },
+          "fundamentacaoLegal": {
+            "type": "string"
+          },
+          "valoresTaxaEmpresa": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValorTaxaEmpresa"
+            }
+          },
+          "valoresTaxaEmbarcacao": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValorTaxaEmbarcacao"
+            }
           }
         }
       },
@@ -5852,6 +5507,18 @@
           }
         }
       },
+      "DocumentacaoRequerida": {
+        "type": "object",
+        "properties": {
+          "numeroOrdem": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "descricaoItemChecklist": {
+            "type": "string"
+          }
+        }
+      },
       "EmbalagemDTO": {
         "type": "object",
         "properties": {
@@ -5868,6 +5535,72 @@
           }
         }
       },
+      "FilaCalculadaDTO": {
+        "type": "object",
+        "properties": {
+          "nuOrdem": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Position in the queue (1 = next)."
+          },
+          "dtEntrada": {
+            "type": "string",
+            "format": "date-time",
+            "x-wire-format": "epoch-millis",
+            "description": "Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
+          },
+          "nuExpediente": {
+            "type": "string"
+          },
+          "codAssunto": {
+            "type": "string"
+          },
+          "dsAssunto": {
+            "type": "string"
+          },
+          "nuProcesso": {
+            "type": "string"
+          },
+          "dtGeracaoFila": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values).",
+            "x-wire-format": "epoch-millis"
+          },
+          "numeroProcessoFormatado": {
+            "type": "string"
+          },
+          "expeditenteFormatado": {
+            "type": "string"
+          }
+        }
+      },
+      "Formulario": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "nomeArquivo": {
+            "type": "string"
+          },
+          "tipoArquivo": {
+            "type": "string"
+          },
+          "conteudo": {
+            "type": "object",
+            "properties": {
+              "binaryStream": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
       "HistoricoIdDTO": {
         "type": "object",
         "properties": {
@@ -5878,6 +5611,324 @@
           "idEntity": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "HistoricoUdiDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "tipoHistorico": {
+            "type": "string"
+          },
+          "totalRegistros": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dtInicio": {
+            "type": "string",
+            "format": "date-time",
+            "x-wire-format": "epoch-millis",
+            "description": "Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
+          },
+          "dtFim": {
+            "type": "string",
+            "format": "date-time",
+            "x-wire-format": "epoch-millis",
+            "description": "Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
+          },
+          "dtGeracao": {
+            "type": "string",
+            "format": "date-time",
+            "x-wire-format": "epoch-millis",
+            "description": "Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
+          }
+        }
+      },
+      "NomeTecnicoDTO": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "nomeTecnico": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "tipoProduto": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "descricaoTipoProduto": {
+            "type": "string"
+          },
+          "classeRisco": {
+            "type": "string"
+          },
+          "dataAtualizacao": {
+            "type": "string",
+            "format": "date-time",
+            "x-wire-format": "epoch-millis",
+            "description": "Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
+          }
+        }
+      },
+      "PageConsultaAssunto": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConsultaAssunto"
+            }
+          },
+          "sort": {
+            "$ref": "#/components/schemas/Sort"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageNomeTecnicoDTO": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NomeTecnicoDTO"
+            }
+          },
+          "sort": {
+            "$ref": "#/components/schemas/Sort"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageTermoGMDNDTO": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TermoGMDNDTO"
+            }
+          },
+          "sort": {
+            "$ref": "#/components/schemas/Sort"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageUdiDTO": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UdiDTO"
+            }
+          },
+          "sort": {
+            "$ref": "#/components/schemas/Sort"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageableObject": {
+        "type": "object",
+        "properties": {
+          "paged": {
+            "type": "boolean"
+          },
+          "unpaged": {
+            "type": "boolean"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "offset": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/Sort"
+          }
+        }
+      },
+      "PaginationBuilder": {
+        "type": "object",
+        "properties": {
+          "sorting": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "ASC",
+                "DESC"
+              ]
+            },
+            "description": "Map of column name to ASC/DESC. Sending an array is rejected with a Jackson deserialization error."
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1,
+            "description": "1-based page number. page=0 fails with \"Page index must not be less than zero!\". Responses are Spring Page objects and report the page 0-based in `number` / `pageable.pageNumber`."
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          },
+          "column": {
+            "type": "string"
+          },
+          "order": {
+            "type": "string",
+            "enum": [
+              "ASC",
+              "DESC"
+            ]
+          },
+          "filter": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            },
+            "description": "Map of filter key to value. Required keys depend on the endpoint; see each operation's `x-required-filters`."
           }
         }
       },
@@ -5965,200 +6016,6 @@
           }
         }
       },
-      "SucessaoDispositivoDTO": {
-        "type": "object",
-        "properties": {
-          "previo": {
-            "$ref": "#/components/schemas/DispositivoIdDTO"
-          },
-          "sucessor": {
-            "$ref": "#/components/schemas/DispositivoIdDTO"
-          }
-        }
-      },
-      "VersaoDispositivoDTO": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "$ref": "#/components/schemas/HistoricoIdDTO"
-          },
-          "codigoUdiDi": {
-            "type": "string"
-          },
-          "codigoVersao": {
-            "type": "string"
-          },
-          "dtVersao": {
-            "type": "string",
-            "format": "date-time",
-            "x-wire-format": "epoch-millis",
-            "description": "Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
-          },
-          "numeroVersao": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      },
-      "HistoricoUdiDTO": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "tipoHistorico": {
-            "type": "string"
-          },
-          "totalRegistros": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "dtInicio": {
-            "type": "string",
-            "format": "date-time",
-            "x-wire-format": "epoch-millis",
-            "description": "Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
-          },
-          "dtFim": {
-            "type": "string",
-            "format": "date-time",
-            "x-wire-format": "epoch-millis",
-            "description": "Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
-          },
-          "dtGeracao": {
-            "type": "string",
-            "format": "date-time",
-            "x-wire-format": "epoch-millis",
-            "description": "Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
-          }
-        }
-      },
-      "ChaveValorInteger": {
-        "type": "object",
-        "properties": {
-          "descricao": {
-            "type": "string"
-          },
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "ChaveValorLong": {
-        "type": "object",
-        "properties": {
-          "descricao": {
-            "type": "string"
-          },
-          "id": {
-            "type": "integer",
-            "format": "int64"
-          }
-        }
-      },
-      "DetalheAssunto": {
-        "type": "object",
-        "properties": {
-          "idAssunto": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "descricao": {
-            "type": "string"
-          },
-          "tipoSolicitacao": {
-            "type": "string"
-          },
-          "tipoProduto": {
-            "$ref": "#/components/schemas/TipoProduto"
-          },
-          "sistemas": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Sistema"
-            }
-          },
-          "fatoGerador": {
-            "type": "string"
-          },
-          "assunto": {
-            "type": "string"
-          },
-          "servicos": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Servico"
-            }
-          },
-          "formularios": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Formulario"
-            }
-          },
-          "documentosRequeridos": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DocumentacaoRequerida"
-            }
-          },
-          "fundamentacaoLegal": {
-            "type": "string"
-          },
-          "valoresTaxaEmpresa": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ValorTaxaEmpresa"
-            }
-          },
-          "valoresTaxaEmbarcacao": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ValorTaxaEmbarcacao"
-            }
-          }
-        }
-      },
-      "DocumentacaoRequerida": {
-        "type": "object",
-        "properties": {
-          "numeroOrdem": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "descricaoItemChecklist": {
-            "type": "string"
-          }
-        }
-      },
-      "Formulario": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "nome": {
-            "type": "string"
-          },
-          "nomeArquivo": {
-            "type": "string"
-          },
-          "tipoArquivo": {
-            "type": "string"
-          },
-          "conteudo": {
-            "type": "object",
-            "properties": {
-              "binaryStream": {
-                "type": "object"
-              }
-            }
-          }
-        }
-      },
       "Servico": {
         "type": "object",
         "properties": {
@@ -6171,6 +6028,186 @@
           },
           "hiperlink": {
             "type": "string"
+          }
+        }
+      },
+      "ServicoDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "hiperlink": {
+            "type": "string"
+          }
+        }
+      },
+      "Sistema": {
+        "type": "object",
+        "properties": {
+          "codigoAssunto": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "codigoSistema": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "bloqueado": {
+            "type": "string"
+          },
+          "hiperlink": {
+            "type": "string"
+          }
+        }
+      },
+      "SistemaDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          }
+        }
+      },
+      "Sort": {
+        "type": "object",
+        "properties": {
+          "sorted": {
+            "type": "boolean"
+          },
+          "empty": {
+            "type": "boolean"
+          },
+          "unsorted": {
+            "type": "boolean"
+          }
+        }
+      },
+      "SucessaoDispositivoDTO": {
+        "type": "object",
+        "properties": {
+          "previo": {
+            "$ref": "#/components/schemas/DispositivoIdDTO"
+          },
+          "sucessor": {
+            "$ref": "#/components/schemas/DispositivoIdDTO"
+          }
+        }
+      },
+      "TermoGMDNDTO": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "string"
+          },
+          "nome": {
+            "type": "string"
+          },
+          "definicao": {
+            "type": "string"
+          },
+          "nomeOriginal": {
+            "type": "string"
+          },
+          "definicaoOriginal": {
+            "type": "string"
+          },
+          "ativo": {
+            "type": "string",
+            "enum": [
+              "SIM",
+              "NAO"
+            ]
+          }
+        }
+      },
+      "TipoProduto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "descricao": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoProdutoDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "descricao": {
+            "type": "string"
+          }
+        }
+      },
+      "TipoSolicitacaoDTO": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string"
+          },
+          "valor": {
+            "type": "string"
+          }
+        }
+      },
+      "UdiDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "udiDi": {
+            "type": "string"
+          },
+          "nomeComercial": {
+            "type": "string"
+          },
+          "razaoSocialFabLegal": {
+            "type": "string"
+          },
+          "termoGmdn": {
+            "type": "string"
+          },
+          "cnpjDetentora": {
+            "type": "string"
+          },
+          "razaoSocialDetentora": {
+            "type": "string"
+          },
+          "dtPublicacao": {
+            "type": "string",
+            "format": "date-time",
+            "x-wire-format": "epoch-millis",
+            "description": "Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
+          },
+          "desbloqueado": {
+            "type": "string",
+            "description": "Observed value: \"N\" (the detail endpoint uses SIM/NAO for the same flag)."
+          },
+          "estagio": {
+            "type": "string",
+            "enum": [
+              "DESBLOQUEADO",
+              "NAO_PUBLICADO",
+              "EM_CARENCIA",
+              "CONSOLIDADO"
+            ]
           }
         }
       },
@@ -6224,64 +6261,27 @@
           }
         }
       },
-      "TipoSolicitacaoDTO": {
-        "type": "object",
-        "properties": {
-          "nome": {
-            "type": "string"
-          },
-          "valor": {
-            "type": "string"
-          }
-        }
-      },
-      "TipoProdutoDTO": {
+      "VersaoDispositivoDTO": {
         "type": "object",
         "properties": {
           "id": {
+            "$ref": "#/components/schemas/HistoricoIdDTO"
+          },
+          "codigoUdiDi": {
+            "type": "string"
+          },
+          "codigoVersao": {
+            "type": "string"
+          },
+          "dtVersao": {
+            "type": "string",
+            "format": "date-time",
+            "x-wire-format": "epoch-millis",
+            "description": "Sent as integer epoch milliseconds (midnight America/Sao_Paulo for date-only values)."
+          },
+          "numeroVersao": {
             "type": "integer",
             "format": "int64"
-          },
-          "descricao": {
-            "type": "string"
-          }
-        }
-      },
-      "SistemaDTO": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "nome": {
-            "type": "string"
-          }
-        }
-      },
-      "ServicoDTO": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "descricao": {
-            "type": "string"
-          },
-          "hiperlink": {
-            "type": "string"
-          }
-        }
-      },
-      "AssuntoDTO": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "descricao": {
-            "type": "string"
           }
         }
       },
