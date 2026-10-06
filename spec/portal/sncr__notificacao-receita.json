@@ -1,0 +1,57 @@
+{
+  "slug": "sncr-notificacao-receita",
+  "rota": "sncr/notificacao-receita",
+  "titulo": "Notificação de Receita",
+  "formato": "ENDPOINTS",
+  "conteudo": [
+    {
+      "id": "notificacao-receita",
+      "path": "/numeracoes/notificacao-receita",
+      "method": "POST",
+      "description": "Disponibiliza numerações para notificações de receita autorizadas pela Vigilância Sanitária. Verifica se há numeração disponível para o prescritor informado e retorna o bloco de numerações, com alerta quando o saldo está baixo. Limite de 50 numerações por tipo de receita, por prescritor e por dia; o profissional autenticado via gov.br deve corresponder ao prescritor informado na requisição. Retorna 400 quando os parâmetros são inválidos, o prescritor ou a receita não são encontrados, o prescritor não possui saldo disponível ou o limite diário já foi atingido.",
+      "filters": [
+        {
+          "name": "receita",
+          "type": "string",
+          "description": "Corpo da requisição, obrigatório. Tipo de receita. Valores permitidos: NRA, NRB, NRB2, NRR, NRT.",
+          "example": "NRA"
+        },
+        {
+          "name": "conselho",
+          "type": "string",
+          "description": "Corpo da requisição, obrigatório. Conselho ao qual o prescritor é vinculado (ex.: CRM, CRMV, CRO).",
+          "example": "CRM"
+        },
+        {
+          "name": "uf",
+          "type": "string",
+          "description": "Corpo da requisição, obrigatório. UF do conselho.",
+          "example": "RJ"
+        },
+        {
+          "name": "documento",
+          "type": "string",
+          "description": "Corpo da requisição, obrigatório. Número de identificação do prescritor no conselho.",
+          "example": "123456"
+        },
+        {
+          "name": "quantidade",
+          "type": "integer (int32)",
+          "description": "Corpo da requisição, obrigatório. Quantidade de receitas a serem disponibilizadas. Mínimo 10, máximo 50 (padrão 50).",
+          "example": "25"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/api-sncr/api/v1/numeracoes/notificacao-receita' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token_gov_br>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n  \"receita\": \"NRA\",\n  \"conselho\": \"CRM\",\n  \"uf\": \"RJ\",\n  \"documento\": \"123456\",\n  \"quantidade\": 25\n}'"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/api-sncr/api/v1/numeracoes/notificacao-receita HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token_gov_br>\nContent-Type: application/json\n\n{\n  \"receita\": \"NRA\",\n  \"conselho\": \"CRM\",\n  \"uf\": \"RJ\",\n  \"documento\": \"123456\",\n  \"quantidade\": 25\n}"
+        }
+      ],
+      "responseExample": "{\n  \"numeracoesReceita\": [\n    \"2411.1-00.0000001\",\n    \"2411.1-00.0000002\"\n  ],\n  \"saldoReceitas\": 49,\n  \"mensagem\": \"Saldo inferior a 50 receitas disponíveis.\"\n}"
+    }
+  ]
+}

@@ -62,67 +62,85 @@
             "ordem": 0
           },
           {
-            "id": 11,
-            "nome": "Certificados",
+            "id": 30,
+            "nome": "Certificado de Boas Práticas de Medicamentos",
             "icone": "file-alt",
             "tipo": "PAGINA",
-            "rota": "consultas-externas/certificados-doc",
+            "rota": "consultas-externas/certificado-medicamento-doc",
             "spa": true,
             "ordem": 1
           },
           {
-            "id": 12,
-            "nome": "Funcionamento de Empresa Nacional",
+            "id": 31,
+            "nome": "Fila",
             "icone": "file-alt",
             "tipo": "PAGINA",
-            "rota": "consultas-externas/funcionamento-empresa-nacional",
+            "rota": "consultas-externas/fila-doc",
             "spa": true,
             "ordem": 2
           },
           {
-            "id": 13,
-            "nome": "Funcionamento de Empresa Internacional",
+            "id": 32,
+            "nome": "Assuntos",
             "icone": "file-alt",
             "tipo": "PAGINA",
-            "rota": "consultas-externas/funcionamento-empresa-internacional",
+            "rota": "consultas-externas/assunto-doc",
             "spa": true,
             "ordem": 3
           },
           {
-            "id": 14,
-            "nome": "Empresas Internacionais",
+            "id": 11,
+            "nome": "Certificado de Boas Práticas",
             "icone": "file-alt",
             "tipo": "PAGINA",
-            "rota": "consultas-externas/empresa-internacional-doc",
+            "rota": "consultas-externas/certificados-doc",
             "spa": true,
             "ordem": 4
           },
           {
-            "id": 15,
-            "nome": "Produtos Irregulares (Dossiê)",
+            "id": 33,
+            "nome": "Tabaco",
             "icone": "file-alt",
             "tipo": "PAGINA",
-            "rota": "consultas-externas/dossie-doc",
+            "rota": "consultas-externas/tabaco-doc",
             "spa": true,
             "ordem": 5
           },
           {
-            "id": 16,
-            "nome": "Consulta Alimentos",
-            "icone": "file-alt",
-            "tipo": "PAGINA",
-            "rota": "consultas-externas/consulta-alimentos",
-            "spa": true,
-            "ordem": 6
-          },
-          {
             "id": 17,
-            "nome": "Consulta Produtos de Saúde",
+            "nome": "Produtos Saúde",
             "icone": "file-alt",
             "tipo": "PAGINA",
             "rota": "consultas-externas/consulta-produtos-saude",
             "spa": true,
+            "ordem": 6
+          },
+          {
+            "id": 34,
+            "nome": "Lista",
+            "icone": "file-alt",
+            "tipo": "PAGINA",
+            "rota": "consultas-externas/lista-doc",
+            "spa": true,
             "ordem": 7
+          },
+          {
+            "id": 35,
+            "nome": "Nomes Técnicos de Produtos para Saúde",
+            "icone": "file-alt",
+            "tipo": "PAGINA",
+            "rota": "consultas-externas/nome-tecnico-doc",
+            "spa": true,
+            "ordem": 8
+          },
+          {
+            "id": 36,
+            "nome": "UDI",
+            "icone": "file-alt",
+            "tipo": "PAGINA",
+            "rota": "consultas-externas/udi-doc",
+            "spa": true,
+            "ordem": 9
           },
           {
             "id": 18,
@@ -131,7 +149,7 @@
             "tipo": "LINK_EXTERNO",
             "url": "{{gatewayUrl}}/consultas-externas-api/swagger-ui/index.html",
             "spa": false,
-            "ordem": 8
+            "ordem": 10
           }
         ]
       },
@@ -160,6 +178,80 @@
             "url": "{{sngpcUrl}}/swagger/index.html",
             "spa": false,
             "ordem": 1
+          }
+        ]
+      },
+      {
+        "id": 21,
+        "nome": "SAMMED",
+        "icone": "folder-open",
+        "tipo": "SECAO",
+        "spa": true,
+        "ordem": 2,
+        "filhos": [
+          {
+            "id": 22,
+            "nome": "Calculadora de Preços",
+            "icone": "file-alt",
+            "tipo": "PAGINA",
+            "rota": "sammed/calculadora-doc",
+            "spa": true,
+            "ordem": 0
+          },
+          {
+            "id": 23,
+            "nome": "Lista CMED",
+            "icone": "file-alt",
+            "tipo": "PAGINA",
+            "rota": "sammed/listacmed-doc",
+            "spa": true,
+            "ordem": 1
+          },
+          {
+            "id": 24,
+            "nome": "Swagger UI",
+            "icone": "globe",
+            "tipo": "LINK_EXTERNO",
+            "url": "{{gatewayUrl}}/anvs-listacmed-service/swagger-ui/index.html",
+            "spa": false,
+            "ordem": 2
+          }
+        ]
+      },
+      {
+        "id": 25,
+        "nome": "SNCR",
+        "icone": "folder-open",
+        "tipo": "SECAO",
+        "spa": true,
+        "ordem": 3,
+        "filhos": [
+          {
+            "id": 26,
+            "nome": "Endpoint Notificação de Receita",
+            "icone": "file-alt",
+            "tipo": "PAGINA",
+            "rota": "sncr/notificacao-receita",
+            "spa": true,
+            "ordem": 0
+          },
+          {
+            "id": 28,
+            "nome": "Endpoint Receita de Controle Especial / Receita Sujeita a Retenção",
+            "icone": "file-alt",
+            "tipo": "PAGINA",
+            "rota": "sncr/receita-especial-retencao",
+            "spa": true,
+            "ordem": 1
+          },
+          {
+            "id": 29,
+            "nome": "Swagger UI",
+            "icone": "globe",
+            "tipo": "LINK_EXTERNO",
+            "url": "{{gatewayUrl}}/api-sncr/swagger-ui/index.html",
+            "spa": false,
+            "ordem": 2
           }
         ]
       }

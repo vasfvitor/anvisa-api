@@ -1,0 +1,297 @@
+{
+  "slug": "assunto-doc",
+  "rota": "consultas-externas/assunto-doc",
+  "titulo": "Assuntos",
+  "formato": "ENDPOINTS",
+  "conteudo": [
+    {
+      "id": "download_3",
+      "path": "/api/v1/assunto/download",
+      "method": "POST",
+      "description": "Faz download do relatório de assunto. Recebe JSON com column, count, order, page e filtros em filter[...] e gera um arquivo XLS para download.",
+      "filters": [
+        {
+          "name": "order",
+          "type": "string: ASC | DESC",
+          "description": "Direção da ordenação.",
+          "example": "ASC"
+        },
+        {
+          "name": "filter.codigosAssunto",
+          "type": "string",
+          "description": "Códigos de assunto (campo id de GET /api/v1/assunto/assuntos).",
+          "example": "108"
+        },
+        {
+          "name": "filter.servicos",
+          "type": "string",
+          "description": "Serviços (campo id de GET /api/v1/assunto/servicos).",
+          "example": "10038"
+        },
+        {
+          "name": "filter.sistemas",
+          "type": "string",
+          "description": "Sistemas (campo id de GET /api/v1/assunto/sistemas).",
+          "example": "COSMETICOS"
+        },
+        {
+          "name": "filter.tiposProduto",
+          "type": "string",
+          "description": "Tipos de produto (campo id de GET /api/v1/assunto/tiposProduto).",
+          "example": "6"
+        },
+        {
+          "name": "filter.tiposSolicitacao",
+          "type": "string",
+          "description": "Tipos de solicitação (campo valor de GET /api/v1/assunto/tiposSolicitacao).",
+          "example": "S"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/assunto/download' \\\n  -H 'Accept: */*' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"order\": \"ASC\",\n    \"filter\": {\n      \"codigosAssunto\": \"108\",\n      \"servicos\": \"10038\",\n      \"sistemas\": \"COSMETICOS\",\n      \"tiposProduto\": \"6\",\n      \"tiposSolicitacao\": \"S\"\n    }\n  }' \\\n  -OJ"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/assunto/download HTTP/1.1\nHost: {{gatewayHost}}\nAccept: */*\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"order\": \"ASC\",\n  \"filter\": {\n    \"codigosAssunto\": \"108\",\n    \"servicos\": \"10038\",\n    \"sistemas\": \"COSMETICOS\",\n    \"tiposProduto\": \"6\",\n    \"tiposSolicitacao\": \"S\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "id": "downloadAssuntoFormulario",
+      "path": "/api/v1/assunto/downloadAssuntoFormulario",
+      "method": "POST",
+      "description": "Faz download do formulário de assunto. Recebe JSON codigo do formulário e gera um arquivo XLS para download.",
+      "filters": [
+        {
+          "name": "codigosAssunto",
+          "type": "string",
+          "description": "Código do assunto (campo id de GET /api/v1/assunto/assuntos).",
+          "example": "108"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/assunto/downloadAssuntoFormulario' \\\n  -H 'Accept: */*' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"codigosAssunto\": \"108\"\n  }' \\\n  -OJ"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/assunto/downloadAssuntoFormulario HTTP/1.1\nHost: {{gatewayHost}}\nAccept: */*\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"codigosAssunto\": \"108\"\n}"
+        }
+      ]
+    },
+    {
+      "id": "findAssunto",
+      "path": "/api/v1/assunto/",
+      "method": "POST",
+      "description": "Retorna assuntos paginados. Recebe JSON com page, order, sorting e filtros em filter[...]. Use os filtros específicos como codigosAssunto, servicos, sistemas, tiposProduto, tiposSolicitacao, etc.",
+      "filters": [
+        {
+          "name": "count",
+          "type": "string",
+          "description": "Quantidade de itens por página.",
+          "example": "10"
+        },
+        {
+          "name": "page",
+          "type": "integer (int32)",
+          "description": "Número da página.",
+          "example": "1"
+        },
+        {
+          "name": "column",
+          "type": "string",
+          "description": "Campo usado na ordenação.",
+          "example": "idAssunto"
+        },
+        {
+          "name": "order",
+          "type": "string: ASC | DESC",
+          "description": "Direção da ordenação.",
+          "example": "ASC"
+        },
+        {
+          "name": "filter.codigosAssunto",
+          "type": "string",
+          "description": "Códigos de assunto (campo id de GET /api/v1/assunto/assuntos).",
+          "example": "108"
+        },
+        {
+          "name": "filter.servicos",
+          "type": "string",
+          "description": "Serviços (campo id de GET /api/v1/assunto/servicos).",
+          "example": "10038"
+        },
+        {
+          "name": "filter.sistemas",
+          "type": "string",
+          "description": "Sistemas (campo id de GET /api/v1/assunto/sistemas).",
+          "example": "COSMETICOS"
+        },
+        {
+          "name": "filter.tiposProduto",
+          "type": "string",
+          "description": "Tipos de produto (campo id de GET /api/v1/assunto/tiposProduto).",
+          "example": "6"
+        },
+        {
+          "name": "filter.tiposSolicitacao",
+          "type": "string",
+          "description": "Tipos de solicitação (campo valor de GET /api/v1/assunto/tiposSolicitacao).",
+          "example": "S"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/assunto/' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"count\": \"10\",\n    \"page\": \"1\",\n    \"column\": \"idAssunto\",\n    \"order\": \"ASC\",\n    \"filter\": {\n      \"codigosAssunto\": \"108\",\n      \"servicos\": \"10038\",\n      \"sistemas\": \"COSMETICOS\",\n      \"tiposProduto\": \"6\",\n      \"tiposSolicitacao\": \"S\"\n    }\n  }'"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/assunto/ HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"count\": \"10\",\n  \"page\": \"1\",\n  \"column\": \"idAssunto\",\n  \"order\": \"ASC\",\n  \"filter\": {\n    \"codigosAssunto\": \"108\",\n    \"servicos\": \"10038\",\n    \"sistemas\": \"COSMETICOS\",\n    \"tiposProduto\": \"6\",\n    \"tiposSolicitacao\": \"S\"\n  }\n}"
+        }
+      ],
+      "responseExample": "{\n  \"totalPages\": 0,\n  \"totalElements\": 0,\n  \"number\": 0,\n  \"size\": 0,\n  \"numberOfElements\": 0,\n  \"content\": [\n    {\n      \"idAssunto\": 0,\n      \"descricao\": \"string\",\n      \"tipoSolicitacao\": \"string\",\n      \"tipoProduto\": {\n        \"id\": 0,\n        \"descricao\": \"string\"\n      },\n      \"sistemas\": [\n        {\n          \"codigoAssunto\": 0,\n          \"codigoSistema\": \"string\",\n          \"nome\": \"string\",\n          \"bloqueado\": \"string\",\n          \"hiperlink\": \"string\"\n        }\n      ],\n      \"fatoGerador\": \"string\"\n    }\n  ],\n  \"sort\": {\n    \"sorted\": true,\n    \"empty\": true,\n    \"unsorted\": true\n  },\n  \"first\": true,\n  \"last\": true,\n  \"pageable\": {\n    \"paged\": true,\n    \"unpaged\": true,\n    \"pageNumber\": 0,\n    \"pageSize\": 0,\n    \"offset\": 0,\n    \"sort\": {\n      \"sorted\": true,\n      \"empty\": true,\n      \"unsorted\": true\n    }\n  },\n  \"empty\": true\n}"
+    },
+    {
+      "id": "detailAssunto",
+      "path": "/api/v1/assunto/{codigoAssunto}",
+      "method": "GET",
+      "description": "Retorna detalhe de um assunto. Retorna informações detalhadas do Assunto para o código do assunto informado.",
+      "filters": [
+        {
+          "name": "codigoAssunto",
+          "type": "string",
+          "description": "Parâmetro de caminho, obrigatório. Código do assunto (campo id de GET /api/v1/assunto/assuntos)."
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/assunto/{codigoAssunto}' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/assunto/{codigoAssunto} HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "{\n  \"idAssunto\": 0,\n  \"descricao\": \"string\",\n  \"tipoSolicitacao\": \"string\",\n  \"tipoProduto\": {\n    \"id\": 0,\n    \"descricao\": \"string\"\n  },\n  \"sistemas\": [\n    {\n      \"codigoAssunto\": 0,\n      \"codigoSistema\": \"string\",\n      \"nome\": \"string\",\n      \"bloqueado\": \"string\",\n      \"hiperlink\": \"string\"\n    }\n  ],\n  \"fatoGerador\": \"string\",\n  \"assunto\": \"string\",\n  \"servicos\": [\n    {\n      \"codigoServico\": 0,\n      \"descricao\": \"string\",\n      \"hiperlink\": \"string\"\n    }\n  ],\n  \"formularios\": [\n    {\n      \"id\": 0,\n      \"nome\": \"string\",\n      \"nomeArquivo\": \"string\",\n      \"tipoArquivo\": \"string\",\n      \"conteudo\": {\n        \"binaryStream\": {}\n      }\n    }\n  ],\n  \"documentosRequeridos\": [\n    {\n      \"numeroOrdem\": 0,\n      \"descricaoItemChecklist\": \"string\"\n    }\n  ],\n  \"fundamentacaoLegal\": \"string\",\n  \"valoresTaxaEmpresa\": [\n    {\n      \"codigoAssunto\": 0,\n      \"codigoFatoGerador\": \"string\",\n      \"porte\": \"string\",\n      \"valorTaxa\": \"string\"\n    }\n  ],\n  \"valoresTaxaEmbarcacao\": [\n    {\n      \"codigoAssunto\": 0,\n      \"classe\": \"string\",\n      \"valorTaxa\": \"string\",\n      \"valorTaxaEmbarcacaoFilhos\": [\n        {\n          \"classe\": \"string\",\n          \"valorTaxa\": \"string\"\n        }\n      ]\n    }\n  ]\n}"
+    },
+    {
+      "id": "findSelectTiposSolicitacao",
+      "path": "/api/v1/assunto/tiposSolicitacao",
+      "method": "GET",
+      "description": "Retorna lista de Tipo de solicitação.",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/assunto/tiposSolicitacao' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/assunto/tiposSolicitacao HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"nome\": \"string\",\n    \"valor\": \"string\"\n  }\n]"
+    },
+    {
+      "id": "findSelectTiposProduto",
+      "path": "/api/v1/assunto/tiposProduto",
+      "method": "GET",
+      "description": "Retorna consulta de Atividade/Tipo de Produto.",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/assunto/tiposProduto' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/assunto/tiposProduto HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"id\": 0,\n    \"descricao\": \"string\"\n  }\n]"
+    },
+    {
+      "id": "findSelectSistemas",
+      "path": "/api/v1/assunto/sistemas",
+      "method": "GET",
+      "description": "Consulta de Serviços. Retorna consulta de Sistemas.",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/assunto/sistemas' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/assunto/sistemas HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"id\": \"string\",\n    \"nome\": \"string\"\n  }\n]"
+    },
+    {
+      "id": "findSelectServicos",
+      "path": "/api/v1/assunto/servicos",
+      "method": "GET",
+      "description": "Retorna consulta de Serviços.",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/assunto/servicos' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/assunto/servicos HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"id\": 0,\n    \"descricao\": \"string\",\n    \"hiperlink\": \"string\"\n  }\n]"
+    },
+    {
+      "id": "findServicosAssociados",
+      "path": "/api/v1/assunto/servicosAssociados/{codigoServico}",
+      "method": "GET",
+      "description": "Retorna lista de serviços associados. Retorna lista com o código, descrição e link dos serviços associados.",
+      "filters": [
+        {
+          "name": "codigoServico",
+          "type": "string",
+          "description": "Parâmetro de caminho, obrigatório. Código do serviço (campo id de GET /api/v1/assunto/servicos)."
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/assunto/servicosAssociados/{codigoServico}' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/assunto/servicosAssociados/{codigoServico} HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"id\": 0,\n    \"descricao\": \"string\",\n    \"hiperlink\": \"string\"\n  }\n]"
+    },
+    {
+      "id": "findSelectAssuntos",
+      "path": "/api/v1/assunto/assuntos",
+      "method": "GET",
+      "description": "Retorna lista de Assuntos. Retorna lista com o código e descrição do assunto.",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/assunto/assuntos' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/assunto/assuntos HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"id\": 0,\n    \"descricao\": \"string\"\n  }\n]"
+    }
+  ]
+}

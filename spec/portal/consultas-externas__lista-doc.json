@@ -1,0 +1,159 @@
+{
+  "slug": "lista-doc",
+  "rota": "consultas-externas/lista-doc",
+  "titulo": "Lista",
+  "formato": "ENDPOINTS",
+  "conteudo": [
+    {
+      "id": "downloadLista",
+      "path": "/api/v1/lista/downloadlista",
+      "method": "POST",
+      "description": "Faz download do relatório de lista. Recebe os filtros da consulta e gera um arquivo XLSX com o relatório de lista.",
+      "filters": [
+        {
+          "name": "count",
+          "type": "number",
+          "description": "Quantidade de itens por página.",
+          "example": "10"
+        },
+        {
+          "name": "page",
+          "type": "integer (int32)",
+          "description": "Número da página.",
+          "example": "1"
+        },
+        {
+          "name": "order",
+          "type": "string: ASC | DESC",
+          "description": "Direção da ordenação.",
+          "example": "ASC"
+        },
+        {
+          "name": "filter.subfila",
+          "type": "string",
+          "description": "Código da sublista (campo id de GET /api/v1/lista/{codigoGrupo}/sublista).",
+          "example": "123"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/lista/downloadlista' \\\n  -H 'Accept: */*' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"count\": 10,\n    \"page\": \"1\",\n    \"order\": \"ASC\",\n    \"filter\": {\n      \"subfila\": \"123\"\n    }\n  }' \\\n  -OJ"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/lista/downloadlista HTTP/1.1\nHost: {{gatewayHost}}\nAccept: */*\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"count\": 10,\n  \"page\": \"1\",\n  \"order\": \"ASC\",\n  \"filter\": {\n    \"subfila\": \"123\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "id": "findCalculada",
+      "path": "/api/v1/lista/consulta",
+      "method": "POST",
+      "description": "Retorna a Lista calculada. Recebe os filtros da consulta e retorna os dados calculados da subfila informada.",
+      "filters": [
+        {
+          "name": "count",
+          "type": "number",
+          "description": "Quantidade de itens por página.",
+          "example": "10"
+        },
+        {
+          "name": "page",
+          "type": "integer (int32)",
+          "description": "Número da página.",
+          "example": "1"
+        },
+        {
+          "name": "order",
+          "type": "string: ASC | DESC",
+          "description": "Direção da ordenação.",
+          "example": "ASC"
+        },
+        {
+          "name": "filter.subfila",
+          "type": "string",
+          "description": "Código da sublista (campo id de GET /api/v1/lista/{codigoGrupo}/sublista).",
+          "example": "123"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/lista/consulta' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"count\": 10,\n    \"page\": \"1\",\n    \"order\": \"ASC\",\n    \"filter\": {\n      \"subfila\": \"123\"\n    }\n  }'"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/lista/consulta HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"count\": 10,\n  \"page\": \"1\",\n  \"order\": \"ASC\",\n  \"filter\": {\n    \"subfila\": \"123\"\n  }\n}"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"nuOrdem\": {},\n    \"dtEntrada\": {},\n    \"nuExpediente\": \"string\",\n    \"codAssunto\": \"string\",\n    \"dsAssunto\": \"string\",\n    \"nuProcesso\": \"string\",\n    \"dtGeracaoFila\": {},\n    \"numeroProcessoFormatado\": \"string\",\n    \"expeditenteFormatado\": \"string\"\n  }\n]"
+    },
+    {
+      "id": "findSelectSublista",
+      "path": "/api/v1/lista/{codigoGrupo}/sublista",
+      "method": "GET",
+      "description": "Retorna sublistas por grupo. Retorna as sublistas associadas ao grupo informado.",
+      "filters": [
+        {
+          "name": "codigoGrupo",
+          "type": "integer (int64)",
+          "description": "Parâmetro de caminho, obrigatório. Código do grupo de lista (campo id de GET /api/v1/lista/{areaLista}/lista)."
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/lista/{codigoGrupo}/sublista' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/lista/{codigoGrupo}/sublista HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"descricao\": \"string\",\n    \"id\": 0\n  }\n]"
+    },
+    {
+      "id": "findSelectLista",
+      "path": "/api/v1/lista/{areaLista}/lista",
+      "method": "GET",
+      "description": "Retorna grupos de lista por area da lista. Retorna os grupos de lista associados a áreas de interesse da lista informada.",
+      "filters": [
+        {
+          "name": "areaLista",
+          "type": "integer (int64)",
+          "description": "Parâmetro de caminho, obrigatório. Área de interesse da lista (campo id de GET /api/v1/lista/arealista)."
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/lista/{areaLista}/lista' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/lista/{areaLista}/lista HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"descricao\": \"string\",\n    \"id\": 0\n  }\n]"
+    },
+    {
+      "id": "findSelectAreaLista",
+      "path": "/api/v1/lista/arealista",
+      "method": "GET",
+      "description": "Retorna áreas de interesse da lista. Retorna os tipos de produto disponíveis para consulta de lista.",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/lista/arealista' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/lista/arealista HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"id\": 0,\n    \"descricao\": \"string\"\n  }\n]"
+    }
+  ]
+}

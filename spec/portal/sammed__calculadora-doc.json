@@ -1,0 +1,218 @@
+{
+  "slug": "sammed-calculadora-doc",
+  "rota": "sammed/calculadora-doc",
+  "titulo": "Calculadora de Preços CMED",
+  "formato": "ENDPOINTS",
+  "conteudo": [
+    {
+      "path": "/calculadora/converter/todas-aliquotas",
+      "method": "GET",
+      "description": "Gera a tabela completa com PF, PMC e PMVG para todas as alíquotas de ICMS válidas para o tipo LCCT informado.",
+      "filters": [
+        {
+          "name": "precoPF0",
+          "type": "number",
+          "description": "Preço de Fábrica com 0% de ICMS (PF0). Obrigatório.",
+          "example": "100.00"
+        },
+        {
+          "name": "dsTipoLcct",
+          "type": "string",
+          "description": "Classificação LCCT (Lista de Concessão de Crédito Tributário PIS/COFINS). Obrigatório. Valores aceitos: Positiva, Negativa ou Neutra.",
+          "example": "Positiva"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/anvs-listacmed-service/api/v1/calculadora/converter/todas-aliquotas?precoPF0=100.00&dsTipoLcct=Positiva' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/anvs-listacmed-service/api/v1/calculadora/converter/todas-aliquotas?precoPF0=100.00&dsTipoLcct=Positiva HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"aliquota\": \"0%\",\n    \"pf\": 100.00,\n    \"pmc\": 138.21,\n    \"pmvg\": 78.47\n  },\n  {\n    \"aliquota\": \"18%\",\n    \"pf\": 121.95,\n    \"pmc\": 168.55,\n    \"pmvg\": 95.69\n  }\n]"
+    },
+    {
+      "path": "/calculadora/converter/todas-aliquotas/listaPMC",
+      "method": "GET",
+      "description": "Gera a lista de PMC (Preço Máximo ao Consumidor) formatada para publicação. Quando restricaoHospitalar = \"Sim\", os valores de PMC são omitidos.",
+      "filters": [
+        {
+          "name": "precoPF0",
+          "type": "number",
+          "description": "Preço de Fábrica com 0% de ICMS (PF0). Obrigatório.",
+          "example": "100.00"
+        },
+        {
+          "name": "dsTipoLcct",
+          "type": "string",
+          "description": "Classificação LCCT. Obrigatório. Valores aceitos: Positiva, Negativa ou Neutra.",
+          "example": "Positiva"
+        },
+        {
+          "name": "restricaoHospitalar",
+          "type": "string",
+          "description": "Produto de uso restrito a hospitais. Opcional, padrão \"Não\". Valores: Sim ou Não.",
+          "example": "Não"
+        },
+        {
+          "name": "confaz87",
+          "type": "string",
+          "description": "Produto abrangido pelo Convênio CONFAZ nº 87/2002. Opcional, padrão \"Não\". Valores: Sim ou Não.",
+          "example": "Não"
+        },
+        {
+          "name": "icms0pc",
+          "type": "string",
+          "description": "Aplica alíquota de ICMS 0%. Opcional, padrão \"Não\". Valores: Sim ou Não.",
+          "example": "Não"
+        },
+        {
+          "name": "codigoGgrem",
+          "type": "string",
+          "description": "Código GGREM do produto. Opcional, padrão vazio. Parâmetro ainda não utilizado pelo serviço.",
+          "example": "\"\""
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/anvs-listacmed-service/api/v1/calculadora/converter/todas-aliquotas/listaPMC?precoPF0=100.00&dsTipoLcct=Positiva&restricaoHospitalar=N%C3%A3o' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/anvs-listacmed-service/api/v1/calculadora/converter/todas-aliquotas/listaPMC?precoPF0=100.00&dsTipoLcct=Positiva&restricaoHospitalar=N%C3%A3o HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "{\n  \"precoOriginal\": {\n    \"valor\": \"100.00\",\n    \"tipoPreco\": \"Fábrica (Base)\",\n    \"aliquota\": \"0%\",\n    \"lcct\": \"Positiva\"\n  },\n  \"precoConvertido\": [\n    {\n      \"valor\": \"138.21\",\n      \"tipoPreco\": \"Máximo ao Consumidor\",\n      \"aliquota\": \"0%\",\n      \"lcct\": \"Positiva\"\n    }\n  ]\n}"
+    },
+    {
+      "path": "/calculadora/converter/todas-aliquotas/listaPMVG",
+      "method": "GET",
+      "description": "Gera a lista de PMVG (Preço Máximo de Venda ao Governo) para licitações, com o desconto CAP aplicado.",
+      "filters": [
+        {
+          "name": "precoPF0",
+          "type": "number",
+          "description": "Preço de Fábrica com 0% de ICMS (PF0). Obrigatório.",
+          "example": "100.00"
+        },
+        {
+          "name": "dsTipoLcct",
+          "type": "string",
+          "description": "Classificação LCCT. Obrigatório. Valores aceitos: Positiva, Negativa ou Neutra.",
+          "example": "Positiva"
+        },
+        {
+          "name": "confaz87",
+          "type": "string",
+          "description": "Produto abrangido pelo Convênio CONFAZ nº 87/2002. Opcional, padrão \"Não\". Valores: Sim ou Não.",
+          "example": "Não"
+        },
+        {
+          "name": "icms0pc",
+          "type": "string",
+          "description": "Aplica alíquota de ICMS 0%. Opcional, padrão \"Não\". Valores: Sim ou Não.",
+          "example": "Não"
+        },
+        {
+          "name": "cap",
+          "type": "string",
+          "description": "Produto sujeito ao Coeficiente de Adequação de Preços. Opcional, padrão \"Não\". Valores: Sim ou Não.",
+          "example": "Não"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/anvs-listacmed-service/api/v1/calculadora/converter/todas-aliquotas/listaPMVG?precoPF0=100.00&dsTipoLcct=Positiva&cap=Sim' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/anvs-listacmed-service/api/v1/calculadora/converter/todas-aliquotas/listaPMVG?precoPF0=100.00&dsTipoLcct=Positiva&cap=Sim HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"valor\": \"78.47\",\n    \"tipoPreco\": \"Máximo de Venda ao Governo \",\n    \"aliquota\": \"0%\",\n    \"lcct\": \"Positiva\"\n  },\n  {\n    \"valor\": \"95.69\",\n    \"tipoPreco\": \"Máximo de Venda ao Governo \",\n    \"aliquota\": \"18%\",\n    \"lcct\": \"Positiva\"\n  }\n]"
+    },
+    {
+      "path": "/calculadora/converter/simples",
+      "method": "GET",
+      "description": "Converte um preço PF0 para uma alíquota e um tipo de preço específicos. Atenção: dsTipoPreco é comparado sem acentuação — os valores aceitos estão descritos em cada parâmetro.",
+      "filters": [
+        {
+          "name": "precoPF0",
+          "type": "number",
+          "description": "Preço de Fábrica com 0% de ICMS (PF0). Obrigatório.",
+          "example": "100.00"
+        },
+        {
+          "name": "dsTipoAliquota",
+          "type": "string",
+          "description": "Alíquota de ICMS de destino. Obrigatório. Deve corresponder exatamente (inclusive maiúsculas/minúsculas) a uma alíquota cadastrada — use o endpoint /converter/todas-aliquotas para obter os valores disponíveis.",
+          "example": "18%"
+        },
+        {
+          "name": "dsTipoLcct",
+          "type": "string",
+          "description": "Classificação LCCT. Obrigatório. Valores aceitos: Positiva, Negativa ou Neutra. Neste endpoint um valor inválido não gera erro — é tratado como Positiva.",
+          "example": "Positiva"
+        },
+        {
+          "name": "dsTipoPreco",
+          "type": "string",
+          "description": "Tipo de preço desejado. Obrigatório. Valores aceitos, SEM acentuação: Fabrica, Maximo ao Consumidor ou Maximo ao Governo. Um valor acentuado ou desconhecido retorna HTTP 200 com valor 0.",
+          "example": "Maximo ao Consumidor"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/anvs-listacmed-service/api/v1/calculadora/converter/simples?precoPF0=100.00&dsTipoAliquota=18%25&dsTipoLcct=Positiva&dsTipoPreco=Maximo%20ao%20Consumidor' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/anvs-listacmed-service/api/v1/calculadora/converter/simples?precoPF0=100.00&dsTipoAliquota=18%25&dsTipoLcct=Positiva&dsTipoPreco=Maximo%20ao%20Consumidor HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "{\n  \"precoOriginal\": {\n    \"valor\": \"100.00\",\n    \"tipoPreco\": \"Fábrica (Base)\",\n    \"aliquota\": \"0%\",\n    \"lcct\": \"Positiva\"\n  },\n  \"precoConvertido\": [\n    {\n      \"valor\": \"168.55\",\n      \"tipoPreco\": \"Máximo ao Consumidor\",\n      \"aliquota\": \"18%\",\n      \"lcct\": \"Positiva\"\n    }\n  ]\n}"
+    },
+    {
+      "path": "/calculadora/converter/simples-uf",
+      "method": "GET",
+      "description": "Converte um preço PF0 para as alíquotas de ICMS vigentes na UF informada, devolvendo PF, PMC e PMVG de cada uma. Diferente dos demais endpoints da calculadora, uf e dsTipoLcct são enumerações: os valores precisam ser enviados em MAIÚSCULAS e qualquer valor fora da lista resulta em HTTP 400.",
+      "filters": [
+        {
+          "name": "precoPF0",
+          "type": "number",
+          "description": "Preço de Fábrica com 0% de ICMS (PF0). Obrigatório.",
+          "example": "100.00"
+        },
+        {
+          "name": "uf",
+          "type": "string",
+          "description": "Sigla da UF cujas alíquotas serão usadas no cálculo. Obrigatório, em maiúsculas. Valores aceitos: AC, AL, AP, AM, BA, CE, DF, ES, GO, MA, MT, MS, MG, PA, PB, PR, PE, PI, RJ, RN, RS, RO, RR, SC, SP, SE, TO.",
+          "example": "SP"
+        },
+        {
+          "name": "dsTipoLcct",
+          "type": "string",
+          "description": "Classificação LCCT. Obrigatório, em maiúsculas. Valores aceitos: POSITIVA, NEGATIVA ou NEUTRA — neste endpoint, ao contrário dos demais, um valor em minúsculas como \"Positiva\" retorna HTTP 400.",
+          "example": "POSITIVA"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/anvs-listacmed-service/api/v1/calculadora/converter/simples-uf?precoPF0=100.00&uf=SP&dsTipoLcct=POSITIVA' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/anvs-listacmed-service/api/v1/calculadora/converter/simples-uf?precoPF0=100.00&uf=SP&dsTipoLcct=POSITIVA HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"aliquota\": \"18%\",\n    \"pf\": 121.95,\n    \"pmc\": 168.55,\n    \"pmvg\": 95.69\n  }\n]"
+    }
+  ]
+}

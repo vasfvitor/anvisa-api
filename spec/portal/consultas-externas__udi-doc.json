@@ -1,0 +1,317 @@
+{
+  "slug": "udi-doc",
+  "rota": "consultas-externas/udi-doc",
+  "titulo": "UDI",
+  "formato": "ENDPOINTS",
+  "conteudo": [
+    {
+      "id": "paginar",
+      "path": "/api/v1/udi",
+      "method": "POST",
+      "description": "Retorna UDI paginados. Recebe JSON com column, count, order, page e filtros em filter[...]. Use os filtros específicos como categoriaDispositivo, cnpjDetentora, codigoGmdn etc.",
+      "filters": [
+        {
+          "name": "count",
+          "type": "string",
+          "description": "Quantidade de itens por página.",
+          "example": "10"
+        },
+        {
+          "name": "page",
+          "type": "integer (int32)",
+          "description": "Número da página.",
+          "example": "1"
+        },
+        {
+          "name": "filter.categoriaDispositivo",
+          "type": "string",
+          "description": "Categoria do dispositivo.",
+          "example": "EQUIPAMENTO"
+        },
+        {
+          "name": "filter.cnpjDetentora",
+          "type": "string",
+          "description": "CNPJ da empresa detentora.",
+          "example": "11195731000156"
+        },
+        {
+          "name": "filter.codigoGmdn",
+          "type": "string",
+          "description": "Código do termo GMDN (campo codigo de POST /api/v1/udi/termoGmdn).",
+          "example": "30259"
+        },
+        {
+          "name": "filter.incorpora",
+          "type": "string",
+          "description": "Indicador S ou N.",
+          "example": "S"
+        },
+        {
+          "name": "filter.nomeComercial",
+          "type": "string",
+          "description": "Nome comercial.",
+          "example": "a"
+        },
+        {
+          "name": "filter.nuRegistro",
+          "type": "string",
+          "description": "Número do registro.",
+          "example": "80290080001"
+        },
+        {
+          "name": "filter.razaoSocialFabLegal",
+          "type": "string",
+          "description": "Razão social do fabricante legal.",
+          "example": "as"
+        },
+        {
+          "name": "filter.tipoCadastro",
+          "type": "string",
+          "description": "Tipo de cadastro.",
+          "example": "RECONDICIONADO"
+        },
+        {
+          "name": "filter.udiDi",
+          "type": "string",
+          "description": "Identificador UDI-DI.",
+          "example": "a"
+        },
+        {
+          "name": "filter.usoLeigo",
+          "type": "string",
+          "description": "Uso leigo: S ou N.",
+          "example": "S"
+        },
+        {
+          "name": "filter.versaoModelo",
+          "type": "string",
+          "description": "Versão ou modelo.",
+          "example": "a"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/udi' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"count\": \"10\",\n    \"page\": \"1\",\n    \"filter\": {\n      \"categoriaDispositivo\": \"EQUIPAMENTO\",\n      \"cnpjDetentora\": \"11195731000156\",\n      \"codigoGmdn\": \"30259\",\n      \"incorpora\": \"S\",\n      \"nomeComercial\": \"a\",\n      \"nuRegistro\": \"80290080001\",\n      \"razaoSocialFabLegal\": \"as\",\n      \"tipoCadastro\": \"RECONDICIONADO\",\n      \"udiDi\": \"a\",\n      \"usoLeigo\": \"S\",\n      \"versaoModelo\": \"a\"\n    }\n  }'"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/udi HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"count\": \"10\",\n  \"page\": \"1\",\n  \"filter\": {\n    \"categoriaDispositivo\": \"EQUIPAMENTO\",\n    \"cnpjDetentora\": \"11195731000156\",\n    \"codigoGmdn\": \"30259\",\n    \"incorpora\": \"S\",\n    \"nomeComercial\": \"a\",\n    \"nuRegistro\": \"80290080001\",\n    \"razaoSocialFabLegal\": \"as\",\n    \"tipoCadastro\": \"RECONDICIONADO\",\n    \"udiDi\": \"a\",\n    \"usoLeigo\": \"S\",\n    \"versaoModelo\": \"a\"\n  }\n}"
+        }
+      ],
+      "responseExample": "{\n  \"totalPages\": 0,\n  \"totalElements\": 0,\n  \"number\": 0,\n  \"size\": 0,\n  \"numberOfElements\": 0,\n  \"content\": [\n    {\n      \"id\": 0,\n      \"udiDi\": \"string\",\n      \"nomeComercial\": \"string\",\n      \"razaoSocialFabLegal\": \"string\",\n      \"termoGmdn\": \"string\",\n      \"cnpjDetentora\": \"string\",\n      \"razaoSocialDetentora\": \"string\",\n      \"dtPublicacao\": \"2026-01-01T00:00:00.000Z\",\n      \"desbloqueado\": \"string\",\n      \"estagio\": \"DESBLOQUEADO\"\n    }\n  ],\n  \"sort\": {\n    \"sorted\": true,\n    \"empty\": true,\n    \"unsorted\": true\n  },\n  \"first\": true,\n  \"last\": true,\n  \"pageable\": {\n    \"paged\": true,\n    \"unpaged\": true,\n    \"pageNumber\": 0,\n    \"pageSize\": 0,\n    \"offset\": 0,\n    \"sort\": {\n      \"sorted\": true,\n      \"empty\": true,\n      \"unsorted\": true\n    }\n  },\n  \"empty\": true\n}"
+    },
+    {
+      "id": "paginarTermoGmdn",
+      "path": "/api/v1/udi/termoGmdn",
+      "method": "POST",
+      "description": "Retorna Termo Gmdn paginados. Recebe JSON com column, count, order, page e filtros em filter[...]. Use os filtros específicos como categoriaDispositivo, cnpjDetentora, codigoGmdn etc.",
+      "filters": [
+        {
+          "name": "count",
+          "type": "string",
+          "description": "Quantidade de itens por página.",
+          "example": "10"
+        },
+        {
+          "name": "page",
+          "type": "integer (int32)",
+          "description": "Número da página.",
+          "example": "1"
+        },
+        {
+          "name": "filter.codigo",
+          "type": "string",
+          "description": "Código do termo GMDN.",
+          "example": "1"
+        },
+        {
+          "name": "filter.conteudo",
+          "type": "string",
+          "description": "Texto do termo GMDN.",
+          "example": "dispositivo"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/udi/termoGmdn' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"count\": \"10\",\n    \"page\": \"1\",\n    \"filter\": {\n      \"codigo\": \"1\",\n      \"conteudo\": \"dispositivo\"\n    }\n  }'"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/udi/termoGmdn HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"count\": \"10\",\n  \"page\": \"1\",\n  \"filter\": {\n    \"codigo\": \"1\",\n    \"conteudo\": \"dispositivo\"\n  }\n}"
+        }
+      ],
+      "responseExample": "{\n  \"totalPages\": 0,\n  \"totalElements\": 0,\n  \"number\": 0,\n  \"size\": 0,\n  \"numberOfElements\": 0,\n  \"content\": [\n    {\n      \"codigo\": \"string\",\n      \"nome\": \"string\",\n      \"definicao\": \"string\",\n      \"nomeOriginal\": \"string\",\n      \"definicaoOriginal\": \"string\",\n      \"ativo\": \"SIM\"\n    }\n  ],\n  \"sort\": {\n    \"sorted\": true,\n    \"empty\": true,\n    \"unsorted\": true\n  },\n  \"first\": true,\n  \"last\": true,\n  \"pageable\": {\n    \"paged\": true,\n    \"unpaged\": true,\n    \"pageNumber\": 0,\n    \"pageSize\": 0,\n    \"offset\": 0,\n    \"sort\": {\n      \"sorted\": true,\n      \"empty\": true,\n      \"unsorted\": true\n    }\n  },\n  \"empty\": true\n}"
+    },
+    {
+      "id": "find",
+      "path": "/api/v1/udi/{id}",
+      "method": "GET",
+      "description": "Retorna o UDI detalhado de acordo com o ID informado.",
+      "filters": [
+        {
+          "name": "id",
+          "type": "integer (int64)",
+          "description": "Parâmetro de caminho, obrigatório. Identificador do UDI (campo id de POST /api/v1/udi)."
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/udi/{id}' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/udi/{id} HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "{\n  \"dispositivo\": {\n    \"id\": 0,\n    \"udiDi\": {\n      \"id\": \"string\",\n      \"entidadeEmissora\": \"string\"\n    },\n    \"udiDiOriginal\": {\n      \"id\": \"string\",\n      \"entidadeEmissora\": \"string\"\n    },\n    \"registroProduto\": {\n      \"numeroRegistro\": \"string\",\n      \"nomeProduto\": \"string\",\n      \"tipoProduto\": 0,\n      \"dtVencimento\": \"2026-01-01T00:00:00.000Z\",\n      \"dtCancelamento\": \"2026-01-01T00:00:00.000Z\",\n      \"nuCnpjEmpresa\": \"string\",\n      \"razaoSocialEmpresa\": \"string\",\n      \"enderecoEmpresa\": \"string\",\n      \"nomeTecnico\": \"string\",\n      \"classeRisco\": \"string\"\n    },\n    \"tipoProduto\": \"string\",\n    \"recondicionadora\": {\n      \"razaoSocial\": \"string\",\n      \"endereco\": \"string\",\n      \"pais\": \"string\"\n    },\n    \"nomeComercial\": \"string\",\n    \"versaoModelo\": \"string\",\n    \"codigoCatalogo\": \"string\",\n    \"fabricanteLegal\": {\n      \"razaoSocial\": \"string\",\n      \"endereco\": \"string\",\n      \"pais\": \"string\"\n    },\n    \"qtdPorEmbalagem\": 0,\n    \"categoria\": \"string\",\n    \"isUsoUnico\": \"SIM\",\n    \"isPassivelReutilizacao\": \"SIM\",\n    \"isSemLimitePredefinido\": \"SIM\",\n    \"qtdMaxReutilizacoes\": 0,\n    \"isDispositivoEsteril\": \"SIM\",\n    \"isRequerEsterilizacao\": \"SIM\",\n    \"isPossuiLatex\": \"SIM\",\n    \"isUsoLeigo\": \"SIM\",\n    \"isDispositivoCombinado\": \"SIM\",\n    \"isMaterialBiologico\": \"SIM\",\n    \"isIncorporaIA\": \"SIM\",\n    \"compatibilidadeComRM\": \"string\",\n    \"contraindicacoesCriticas\": \"string\",\n    \"condicoesArmazenamentoManuseio\": \"string\",\n    \"caracteristicasDimensionais\": \"string\",\n    \"termoGmdn\": {\n      \"codigo\": \"string\",\n      \"nome\": \"string\",\n      \"definicao\": \"string\",\n      \"nomeOriginal\": \"string\",\n      \"definicaoOriginal\": \"string\",\n      \"ativo\": \"SIM\"\n    },\n    \"hasIdentificadorUnidadeUtilizacao\": \"SIM\",\n    \"descIdentificadorUnidadeUtilizacao\": \"string\",\n    \"hasNumeroLote\": \"SIM\",\n    \"hasNumeroSerie\": \"SIM\",\n    \"hasDtValidade\": \"SIM\",\n    \"hasDtManufRecondReproc\": \"SIM\",\n    \"hasDtLiberacaoSAMD\": \"SIM\",\n    \"hasVersaoSoftware\": \"SIM\",\n    \"informacoesSuplementares\": \"string\",\n    \"informacoesAtendimentoConsumidor\": \"string\",\n    \"dtDescontinuacao\": \"2026-01-01T00:00:00.000Z\",\n    \"dtPublicacao\": \"2026-01-01T00:00:00.000Z\",\n    \"ativo\": \"SIM\",\n    \"desbloqueado\": \"SIM\",\n    \"codigoVersao\": \"string\",\n    \"nomeProdutoRegularizacao\": \"string\",\n    \"embalagens\": [\n      {\n        \"udiDi\": {\n          \"id\": \"string\",\n          \"entidadeEmissora\": \"string\"\n        },\n        \"nivelEmbalagem\": 0,\n        \"qtdPorEmbalagem\": 0\n      }\n    ],\n    \"metodosEsterilizacao\": [\n      \"string\"\n    ]\n  },\n  \"autorizacaoFuncionamento\": {\n    \"ordem\": 0,\n    \"cnpj\": \"string\",\n    \"razaoSocial\": \"string\",\n    \"nomeFantasia\": \"string\",\n    \"autorizacao\": \"string\",\n    \"novaAutorizacao\": \"string\",\n    \"numeroProcesso\": \"string\",\n    \"tipoProduto\": \"string\",\n    \"enderecoInternet\": \"string\",\n    \"numeroSac\": \"string\",\n    \"dataAutorizacao\": \"2026-01-01T00:00:00.000Z\",\n    \"dataAtualizacao\": \"2026-01-01T00:00:00.000Z\",\n    \"cadastro\": true,\n    \"ativa\": true\n  },\n  \"versoes\": [\n    {\n      \"id\": {\n        \"idHistorico\": 0,\n        \"idEntity\": 0\n      },\n      \"codigoUdiDi\": \"string\",\n      \"codigoVersao\": \"string\",\n      \"dtVersao\": \"2026-01-01T00:00:00.000Z\",\n      \"numeroVersao\": 0\n    }\n  ],\n  \"versaoDetalhada\": {\n    \"id\": {\n      \"idHistorico\": 0,\n      \"idEntity\": 0\n    },\n    \"codigoUdiDi\": \"string\",\n    \"codigoVersao\": \"string\",\n    \"dtVersao\": \"2026-01-01T00:00:00.000Z\",\n    \"numeroVersao\": 0\n  },\n  \"sucessao\": {\n    \"previo\": {\n      \"id\": 0,\n      \"udiDi\": \"string\",\n      \"udiDiEmissora\": \"string\",\n      \"idDispositivoPrevio\": 0,\n      \"tipoSucessao\": \"string\",\n      \"registroProduto\": {\n        \"numeroRegistro\": \"string\",\n        \"nomeProduto\": \"string\",\n        \"tipoProduto\": 0,\n        \"dtVencimento\": \"2026-01-01T00:00:00.000Z\",\n        \"dtCancelamento\": \"2026-01-01T00:00:00.000Z\",\n        \"nuCnpjEmpresa\": \"string\",\n        \"razaoSocialEmpresa\": \"string\",\n        \"enderecoEmpresa\": \"string\",\n        \"nomeTecnico\": \"string\",\n        \"classeRisco\": \"string\"\n      }\n    },\n    \"sucessor\": {\n      \"id\": 0,\n      \"udiDi\": \"string\",\n      \"udiDiEmissora\": \"string\",\n      \"idDispositivoPrevio\": 0,\n      \"tipoSucessao\": \"string\",\n      \"registroProduto\": {\n        \"numeroRegistro\": \"string\",\n        \"nomeProduto\": \"string\",\n        \"tipoProduto\": 0,\n        \"dtVencimento\": \"2026-01-01T00:00:00.000Z\",\n        \"dtCancelamento\": \"2026-01-01T00:00:00.000Z\",\n        \"nuCnpjEmpresa\": \"string\",\n        \"razaoSocialEmpresa\": \"string\",\n        \"enderecoEmpresa\": \"string\",\n        \"nomeTecnico\": \"string\",\n        \"classeRisco\": \"string\"\n      }\n    }\n  },\n  \"estagio\": \"DESBLOQUEADO\"\n}"
+    },
+    {
+      "id": "download_4",
+      "path": "/api/v1/udi/{id}/download",
+      "method": "GET",
+      "description": "Retorna o arquivo do detalhe do UDI. Retorna arquivo do Detalhe do UDI por ID.",
+      "filters": [
+        {
+          "name": "id",
+          "type": "integer (int64)",
+          "description": "Parâmetro de caminho, obrigatório. Identificador do UDI (campo id de POST /api/v1/udi)."
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/udi/{id}/download' \\\n  -H 'Accept: */*' \\\n  -H 'Authorization: Bearer <token>' \\\n  -OJ"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/udi/{id}/download HTTP/1.1\nHost: {{gatewayHost}}\nAccept: */*\nAuthorization: Bearer <token>"
+        }
+      ]
+    },
+    {
+      "id": "findHistorico",
+      "path": "/api/v1/udi/{idDispositivo}/{idHistorico}",
+      "method": "GET",
+      "description": "Retorna o Historico do UDI de acordo com os IDs informados.",
+      "filters": [
+        {
+          "name": "idDispositivo",
+          "type": "integer (int64)",
+          "description": "Parâmetro de caminho, obrigatório. Identificador do dispositivo (campo versoes[].id.idEntity de GET /api/v1/udi/{id})."
+        },
+        {
+          "name": "idHistorico",
+          "type": "integer (int64)",
+          "description": "Parâmetro de caminho, obrigatório. Identificador do histórico (campo versoes[].id.idHistorico de GET /api/v1/udi/{id})."
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/udi/{idDispositivo}/{idHistorico}' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/udi/{idDispositivo}/{idHistorico} HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "{\n  \"dispositivo\": {\n    \"id\": 0,\n    \"udiDi\": {\n      \"id\": \"string\",\n      \"entidadeEmissora\": \"string\"\n    },\n    \"udiDiOriginal\": {\n      \"id\": \"string\",\n      \"entidadeEmissora\": \"string\"\n    },\n    \"registroProduto\": {\n      \"numeroRegistro\": \"string\",\n      \"nomeProduto\": \"string\",\n      \"tipoProduto\": 0,\n      \"dtVencimento\": \"2026-01-01T00:00:00.000Z\",\n      \"dtCancelamento\": \"2026-01-01T00:00:00.000Z\",\n      \"nuCnpjEmpresa\": \"string\",\n      \"razaoSocialEmpresa\": \"string\",\n      \"enderecoEmpresa\": \"string\",\n      \"nomeTecnico\": \"string\",\n      \"classeRisco\": \"string\"\n    },\n    \"tipoProduto\": \"string\",\n    \"recondicionadora\": {\n      \"razaoSocial\": \"string\",\n      \"endereco\": \"string\",\n      \"pais\": \"string\"\n    },\n    \"nomeComercial\": \"string\",\n    \"versaoModelo\": \"string\",\n    \"codigoCatalogo\": \"string\",\n    \"fabricanteLegal\": {\n      \"razaoSocial\": \"string\",\n      \"endereco\": \"string\",\n      \"pais\": \"string\"\n    },\n    \"qtdPorEmbalagem\": 0,\n    \"categoria\": \"string\",\n    \"isUsoUnico\": \"SIM\",\n    \"isPassivelReutilizacao\": \"SIM\",\n    \"isSemLimitePredefinido\": \"SIM\",\n    \"qtdMaxReutilizacoes\": 0,\n    \"isDispositivoEsteril\": \"SIM\",\n    \"isRequerEsterilizacao\": \"SIM\",\n    \"isPossuiLatex\": \"SIM\",\n    \"isUsoLeigo\": \"SIM\",\n    \"isDispositivoCombinado\": \"SIM\",\n    \"isMaterialBiologico\": \"SIM\",\n    \"isIncorporaIA\": \"SIM\",\n    \"compatibilidadeComRM\": \"string\",\n    \"contraindicacoesCriticas\": \"string\",\n    \"condicoesArmazenamentoManuseio\": \"string\",\n    \"caracteristicasDimensionais\": \"string\",\n    \"termoGmdn\": {\n      \"codigo\": \"string\",\n      \"nome\": \"string\",\n      \"definicao\": \"string\",\n      \"nomeOriginal\": \"string\",\n      \"definicaoOriginal\": \"string\",\n      \"ativo\": \"SIM\"\n    },\n    \"hasIdentificadorUnidadeUtilizacao\": \"SIM\",\n    \"descIdentificadorUnidadeUtilizacao\": \"string\",\n    \"hasNumeroLote\": \"SIM\",\n    \"hasNumeroSerie\": \"SIM\",\n    \"hasDtValidade\": \"SIM\",\n    \"hasDtManufRecondReproc\": \"SIM\",\n    \"hasDtLiberacaoSAMD\": \"SIM\",\n    \"hasVersaoSoftware\": \"SIM\",\n    \"informacoesSuplementares\": \"string\",\n    \"informacoesAtendimentoConsumidor\": \"string\",\n    \"dtDescontinuacao\": \"2026-01-01T00:00:00.000Z\",\n    \"dtPublicacao\": \"2026-01-01T00:00:00.000Z\",\n    \"ativo\": \"SIM\",\n    \"desbloqueado\": \"SIM\",\n    \"codigoVersao\": \"string\",\n    \"nomeProdutoRegularizacao\": \"string\",\n    \"embalagens\": [\n      {\n        \"udiDi\": {\n          \"id\": \"string\",\n          \"entidadeEmissora\": \"string\"\n        },\n        \"nivelEmbalagem\": 0,\n        \"qtdPorEmbalagem\": 0\n      }\n    ],\n    \"metodosEsterilizacao\": [\n      \"string\"\n    ]\n  },\n  \"autorizacaoFuncionamento\": {\n    \"ordem\": 0,\n    \"cnpj\": \"string\",\n    \"razaoSocial\": \"string\",\n    \"nomeFantasia\": \"string\",\n    \"autorizacao\": \"string\",\n    \"novaAutorizacao\": \"string\",\n    \"numeroProcesso\": \"string\",\n    \"tipoProduto\": \"string\",\n    \"enderecoInternet\": \"string\",\n    \"numeroSac\": \"string\",\n    \"dataAutorizacao\": \"2026-01-01T00:00:00.000Z\",\n    \"dataAtualizacao\": \"2026-01-01T00:00:00.000Z\",\n    \"cadastro\": true,\n    \"ativa\": true\n  },\n  \"versoes\": [\n    {\n      \"id\": {\n        \"idHistorico\": 0,\n        \"idEntity\": 0\n      },\n      \"codigoUdiDi\": \"string\",\n      \"codigoVersao\": \"string\",\n      \"dtVersao\": \"2026-01-01T00:00:00.000Z\",\n      \"numeroVersao\": 0\n    }\n  ],\n  \"versaoDetalhada\": {\n    \"id\": {\n      \"idHistorico\": 0,\n      \"idEntity\": 0\n    },\n    \"codigoUdiDi\": \"string\",\n    \"codigoVersao\": \"string\",\n    \"dtVersao\": \"2026-01-01T00:00:00.000Z\",\n    \"numeroVersao\": 0\n  },\n  \"sucessao\": {\n    \"previo\": {\n      \"id\": 0,\n      \"udiDi\": \"string\",\n      \"udiDiEmissora\": \"string\",\n      \"idDispositivoPrevio\": 0,\n      \"tipoSucessao\": \"string\",\n      \"registroProduto\": {\n        \"numeroRegistro\": \"string\",\n        \"nomeProduto\": \"string\",\n        \"tipoProduto\": 0,\n        \"dtVencimento\": \"2026-01-01T00:00:00.000Z\",\n        \"dtCancelamento\": \"2026-01-01T00:00:00.000Z\",\n        \"nuCnpjEmpresa\": \"string\",\n        \"razaoSocialEmpresa\": \"string\",\n        \"enderecoEmpresa\": \"string\",\n        \"nomeTecnico\": \"string\",\n        \"classeRisco\": \"string\"\n      }\n    },\n    \"sucessor\": {\n      \"id\": 0,\n      \"udiDi\": \"string\",\n      \"udiDiEmissora\": \"string\",\n      \"idDispositivoPrevio\": 0,\n      \"tipoSucessao\": \"string\",\n      \"registroProduto\": {\n        \"numeroRegistro\": \"string\",\n        \"nomeProduto\": \"string\",\n        \"tipoProduto\": 0,\n        \"dtVencimento\": \"2026-01-01T00:00:00.000Z\",\n        \"dtCancelamento\": \"2026-01-01T00:00:00.000Z\",\n        \"nuCnpjEmpresa\": \"string\",\n        \"razaoSocialEmpresa\": \"string\",\n        \"enderecoEmpresa\": \"string\",\n        \"nomeTecnico\": \"string\",\n        \"classeRisco\": \"string\"\n      }\n    }\n  },\n  \"estagio\": \"DESBLOQUEADO\"\n}"
+    },
+    {
+      "id": "downloadHistorico",
+      "path": "/api/v1/udi/{idDispositivo}/{idHistorico}/download",
+      "method": "GET",
+      "description": "Retorna o arquivo do detalhamento por id do dispositivo e id histórico do UDI. Retorna arquivo do Historico do UDI por ID.",
+      "filters": [
+        {
+          "name": "idDispositivo",
+          "type": "integer (int64)",
+          "description": "Parâmetro de caminho, obrigatório. Identificador do dispositivo (campo versoes[].id.idEntity de GET /api/v1/udi/{id})."
+        },
+        {
+          "name": "idHistorico",
+          "type": "integer (int64)",
+          "description": "Parâmetro de caminho, obrigatório. Identificador do histórico (campo versoes[].id.idHistorico de GET /api/v1/udi/{id})."
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/udi/{idDispositivo}/{idHistorico}/download' \\\n  -H 'Accept: */*' \\\n  -H 'Authorization: Bearer <token>' \\\n  -OJ"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/udi/{idDispositivo}/{idHistorico}/download HTTP/1.1\nHost: {{gatewayHost}}\nAccept: */*\nAuthorization: Bearer <token>"
+        }
+      ]
+    },
+    {
+      "id": "paginarTermoGmdn_1",
+      "path": "/api/v1/udi/termoGmdn/{codigo}",
+      "method": "GET",
+      "description": "Retorna o termo Gmdn do UDI por codigo.",
+      "filters": [
+        {
+          "name": "codigo",
+          "type": "string",
+          "description": "Parâmetro de caminho, obrigatório. Código do termo GMDN (campo codigo de POST /api/v1/udi/termoGmdn)."
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/udi/termoGmdn/{codigo}' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/udi/termoGmdn/{codigo} HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "{\n  \"codigo\": \"string\",\n  \"nome\": \"string\",\n  \"definicao\": \"string\",\n  \"nomeOriginal\": \"string\",\n  \"definicaoOriginal\": \"string\",\n  \"ativo\": \"SIM\"\n}"
+    },
+    {
+      "id": "findHistorico_1",
+      "path": "/api/v1/udi/historico",
+      "method": "GET",
+      "description": "Retorna o Historico do UDI.",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/udi/historico' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/udi/historico HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"id\": 0,\n    \"tipoHistorico\": \"string\",\n    \"totalRegistros\": 0,\n    \"dtInicio\": \"2026-01-01T00:00:00.000Z\",\n    \"dtFim\": \"2026-01-01T00:00:00.000Z\",\n    \"dtGeracao\": \"2026-01-01T00:00:00.000Z\"\n  }\n]"
+    },
+    {
+      "id": "downloadHistoricoUdi",
+      "path": "/api/v1/udi/historico/{id}/download",
+      "method": "GET",
+      "description": "Retorna o arquivo do Historico do UDI. Retorna arquivo do Historico do UDI por ID.",
+      "filters": [
+        {
+          "name": "id",
+          "type": "integer (int64)",
+          "description": "Parâmetro de caminho, obrigatório. Identificador do histórico (campo id de GET /api/v1/udi/historico)."
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/udi/historico/{id}/download' \\\n  -H 'Accept: */*' \\\n  -H 'Authorization: Bearer <token>' \\\n  -OJ"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/udi/historico/{id}/download HTTP/1.1\nHost: {{gatewayHost}}\nAccept: */*\nAuthorization: Bearer <token>"
+        }
+      ]
+    }
+  ]
+}

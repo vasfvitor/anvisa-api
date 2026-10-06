@@ -1,0 +1,430 @@
+{
+  "slug": "certificado-medicamento-doc",
+  "rota": "consultas-externas/certificado-medicamento-doc",
+  "titulo": "Certificado de Boas Práticas de Medicamentos",
+  "formato": "ENDPOINTS",
+  "conteudo": [
+    {
+      "id": "download_1",
+      "path": "/api/v1/certificadoMedicamento/download",
+      "method": "POST",
+      "description": "Faz o download do relatório de certificados. Recebe JSON com page, order, sorting e filtros em filter[...] e gera um arquivo para download.",
+      "filters": [
+        {
+          "name": "size",
+          "type": "integer (int32)",
+          "description": "Quantidade de itens por página.",
+          "example": "10"
+        },
+        {
+          "name": "page",
+          "type": "integer (int32)",
+          "description": "Número da página.",
+          "example": "1"
+        },
+        {
+          "name": "filter.nacional",
+          "type": "boolean",
+          "description": "Inclui empresas nacionais.",
+          "example": "true"
+        },
+        {
+          "name": "filter.internacional",
+          "type": "boolean",
+          "description": "Inclui empresas internacionais.",
+          "example": "true"
+        },
+        {
+          "name": "filter.certificacaoConcedidaPor",
+          "type": "string",
+          "description": "Quem concedeu a certificação (campo id de GET /api/v1/certificadoMedicamento/certificacaoConcedidaPor).",
+          "example": "2",
+          "metadataFragment": "certificacaoConcedidaPor"
+        },
+        {
+          "name": "filter.classesCertificacao",
+          "type": "string",
+          "description": "Classes de certificação (campo id de GET /api/v1/certificadoMedicamento/classesCertificacao).",
+          "example": "27702",
+          "metadataFragment": "classesCertificacao"
+        },
+        {
+          "name": "filter.formasFarmaceuticas",
+          "type": "string",
+          "description": "Formas farmacêuticas (campo id de GET /api/v1/certificadoMedicamento/formasFarmaceuticas).",
+          "example": "53",
+          "metadataFragment": "formasFarmaceuticas"
+        },
+        {
+          "name": "filter.linhasCertificacao",
+          "type": "string",
+          "description": "Linhas de certificação (campo id de GET /api/v1/certificadoMedicamento/linhasCertificacao).",
+          "example": "12",
+          "metadataFragment": "linhasCertificacao"
+        },
+        {
+          "name": "filter.status",
+          "type": "string",
+          "description": "Status do certificado (campo id de GET /api/v1/certificadoMedicamento/status). Aceita vários valores separados por vírgula.",
+          "example": "0,1,2,3",
+          "metadataFragment": "status"
+        },
+        {
+          "name": "filter.cnpjCertificada",
+          "type": "string",
+          "description": "CNPJ da empresa certificada.",
+          "example": "0"
+        },
+        {
+          "name": "filter.cnpjSolicitante",
+          "type": "string",
+          "description": "CNPJ da empresa solicitante.",
+          "example": "0"
+        },
+        {
+          "name": "filter.ufs",
+          "type": "string",
+          "description": "Siglas de UF.",
+          "example": "MG",
+          "metadataFragment": "uf"
+        },
+        {
+          "name": "filter.codigoUnico",
+          "type": "string",
+          "description": "Código único da empresa.",
+          "example": "C011812"
+        },
+        {
+          "name": "filter.pais",
+          "type": "string",
+          "description": "Código do país.",
+          "example": "182",
+          "metadataFragment": "pais"
+        },
+        {
+          "name": "filter.contexto",
+          "type": "string",
+          "description": "Contexto da consulta: \"certificadoMedicamento\" para certificados de medicamentos (com os filtros específicos) ou \"certificado\" para certificados genéricos (sem classesCertificacao, formasFarmaceuticas e linhasCertificacao).",
+          "example": "certificadoMedicamento"
+        },
+        {
+          "name": "filter.dataPublicacaoInicial",
+          "type": "string",
+          "description": "Data de publicação inicial.",
+          "example": "01/12/2024 03:00:00"
+        },
+        {
+          "name": "filter.dataPublicacaoFinal",
+          "type": "string",
+          "description": "Data de publicação final.",
+          "example": "30/01/2025 03:00:00"
+        },
+        {
+          "name": "filter.dataValidadeInicial",
+          "type": "string",
+          "description": "Data de validade inicial.",
+          "example": "01/12/2024 03:00:00"
+        },
+        {
+          "name": "filter.dataValidadeFinal",
+          "type": "string",
+          "description": "Data de validade final.",
+          "example": "30/01/2025 03:00:00"
+        },
+        {
+          "name": "filter.liberacaoSim",
+          "type": "boolean",
+          "description": "Inclui certificados com liberação.",
+          "example": "true"
+        },
+        {
+          "name": "filter.liberacaoNao",
+          "type": "boolean",
+          "description": "Inclui certificados sem liberação.",
+          "example": "true"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "# Certificados Medicamento\ncurl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/certificadoMedicamento/download' \\\n  -H 'Accept: */*' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"size\": \"10\",\n    \"page\": \"1\",\n    \"filter\": {\n      \"nacional\": true,\n      \"internacional\": true,\n      \"certificacaoConcedidaPor\": \"2\",\n      \"classesCertificacao\": \"27702\",\n      \"formasFarmaceuticas\": \"53\",\n      \"linhasCertificacao\": \"12\",\n      \"status\": \"0,1,2,3\",\n      \"cnpjCertificada\": \"0\",\n      \"cnpjSolicitante\": \"0\",\n      \"ufs\": \"MG\",\n      \"codigoUnico\": \"C011812\",\n      \"pais\": \"182\",\n      \"contexto\": \"certificadoMedicamento\",\n      \"dataPublicacaoInicial\": \"01/12/2024 03:00:00\",\n      \"dataPublicacaoFinal\": \"30/01/2025 03:00:00\",\n      \"dataValidadeInicial\": \"01/12/2024 03:00:00\",\n      \"dataValidadeFinal\": \"30/01/2025 03:00:00\",\n      \"liberacaoSim\": true,\n      \"liberacaoNao\": true\n    }\n  }' \\\n  -OJ\n\n# Certificados Genéricos\ncurl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/certificadoMedicamento/download' \\\n  -H 'Accept: */*' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"size\": \"10\",\n    \"page\": \"1\",\n    \"filter\": {\n      \"nacional\": true,\n      \"internacional\": false,\n      \"certificacaoConcedidaPor\": \"3,4\",\n      \"status\": \"0,3\",\n      \"cnpjCertificada\": \"76475789000107\",\n      \"ufs\": \"SP,MG\",\n      \"contexto\": \"certificado\",\n      \"dataPublicacaoInicial\": \"01/12/2024 03:00:00\",\n      \"dataPublicacaoFinal\": \"30/01/2025 03:00:00\",\n      \"dataValidadeInicial\": \"01/12/2024 03:00:00\",\n      \"dataValidadeFinal\": \"30/01/2025 03:00:00\",\n      \"liberacaoSim\": true,\n      \"liberacaoNao\": false\n    }\n  }' \\\n  -OJ"
+        },
+        {
+          "type": "http",
+          "snippet": "# Certificados Medicamento\nPOST {{gatewayUrl}}/consultas-externas-api/api/v1/certificadoMedicamento/download HTTP/1.1\nHost: {{gatewayHost}}\nAccept: */*\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"size\": \"10\",\n  \"page\": \"1\",\n  \"filter\": {\n    \"nacional\": true,\n    \"internacional\": true,\n    \"certificacaoConcedidaPor\": \"2\",\n    \"classesCertificacao\": \"27702\",\n    \"formasFarmaceuticas\": \"53\",\n    \"linhasCertificacao\": \"12\",\n    \"status\": \"0,1,2,3\",\n    \"cnpjCertificada\": \"0\",\n    \"cnpjSolicitante\": \"0\",\n    \"ufs\": \"MG\",\n    \"codigoUnico\": \"C011812\",\n    \"pais\": \"182\",\n    \"contexto\": \"certificadoMedicamento\",\n    \"dataPublicacaoInicial\": \"01/12/2024 03:00:00\",\n    \"dataPublicacaoFinal\": \"30/01/2025 03:00:00\",\n    \"dataValidadeInicial\": \"01/12/2024 03:00:00\",\n    \"dataValidadeFinal\": \"30/01/2025 03:00:00\",\n    \"liberacaoSim\": true,\n    \"liberacaoNao\": true\n  }\n}\n\n###\n\n# Certificados Genéricos\nPOST {{gatewayUrl}}/consultas-externas-api/api/v1/certificadoMedicamento/download HTTP/1.1\nHost: {{gatewayHost}}\nAccept: */*\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"size\": \"10\",\n  \"page\": \"1\",\n  \"filter\": {\n    \"nacional\": true,\n    \"internacional\": false,\n    \"certificacaoConcedidaPor\": \"3,4\",\n    \"status\": \"0,3\",\n    \"cnpjCertificada\": \"76475789000107\",\n    \"ufs\": \"SP,MG\",\n    \"contexto\": \"certificado\",\n    \"dataPublicacaoInicial\": \"01/12/2024 03:00:00\",\n    \"dataPublicacaoFinal\": \"30/01/2025 03:00:00\",\n    \"dataValidadeInicial\": \"01/12/2024 03:00:00\",\n    \"dataValidadeFinal\": \"30/01/2025 03:00:00\",\n    \"liberacaoSim\": true,\n    \"liberacaoNao\": false\n  }\n}"
+        }
+      ]
+    },
+    {
+      "id": "findCertificado_1",
+      "path": "/api/v1/certificadoMedicamento/",
+      "method": "POST",
+      "description": "Retorna certificados paginados. Recebe JSON com page, order, sorting e filtros em filter[...]. Para certificados medicamentos, use contexto = \"certificadoMedicamento\" e inclua filtros específicos; para certificados genéricos, use contexto = \"certificado\" e não inclua classesCertificacao, formasFarmaceuticas ou linhasCertificacao.",
+      "filters": [
+        {
+          "name": "size",
+          "type": "integer (int32)",
+          "description": "Quantidade de itens por página.",
+          "example": "10"
+        },
+        {
+          "name": "page",
+          "type": "integer (int32)",
+          "description": "Número da página.",
+          "example": "1"
+        },
+        {
+          "name": "filter.nacional",
+          "type": "boolean",
+          "description": "Inclui empresas nacionais.",
+          "example": "true"
+        },
+        {
+          "name": "filter.internacional",
+          "type": "boolean",
+          "description": "Inclui empresas internacionais.",
+          "example": "true"
+        },
+        {
+          "name": "filter.certificacaoConcedidaPor",
+          "type": "string",
+          "description": "Quem concedeu a certificação (campo id de GET /api/v1/certificadoMedicamento/certificacaoConcedidaPor).",
+          "example": "2",
+          "metadataFragment": "certificacaoConcedidaPor"
+        },
+        {
+          "name": "filter.classesCertificacao",
+          "type": "string",
+          "description": "Classes de certificação (campo id de GET /api/v1/certificadoMedicamento/classesCertificacao).",
+          "example": "27702",
+          "metadataFragment": "classesCertificacao"
+        },
+        {
+          "name": "filter.formasFarmaceuticas",
+          "type": "string",
+          "description": "Formas farmacêuticas (campo id de GET /api/v1/certificadoMedicamento/formasFarmaceuticas).",
+          "example": "53",
+          "metadataFragment": "formasFarmaceuticas"
+        },
+        {
+          "name": "filter.linhasCertificacao",
+          "type": "string",
+          "description": "Linhas de certificação (campo id de GET /api/v1/certificadoMedicamento/linhasCertificacao).",
+          "example": "12",
+          "metadataFragment": "linhasCertificacao"
+        },
+        {
+          "name": "filter.status",
+          "type": "string",
+          "description": "Status do certificado (campo id de GET /api/v1/certificadoMedicamento/status). Aceita vários valores separados por vírgula.",
+          "example": "0,1,2,3",
+          "metadataFragment": "status"
+        },
+        {
+          "name": "filter.cnpjCertificada",
+          "type": "string",
+          "description": "CNPJ da empresa certificada.",
+          "example": "0"
+        },
+        {
+          "name": "filter.cnpjSolicitante",
+          "type": "string",
+          "description": "CNPJ da empresa solicitante.",
+          "example": "0"
+        },
+        {
+          "name": "filter.ufs",
+          "type": "string",
+          "description": "Siglas de UF.",
+          "example": "MG",
+          "metadataFragment": "uf"
+        },
+        {
+          "name": "filter.codigoUnico",
+          "type": "string",
+          "description": "Código único da empresa.",
+          "example": "C011812"
+        },
+        {
+          "name": "filter.pais",
+          "type": "string",
+          "description": "Código do país.",
+          "example": "182",
+          "metadataFragment": "pais"
+        },
+        {
+          "name": "filter.contexto",
+          "type": "string",
+          "description": "Contexto da consulta: \"certificadoMedicamento\" para certificados de medicamentos (com os filtros específicos) ou \"certificado\" para certificados genéricos (sem classesCertificacao, formasFarmaceuticas e linhasCertificacao).",
+          "example": "certificadoMedicamento"
+        },
+        {
+          "name": "filter.dataPublicacaoInicial",
+          "type": "string",
+          "description": "Data de publicação inicial.",
+          "example": "01/12/2024 03:00:00"
+        },
+        {
+          "name": "filter.dataPublicacaoFinal",
+          "type": "string",
+          "description": "Data de publicação final.",
+          "example": "30/01/2025 03:00:00"
+        },
+        {
+          "name": "filter.dataValidadeInicial",
+          "type": "string",
+          "description": "Data de validade inicial.",
+          "example": "01/12/2024 03:00:00"
+        },
+        {
+          "name": "filter.dataValidadeFinal",
+          "type": "string",
+          "description": "Data de validade final.",
+          "example": "30/01/2025 03:00:00"
+        },
+        {
+          "name": "filter.liberacaoSim",
+          "type": "boolean",
+          "description": "Inclui certificados com liberação.",
+          "example": "true"
+        },
+        {
+          "name": "filter.liberacaoNao",
+          "type": "boolean",
+          "description": "Inclui certificados sem liberação.",
+          "example": "true"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "# Certificados Medicamento\ncurl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/certificadoMedicamento/' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"size\": \"10\",\n    \"page\": \"1\",\n    \"filter\": {\n      \"nacional\": true,\n      \"internacional\": true,\n      \"certificacaoConcedidaPor\": \"2\",\n      \"classesCertificacao\": \"27702\",\n      \"formasFarmaceuticas\": \"53\",\n      \"linhasCertificacao\": \"12\",\n      \"status\": \"0,1,2,3\",\n      \"cnpjCertificada\": \"0\",\n      \"cnpjSolicitante\": \"0\",\n      \"ufs\": \"MG\",\n      \"codigoUnico\": \"C011812\",\n      \"pais\": \"182\",\n      \"contexto\": \"certificadoMedicamento\",\n      \"dataPublicacaoInicial\": \"01/12/2024 03:00:00\",\n      \"dataPublicacaoFinal\": \"30/01/2025 03:00:00\",\n      \"dataValidadeInicial\": \"01/12/2024 03:00:00\",\n      \"dataValidadeFinal\": \"30/01/2025 03:00:00\",\n      \"liberacaoSim\": true,\n      \"liberacaoNao\": true\n    }\n  }'\n\n# Certificados Genéricos\ncurl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/certificadoMedicamento/' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"size\": \"10\",\n    \"page\": \"1\",\n    \"filter\": {\n      \"nacional\": true,\n      \"internacional\": false,\n      \"certificacaoConcedidaPor\": \"3,4\",\n      \"status\": \"0,3\",\n      \"cnpjCertificada\": \"76475789000107\",\n      \"ufs\": \"SP,MG\",\n      \"contexto\": \"certificado\",\n      \"dataPublicacaoInicial\": \"01/12/2024 03:00:00\",\n      \"dataPublicacaoFinal\": \"30/01/2025 03:00:00\",\n      \"dataValidadeInicial\": \"01/12/2024 03:00:00\",\n      \"dataValidadeFinal\": \"30/01/2025 03:00:00\",\n      \"liberacaoSim\": true,\n      \"liberacaoNao\": false\n    }\n  }'"
+        },
+        {
+          "type": "http",
+          "snippet": "# Certificados Medicamento\nPOST {{gatewayUrl}}/consultas-externas-api/api/v1/certificadoMedicamento/ HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"size\": \"10\",\n  \"page\": \"1\",\n  \"filter\": {\n    \"nacional\": true,\n    \"internacional\": true,\n    \"certificacaoConcedidaPor\": \"2\",\n    \"classesCertificacao\": \"27702\",\n    \"formasFarmaceuticas\": \"53\",\n    \"linhasCertificacao\": \"12\",\n    \"status\": \"0,1,2,3\",\n    \"cnpjCertificada\": \"0\",\n    \"cnpjSolicitante\": \"0\",\n    \"ufs\": \"MG\",\n    \"codigoUnico\": \"C011812\",\n    \"pais\": \"182\",\n    \"contexto\": \"certificadoMedicamento\",\n    \"dataPublicacaoInicial\": \"01/12/2024 03:00:00\",\n    \"dataPublicacaoFinal\": \"30/01/2025 03:00:00\",\n    \"dataValidadeInicial\": \"01/12/2024 03:00:00\",\n    \"dataValidadeFinal\": \"30/01/2025 03:00:00\",\n    \"liberacaoSim\": true,\n    \"liberacaoNao\": true\n  }\n}\n\n###\n\n# Certificados Genéricos\nPOST {{gatewayUrl}}/consultas-externas-api/api/v1/certificadoMedicamento/ HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"size\": \"10\",\n  \"page\": \"1\",\n  \"filter\": {\n    \"nacional\": true,\n    \"internacional\": false,\n    \"certificacaoConcedidaPor\": \"3,4\",\n    \"status\": \"0,3\",\n    \"cnpjCertificada\": \"76475789000107\",\n    \"ufs\": \"SP,MG\",\n    \"contexto\": \"certificado\",\n    \"dataPublicacaoInicial\": \"01/12/2024 03:00:00\",\n    \"dataPublicacaoFinal\": \"30/01/2025 03:00:00\",\n    \"dataValidadeInicial\": \"01/12/2024 03:00:00\",\n    \"dataValidadeFinal\": \"30/01/2025 03:00:00\",\n    \"liberacaoSim\": true,\n    \"liberacaoNao\": false\n  }\n}"
+        }
+      ],
+      "responseExample": "{\n  \"totalPages\": 0,\n  \"totalElements\": 0,\n  \"number\": 0,\n  \"size\": 0,\n  \"numberOfElements\": 0,\n  \"content\": [\n    {\n      \"idCertificado\": 0,\n      \"empresaSolicitante\": \"string\",\n      \"cnpj\": \"string\",\n      \"empresaCertificada\": \"string\",\n      \"codigoUnico\": \"string\",\n      \"cnpjCertificada\": \"string\",\n      \"tipoCertificado\": \"string\",\n      \"assunto\": \"string\",\n      \"dataPublicacao\": \"2026-01-01T00:00:00.000Z\",\n      \"datavalidade\": \"2026-01-01T00:00:00.000Z\",\n      \"status\": \"string\",\n      \"certificacaoConcedidaPor\": \"string\",\n      \"codCertificacaoConcedidaPor\": 0,\n      \"dataAtualizacao\": \"2026-01-01T00:00:00.000Z\",\n      \"numeroExpediente\": \"string\",\n      \"numeroProcesso\": \"string\",\n      \"enderecoSolicitante\": \"string\",\n      \"cidadeSolicitante\": \"string\",\n      \"estadoSolicitante\": \"string\",\n      \"paisSolicitante\": \"string\",\n      \"enderecoCertificado\": \"string\",\n      \"cidadeCertificado\": \"string\",\n      \"estadoCertificado\": \"string\",\n      \"paisCertificado\": \"string\"\n    }\n  ],\n  \"sort\": {\n    \"sorted\": true,\n    \"empty\": true,\n    \"unsorted\": true\n  },\n  \"first\": true,\n  \"last\": true,\n  \"pageable\": {\n    \"paged\": true,\n    \"unpaged\": true,\n    \"pageNumber\": 0,\n    \"pageSize\": 0,\n    \"offset\": 0,\n    \"sort\": {\n      \"sorted\": true,\n      \"empty\": true,\n      \"unsorted\": true\n    }\n  },\n  \"empty\": true\n}"
+    },
+    {
+      "id": "detailCertificado",
+      "path": "/api/v1/certificadoMedicamento/{id}",
+      "method": "GET",
+      "description": "Retorna o certificado detalhado de acordo com o ID informado.",
+      "filters": [
+        {
+          "name": "id",
+          "type": "integer (int64)",
+          "description": "Parâmetro de caminho, obrigatório. Identificador do certificado (campo idCertificado de POST /api/v1/certificadoMedicamento/)."
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/certificadoMedicamento/{id}' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/certificadoMedicamento/{id} HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "{\n  \"idCertificado\": 0,\n  \"empresaSolicitante\": \"string\",\n  \"cnpj\": \"string\",\n  \"endereco\": \"string\",\n  \"cidade\": \"string\",\n  \"uf\": \"string\",\n  \"empresaCertificada\": \"string\",\n  \"codigoUnico\": \"string\",\n  \"cnpjCertificada\": \"string\",\n  \"enderecoCertificada\": \"string\",\n  \"cidadeCertificada\": \"string\",\n  \"ufCertificada\": \"string\",\n  \"paisCertificado\": \"string\",\n  \"paisSolicitante\": \"string\",\n  \"tipoCertificado\": \"string\",\n  \"assunto\": \"string\",\n  \"dataPublicacao\": \"2026-01-01T00:00:00.000Z\",\n  \"datavalidade\": \"2026-01-01T00:00:00.000Z\",\n  \"resolucao\": \"string\",\n  \"dataResolucao\": \"2026-01-01T00:00:00.000Z\",\n  \"numeroDou\": \"string\",\n  \"numeroExpediente\": \"string\",\n  \"motivo\": {\n    \"tipo\": \"string\",\n    \"descricao\": \"string\"\n  },\n  \"certificacaoConcedidaPor\": {\n    \"codigo\": 0,\n    \"descricao\": \"string\"\n  },\n  \"tipoAssunto\": 0,\n  \"codSituacao\": 0,\n  \"contexto\": \"string\",\n  \"status\": \"VALIDO\",\n  \"linhasCertificacao\": [\n    {\n      \"cod\": 0,\n      \"ordem\": 0,\n      \"descricao\": \"string\",\n      \"tipoProduto\": \"string\",\n      \"documento\": {\n        \"codDocumentoPeticao\": 0,\n        \"codSituacao\": 0,\n        \"situacao\": \"string\",\n        \"dtPublicacao\": \"2026-01-01T00:00:00.000Z\",\n        \"dtValidade\": \"2026-01-01T00:00:00.000Z\",\n        \"assunto\": \"string\",\n        \"dataResolucao\": \"2026-01-01T00:00:00.000Z\",\n        \"resolucao\": \"string\",\n        \"numeroDou\": \"string\",\n        \"tipoCertificado\": \"string\",\n        \"expediente\": \"string\",\n        \"vigente\": true,\n        \"indeferido\": true\n      },\n      \"campos\": [\n        {\n          \"ordem\": 0,\n          \"campo\": \"string\",\n          \"valores\": [\n            {\n              \"valor\": \"string\",\n              \"tipoAlteracao\": \"PROCESSO\",\n              \"cancelado\": true\n            }\n          ],\n          \"alteracaoCertificacaoForAll\": \"PROCESSO\"\n        }\n      ],\n      \"status\": \"VIGENTE\",\n      \"algumCampoComValorCancelado\": true,\n      \"dataCancelamento\": \"2026-01-01T00:00:00.000Z\",\n      \"dataIndeferimento\": \"2026-01-01T00:00:00.000Z\"\n    }\n  ],\n  \"linhasNoProcesso\": [\n    {\n      \"cod\": 0,\n      \"ordem\": 0,\n      \"descricao\": \"string\",\n      \"tipoProduto\": \"string\",\n      \"documento\": {\n        \"codDocumentoPeticao\": 0,\n        \"codSituacao\": 0,\n        \"situacao\": \"string\",\n        \"dtPublicacao\": \"2026-01-01T00:00:00.000Z\",\n        \"dtValidade\": \"2026-01-01T00:00:00.000Z\",\n        \"assunto\": \"string\",\n        \"dataResolucao\": \"2026-01-01T00:00:00.000Z\",\n        \"resolucao\": \"string\",\n        \"numeroDou\": \"string\",\n        \"tipoCertificado\": \"string\",\n        \"expediente\": \"string\",\n        \"vigente\": true,\n        \"indeferido\": true\n      },\n      \"campos\": [\n        {\n          \"ordem\": 0,\n          \"campo\": \"string\",\n          \"valores\": [\n            {\n              \"valor\": \"string\",\n              \"tipoAlteracao\": \"PROCESSO\",\n              \"cancelado\": true\n            }\n          ],\n          \"alteracaoCertificacaoForAll\": \"PROCESSO\"\n        }\n      ],\n      \"status\": \"VIGENTE\",\n      \"algumCampoComValorCancelado\": true,\n      \"dataCancelamento\": \"2026-01-01T00:00:00.000Z\",\n      \"dataIndeferimento\": \"2026-01-01T00:00:00.000Z\"\n    }\n  ],\n  \"tipoAlteracao\": \"PROCESSO\"\n}"
+    },
+    {
+      "id": "findStatus",
+      "metadataFragment": "status",
+      "path": "/api/v1/certificadoMedicamento/status",
+      "method": "GET",
+      "description": "Retorna status de certificados. Retorna uma lista de 'status' como pares chave-valor.",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/certificadoMedicamento/status' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/certificadoMedicamento/status HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"descricao\": \"string\",\n    \"id\": 0\n  }\n]"
+    },
+    {
+      "id": "findLinhasCertificacao",
+      "metadataFragment": "linhasCertificacao",
+      "path": "/api/v1/certificadoMedicamento/linhasCertificacao",
+      "method": "GET",
+      "description": "Retorna linhas de certificação. Retorna uma lista de linhas de certificação (LinhaCbpf).",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/certificadoMedicamento/linhasCertificacao' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/certificadoMedicamento/linhasCertificacao HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"id\": 0,\n    \"descricao\": \"string\",\n    \"ativa\": \"SIM\"\n  }\n]"
+    },
+    {
+      "id": "findFormasCertificacao",
+      "metadataFragment": "formasFarmaceuticas",
+      "path": "/api/v1/certificadoMedicamento/formasFarmaceuticas",
+      "method": "GET",
+      "description": "Retorna formas farmacêuticas básicas. Retorna uma lista de formas farmacêuticas básicas (FormaFarmaceuticaBasica).",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/certificadoMedicamento/formasFarmaceuticas' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/certificadoMedicamento/formasFarmaceuticas HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"id\": 0,\n    \"descricao\": \"string\",\n    \"ativa\": \"SIM\"\n  }\n]"
+    },
+    {
+      "id": "findClassesCertificacao",
+      "metadataFragment": "classesCertificacao",
+      "path": "/api/v1/certificadoMedicamento/classesCertificacao",
+      "method": "GET",
+      "description": "Retorna classes de certificação. Retorna uma lista de classes de certificação (ClasseCertificacao).",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/certificadoMedicamento/classesCertificacao' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/certificadoMedicamento/classesCertificacao HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"id\": 0,\n    \"descricao\": \"string\",\n    \"ativa\": \"SIM\"\n  }\n]"
+    },
+    {
+      "id": "findCertificacaoConcedidaPor",
+      "metadataFragment": "certificacaoConcedidaPor",
+      "path": "/api/v1/certificadoMedicamento/certificacaoConcedidaPor",
+      "method": "GET",
+      "description": "Retorna fontes de certificação concedida. Retorna uma lista de valores para 'Certificação Concedida Por'.",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/certificadoMedicamento/certificacaoConcedidaPor' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/certificadoMedicamento/certificacaoConcedidaPor HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"id\": 0,\n    \"descricao\": \"string\",\n    \"descricaoDetalhada\": \"string\"\n  }\n]"
+    }
+  ]
+}

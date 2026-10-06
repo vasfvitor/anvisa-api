@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Spec snapshot of 2026-10-06: ANVISA added 27 operations and 33 schemas to the Consultas
+  Externas document on 2026-10-01 (`saude`, `certificado`, `certificadoMedicamento`, `tabaco`),
+  live behind the token but not wrapped yet; `models.py` gained their schemas. The portal menu
+  was reorganized (per-domain doc pages, new SAMMED and SNCR sections) and the empresa,
+  dossiê and alimentos pages left it. See ROADMAP.md.
 - `anvisa.dados` and `anvisa dados list|build`: ANVISA's open-data alimentos CSVs
   (`TA_CONSULTA_ALIMENTOS.CSV`, `TA_CONSULTA_ALIMENTOS_RESULTADO.CSV`) to typed, sorted Parquet
   plus `manifest.json` (schema version 1) and `index.html`. DuckDB does the conversion and comes

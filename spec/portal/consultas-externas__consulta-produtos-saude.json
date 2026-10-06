@@ -1,94 +1,251 @@
 {
   "slug": "consulta-produtos-saude",
   "rota": "consultas-externas/consulta-produtos-saude",
-  "titulo": "Consulta Produtos de Saúde",
+  "titulo": "Produtos Saúde",
   "formato": "ENDPOINTS",
   "conteudo": [
     {
-      "id": "consultaProdutosSaude",
-      "path": "/consulta/saude",
+      "id": "buscaProdutosSaude",
+      "path": "/api/v1/saude",
       "method": "POST",
-      "description": "Consulta de Produtos de Saúde",
+      "description": "Retorna produtos saúde paginados. Recebe JSON com column, count, order, page e filtros em filter[...]. Use os filtros específicos como nomeProduto, numeroRegistro, numeroProcesso, nomeTecnico, cnpj, etc.",
       "filters": [
+        {
+          "name": "sorting",
+          "type": "object",
+          "description": "Ordenação por campo: objeto com o nome do campo e a direção (ASC ou DESC).",
+          "example": "{\"nomeProduto\":\"ASC\"}"
+        },
+        {
+          "name": "count",
+          "type": "number",
+          "description": "Quantidade de itens por página.",
+          "example": "10"
+        },
+        {
+          "name": "order",
+          "type": "string: ASC | DESC",
+          "description": "Direção da ordenação.",
+          "example": "ASC"
+        },
+        {
+          "name": "page",
+          "type": "integer (int32)",
+          "description": "Número da página.",
+          "example": "1"
+        },
         {
           "name": "filter.nomeProduto",
           "type": "string",
-          "description": "Nome do Dispositivo Médico",
-          "example": "MEDIC"
+          "description": "Nome do produto.",
+          "example": "1000MEDIC PROBE COVER"
         },
         {
-          "name": "filter.numeroRegistro",
+          "name": "filter.razaoSocial",
           "type": "string",
-          "description": "Número da Notificação ou do Registro do Dispositivo Médico",
+          "description": "Razão social da empresa.",
+          "example": "1000MEDIC DISTRIBUIDORA IMPORTADORA EXPORTADORA DE MEDICAMENTOS LTDA"
+        },
+        {
+          "name": "filter.nomeTecnico",
+          "type": "string",
+          "description": "Nome técnico.",
           "example": ""
+        },
+        {
+          "name": "filter.tipoAssunto",
+          "type": "string",
+          "description": "Tipo de assunto.",
+          "example": "true"
+        },
+        {
+          "name": "filter.cnpj",
+          "type": "string",
+          "description": "CNPJ da empresa.",
+          "example": "05993698000107"
+        },
+        {
+          "name": "filter.situacaoNotificacaoRegistro",
+          "type": "string",
+          "description": "Situação da notificação ou do registro.",
+          "example": "1"
         },
         {
           "name": "filter.numeroProcesso",
           "type": "string",
-          "description": "Processo da Notificação ou do Registro do Dispositivo Médico",
-          "example": ""
+          "description": "Número do processo.",
+          "example": "25351255616201719"
         },
         {
-          "name": "filter.nomeTecnico.codigos",
+          "name": "filter.registro",
           "type": "string",
-          "description": "Nome Técnico do Dispositivo Médico",
-          "example": ""
+          "description": "Registro do produto.",
+          "example": "80207450001"
         },
         {
-          "name": "filter.empresa.cnpj",
-          "type": "number",
-          "description": "CNPJ da Empresa Fabricante Nacional",
-          "example": "14 caracteres"
-        },
-        {
-          "name": "filter.situacaoNotificacaoRegistro",
-          "type": "number",
-          "description": "Situação da Notificação ou do Registro do Dispositivo Médico",
-          "example": "1=Ativo, 2=Inativo"
+          "name": "filter.numeroRegistro",
+          "type": "string",
+          "description": "Número da notificação ou do registro.",
+          "example": "80207459001"
         }
       ],
       "examples": [
         {
           "type": "curl",
-          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/consulta/saude' \\\n    -H 'Accept: application/json' \\\n    -H 'Authorization: Bearer <token>' \\\n    -H 'Content-Type: application/json' \\\n    -d ' {\n                          \"sorting\": { \"nomeProduto\": \"ASC\" },\n                          \"count\": 10,\n                          \"order\": \"ASC\",\n                          \"page\": \"1\",\n                          \"filter\": {\n                            \"nomeProduto\":\"MEDIC\"\n                            \"nomeTecnico\": \"\",\n                            \"tipoAssunto\": \"true\",\n                            \"cnpj\": \"05993698000107\",\n                             \"situacaoNotificacaoRegistro\": \"1\"\n                          }\n                        }'"
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/saude' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"sorting\": {\n      \"nomeProduto\": \"ASC\"\n    },\n    \"count\": 10,\n    \"order\": \"ASC\",\n    \"page\": \"1\",\n    \"filter\": {\n      \"nomeProduto\": \"1000MEDIC PROBE COVER\",\n      \"razaoSocial\": \"1000MEDIC DISTRIBUIDORA IMPORTADORA EXPORTADORA DE MEDICAMENTOS LTDA\",\n      \"nomeTecnico\": \"\",\n      \"tipoAssunto\": \"true\",\n      \"cnpj\": \"05993698000107\",\n      \"situacaoNotificacaoRegistro\": \"1\",\n      \"numeroProcesso\": \"25351255616201719\",\n      \"registro\": \"80207450001\",\n      \"numeroRegistro\": \"80207459001\"\n    }\n  }'"
         },
         {
           "type": "http",
-          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/consulta/saude HTTP/1.1\n  Host: {{gatewayHost}}\n  Accept: application/json\n  Authorization: Bearer <token>\n  Content-Type: application/json\n\n {\n                           \"sorting\": { \"nomeProduto\": \"ASC\" },\n                           \"count\": 10,\n                           \"order\": \"ASC\",\n                           \"page\": \"1\",\n                           \"filter\": {\n                             \"nomeProduto\":\"MEDIC\"\n                             \"nomeTecnico\": \"\",\n                             \"tipoAssunto\": \"true\",\n                             \"cnpj\": \"05993698000107\",\n                              \"situacaoNotificacaoRegistro\": \"1\"\n                           }\n                         }"
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/saude HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"sorting\": {\n    \"nomeProduto\": \"ASC\"\n  },\n  \"count\": 10,\n  \"order\": \"ASC\",\n  \"page\": \"1\",\n  \"filter\": {\n    \"nomeProduto\": \"1000MEDIC PROBE COVER\",\n    \"razaoSocial\": \"1000MEDIC DISTRIBUIDORA IMPORTADORA EXPORTADORA DE MEDICAMENTOS LTDA\",\n    \"nomeTecnico\": \"\",\n    \"tipoAssunto\": \"true\",\n    \"cnpj\": \"05993698000107\",\n    \"situacaoNotificacaoRegistro\": \"1\",\n    \"numeroProcesso\": \"25351255616201719\",\n    \"registro\": \"80207450001\",\n    \"numeroRegistro\": \"80207459001\"\n  }\n}"
+        }
+      ],
+      "responseExample": "{\n  \"totalPages\": 0,\n  \"totalElements\": 0,\n  \"number\": 0,\n  \"size\": 0,\n  \"numberOfElements\": 0,\n  \"content\": [\n    {\n      \"processo\": \"string\",\n      \"empresa\": {\n        \"cnpj\": \"string\",\n        \"razaoSocial\": \"string\"\n      },\n      \"produto\": \"string\",\n      \"mensagem\": {\n        \"situacao\": \"string\",\n        \"resolucao\": \"string\",\n        \"motivo\": \"string\",\n        \"negativo\": true\n      },\n      \"registro\": \"string\",\n      \"situacao\": \"string\",\n      \"dataVencimento\": \"2026-01-01T00:00:00.000Z\",\n      \"cancelado\": 0,\n      \"dataCancelamento\": \"2026-01-01T00:00:00.000Z\",\n      \"codigoSituacaoAssuntoDoc\": 0,\n      \"dataInicioVigencia\": \"2026-01-01T00:00:00.000Z\",\n      \"siglaRiscoProduto\": \"string\",\n      \"dataAtualizacao\": \"2026-01-01T00:00:00.000Z\",\n      \"vencimento\": {\n        \"data\": \"2026-01-01T00:00:00.000Z\",\n        \"descricao\": \"string\",\n        \"vencido\": true\n      }\n    }\n  ],\n  \"sort\": {\n    \"sorted\": true,\n    \"empty\": true,\n    \"unsorted\": true\n  },\n  \"first\": true,\n  \"last\": true,\n  \"pageable\": {\n    \"paged\": true,\n    \"unpaged\": true,\n    \"pageNumber\": 0,\n    \"pageSize\": 0,\n    \"offset\": 0,\n    \"sort\": {\n      \"sorted\": true,\n      \"empty\": true,\n      \"unsorted\": true\n    }\n  },\n  \"empty\": true\n}"
+    },
+    {
+      "id": "detailProdutoSaude",
+      "path": "/api/v1/saude/{numeroProcesso}",
+      "method": "POST",
+      "description": "Retorna detalhe de produtos saúde. Recebe JSON com column, count, order, page e filtros em filter[...]. Use os filtros específicos como nomeProduto, numeroRegistro, numeroProcesso, nomeTecnico, cnpj, etc.",
+      "filters": [
+        {
+          "name": "numeroProcesso",
+          "type": "string",
+          "description": "Parâmetro de caminho, obrigatório. Número do processo (campo processo de POST /api/v1/saude)."
+        },
+        {
+          "name": "sorting",
+          "type": "object",
+          "description": "Ordenação por campo: objeto com o nome do campo e a direção (ASC ou DESC).",
+          "example": "{\"nomeProduto\":\"ASC\"}"
+        },
+        {
+          "name": "count",
+          "type": "number",
+          "description": "Quantidade de itens por página.",
+          "example": "10"
+        },
+        {
+          "name": "order",
+          "type": "string",
+          "description": "Direção da ordenação.",
+          "example": "ASC"
+        },
+        {
+          "name": "page",
+          "type": "string",
+          "description": "Número da página.",
+          "example": "1"
+        },
+        {
+          "name": "filter.nomeProduto",
+          "type": "string",
+          "description": "Nome do produto.",
+          "example": "1000MEDIC PROBE COVER"
+        },
+        {
+          "name": "filter.razaoSocial",
+          "type": "string",
+          "description": "Razão social da empresa.",
+          "example": "1000MEDIC DISTRIBUIDORA IMPORTADORA EXPORTADORA DE MEDICAMENTOS LTDA"
+        },
+        {
+          "name": "filter.nomeTecnico",
+          "type": "string",
+          "description": "Nome técnico.",
+          "example": ""
+        },
+        {
+          "name": "filter.tipoAssunto",
+          "type": "string",
+          "description": "Tipo de assunto.",
+          "example": "true"
+        },
+        {
+          "name": "filter.cnpj",
+          "type": "string",
+          "description": "CNPJ da empresa.",
+          "example": "05993698000107"
+        },
+        {
+          "name": "filter.situacaoNotificacaoRegistro",
+          "type": "string",
+          "description": "Situação da notificação ou do registro.",
+          "example": "1"
+        },
+        {
+          "name": "filter.numeroProcesso",
+          "type": "string",
+          "description": "Número do processo.",
+          "example": "25351255616201719"
+        },
+        {
+          "name": "filter.registro",
+          "type": "string",
+          "description": "Registro do produto.",
+          "example": "80207450001"
+        },
+        {
+          "name": "filter.numeroRegistro",
+          "type": "string",
+          "description": "Número da notificação ou do registro.",
+          "example": "80207459001"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/saude/{numeroProcesso}' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"sorting\": {\n      \"nomeProduto\": \"ASC\"\n    },\n    \"count\": 10,\n    \"order\": \"ASC\",\n    \"page\": \"1\",\n    \"filter\": {\n      \"nomeProduto\": \"1000MEDIC PROBE COVER\",\n      \"razaoSocial\": \"1000MEDIC DISTRIBUIDORA IMPORTADORA EXPORTADORA DE MEDICAMENTOS LTDA\",\n      \"nomeTecnico\": \"\",\n      \"tipoAssunto\": \"true\",\n      \"cnpj\": \"05993698000107\",\n      \"situacaoNotificacaoRegistro\": \"1\",\n      \"numeroProcesso\": \"25351255616201719\",\n      \"registro\": \"80207450001\",\n      \"numeroRegistro\": \"80207459001\"\n    }\n  }'"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/saude/{numeroProcesso} HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"sorting\": {\n    \"nomeProduto\": \"ASC\"\n  },\n  \"count\": 10,\n  \"order\": \"ASC\",\n  \"page\": \"1\",\n  \"filter\": {\n    \"nomeProduto\": \"1000MEDIC PROBE COVER\",\n    \"razaoSocial\": \"1000MEDIC DISTRIBUIDORA IMPORTADORA EXPORTADORA DE MEDICAMENTOS LTDA\",\n    \"nomeTecnico\": \"\",\n    \"tipoAssunto\": \"true\",\n    \"cnpj\": \"05993698000107\",\n    \"situacaoNotificacaoRegistro\": \"1\",\n    \"numeroProcesso\": \"25351255616201719\",\n    \"registro\": \"80207450001\",\n    \"numeroRegistro\": \"80207459001\"\n  }\n}"
+        }
+      ],
+      "responseExample": "{\n  \"produto\": \"string\",\n  \"empresa\": {\n    \"cnpj\": \"string\",\n    \"razaoSocial\": \"string\",\n    \"autorizacao\": \"string\"\n  },\n  \"mensagem\": {\n    \"situacao\": \"string\",\n    \"resolucao\": \"string\",\n    \"motivo\": \"string\",\n    \"negativo\": true\n  },\n  \"nomeTecnico\": \"string\",\n  \"registro\": \"string\",\n  \"cancelado\": true,\n  \"dataCancelamento\": \"2026-01-01T00:00:00.000Z\",\n  \"processo\": \"string\",\n  \"apresentacoes\": [\n    {\n      \"modelos\": [\n        \"string\"\n      ],\n      \"componente\": \"string\",\n      \"apresentacao\": \"string\"\n    }\n  ],\n  \"apresentacoesPage\": {\n    \"totalPages\": 0,\n    \"totalElements\": 0,\n    \"number\": 0,\n    \"size\": 0,\n    \"numberOfElements\": 0,\n    \"content\": [\n      {\n        \"modelos\": [\n          \"string\"\n        ],\n        \"componente\": \"string\",\n        \"apresentacao\": \"string\"\n      }\n    ],\n    \"sort\": {\n      \"sorted\": true,\n      \"empty\": true,\n      \"unsorted\": true\n    },\n    \"first\": true,\n    \"last\": true,\n    \"pageable\": {\n      \"paged\": true,\n      \"unpaged\": true,\n      \"pageNumber\": 0,\n      \"pageSize\": 0,\n      \"offset\": 0,\n      \"sort\": {\n        \"sorted\": true,\n        \"empty\": true,\n        \"unsorted\": true\n      }\n    },\n    \"empty\": true\n  },\n  \"fabricantes\": [\n    {\n      \"atividade\": \"string\",\n      \"razaoSocial\": \"string\",\n      \"pais\": \"string\",\n      \"local\": \"string\",\n      \"cnpjOuCodigoUnico\": \"string\",\n      \"endereco\": \"string\"\n    }\n  ],\n  \"risco\": {\n    \"sigla\": \"string\",\n    \"descricao\": \"string\"\n  },\n  \"vencimento\": {\n    \"data\": \"2026-01-01T00:00:00.000Z\",\n    \"descricao\": \"string\",\n    \"vencido\": true\n  },\n  \"publicacao\": \"2026-01-01T00:00:00.000Z\",\n  \"apresentacaoModelo\": true,\n  \"arquivos\": [\n    {\n      \"anexoCod\": \"string\",\n      \"nuExpediente\": \"string\",\n      \"nomeArquivo\": \"string\",\n      \"tipoAnexo\": 0,\n      \"tipoArquivo\": \"string\",\n      \"dtEnvio\": \"2026-01-01T00:00:00.000Z\",\n      \"nuProcesso\": \"string\",\n      \"descricaoTipoAnexo\": \"string\",\n      \"nomeCompleto\": \"string\"\n    }\n  ],\n  \"processoMedidaCautelar\": \"string\",\n  \"tooltip\": \"string\",\n  \"dataInicioVigencia\": \"2026-01-01T00:00:00.000Z\",\n  \"codigoSituacaoAssuntoDoc\": 0,\n  \"situacao\": \"string\"\n}"
+    },
+    {
+      "id": "downloadPDF_1",
+      "path": "/api/v1/saude/downloadPDF/{numeroProcesso}",
+      "method": "GET",
+      "description": "Exporta detalhes do produto de saúde em PDF. Gera o arquivo PDF contendo os detalhes do produto de saúde.",
+      "filters": [
+        {
+          "name": "numeroProcesso",
+          "type": "string",
+          "description": "Parâmetro de caminho, obrigatório. Número do processo (campo processo de POST /api/v1/saude)."
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/saude/downloadPDF/{numeroProcesso}' \\\n  -H 'Accept: application/pdf' \\\n  -H 'Authorization: Bearer <token>' \\\n  -OJ"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/saude/downloadPDF/{numeroProcesso} HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/pdf\nAuthorization: Bearer <token>"
         }
       ]
     },
     {
-      "id": "nomesTwecnicos",
-      "path": "/consulta/nomeTecnico",
-      "method": "POST",
-      "description": "Consulta de de Nome Técnico do Dispositivo Médico",
-      "filters": [],
-      "examples": [
+      "id": "downloadExcel",
+      "path": "/api/v1/saude/downloadExcel/{numeroProcesso}",
+      "method": "GET",
+      "description": "Exporta detalhes do produto de saúde em Excel. Gera o arquivo Excel contendo os detalhes do produto de saúde.",
+      "filters": [
         {
-          "type": "curl",
-          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/consulta/nomeTecnico' \\\n             -H 'Accept: application/json' \\\n             -H 'Authorization: Bearer <token>' \\\n             -H 'Content-Type: application/json' \\\n             -d ' {\n                     \"sorting\":{\n                        \"codigo\":\"ASC\"\n                     },\n                     \"count\":10,\n                     \"order\":\"ASC\",\n                     \"page\":\"1\",\n                     \"filter\":{\n                        \"codigo\":\"1511345\",\n                        \"nome\":\"Detector de Bile\"\n                     }\n                  }'"
-        },
-        {
-          "type": "http",
-          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/consulta/nomeTecnico HTTP/1.1\n           Host: {{gatewayHost}}\n           Accept: application/json\n           Authorization: Bearer <token>\n           Content-Type: application/json\n\n         {\n                              \"sorting\":{\n                                 \"codigo\":\"ASC\"\n                              },\n                              \"count\":10,\n                              \"order\":\"ASC\",\n                              \"page\":\"1\",\n                              \"filter\":{\n                                 \"codigo\":\"1511345\",\n                                 \"nome\":\"Detector de Bile\"\n                              }\n                           }"
+          "name": "numeroProcesso",
+          "type": "string",
+          "description": "Parâmetro de caminho, obrigatório. Número do processo (campo processo de POST /api/v1/saude)."
         }
-      ]
-    },
-    {
-      "id": "numeroProcesso",
-      "path": "/consulta/saude/{numeroProcesso}",
-      "method": "POST",
-      "description": "Consulta de Produtos Saúde por número processo",
-      "filters": [],
+      ],
       "examples": [
         {
           "type": "curl",
-          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/consulta/saude/{numeroProcesso}' \\\n              -H 'Accept: application/json' \\\n              -H 'Authorization: Bearer <token>' \\\n              -H 'Content-Type: application/json' \\\n              -d ' {\n                                    \"sorting\": { \"nomeProduto\": \"ASC\" },\n                                    \"count\": 10,\n                                    \"order\": \"ASC\",\n                                    \"page\": \"1\",\n                                    \"filter\": {\n                                      \"nomeProduto\":\"MEDIC\"\n                                      \"nomeTecnico\": \"\",\n                                      \"tipoAssunto\": \"true\",\n                                      \"cnpj\": \"05993698000107\",\n                                       \"situacaoNotificacaoRegistro\": \"1\"\n                                    }\n                                  }'"
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/saude/downloadExcel/{numeroProcesso}' \\\n  -H 'Accept: application/vnd.ms-excel' \\\n  -H 'Authorization: Bearer <token>' \\\n  -OJ"
         },
         {
           "type": "http",
-          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/consulta/saude/{numeroProcesso} HTTP/1.1\n            Host: {{gatewayHost}}\n            Accept: application/json\n            Authorization: Bearer <token>\n            Content-Type: application/json\n\n           {\n                                     \"sorting\": { \"nomeProduto\": \"ASC\" },\n                                     \"count\": 10,\n                                     \"order\": \"ASC\",\n                                     \"page\": \"1\",\n                                     \"filter\": {\n                                       \"nomeProduto\":\"MEDIC\"\n                                       \"nomeTecnico\": \"\",\n                                       \"tipoAssunto\": \"true\",\n                                       \"cnpj\": \"05993698000107\",\n                                        \"situacaoNotificacaoRegistro\": \"1\"\n                                     }\n                                   }"
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/saude/downloadExcel/{numeroProcesso} HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/vnd.ms-excel\nAuthorization: Bearer <token>"
         }
       ]
     }

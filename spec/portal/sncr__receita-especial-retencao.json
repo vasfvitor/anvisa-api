@@ -1,0 +1,57 @@
+{
+  "slug": "sncr-receita-especial-retencao",
+  "rota": "sncr/receita-especial-retencao",
+  "titulo": "Receita de Controle Especial / Receita Sujeita a Retenção",
+  "formato": "ENDPOINTS",
+  "conteudo": [
+    {
+      "id": "receita-especial-retencao",
+      "path": "/numeracoes/receita-especial-retencao",
+      "method": "POST",
+      "description": "Gera numeração para receitas de controle especial (RCE) e receitas sujeitas a retenção (RET), garantindo que não haja duplicidade para o mesmo contexto de geração. Disponibiliza 1.000 numerações por requisição, com limite de 3 requisições mensais por inscrição profissional (máximo de 3.000 numerações por mês, somando RCE e RET). Retorna 400 quando os parâmetros são inválidos ou uma regra de negócio não é atendida (tipo de receita fora de [RCE, RET], prescritor não encontrado ou limite mensal da instituição atingido) e 404 quando falha a consulta ao conselho profissional.",
+      "filters": [
+        {
+          "name": "conselho",
+          "type": "string",
+          "description": "Corpo da requisição, obrigatório. Conselho do prescritor (ex.: CRM, CRMV, CRO).",
+          "example": "CRM"
+        },
+        {
+          "name": "tipo",
+          "type": "string",
+          "description": "Corpo da requisição, obrigatório. Tipo de receita. Valores permitidos: RCE (Receita de Controle Especial) ou RET (Receita Sujeita a Retenção).",
+          "example": "RCE"
+        },
+        {
+          "name": "documento",
+          "type": "string",
+          "description": "Corpo da requisição, obrigatório. Número do documento do prescritor no conselho.",
+          "example": "123456"
+        },
+        {
+          "name": "uf",
+          "type": "string",
+          "description": "Corpo da requisição, obrigatório. Sigla do estado em que a receita será gerada.",
+          "example": "RJ"
+        },
+        {
+          "name": "cnpj",
+          "type": "string",
+          "description": "Corpo da requisição, obrigatório. CNPJ da instituição, ou seja, da empresa responsável pela plataforma de prescrição eletrônica que consome a API.",
+          "example": "11111111111111"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/api-sncr/api/v1/numeracoes/receita-especial-retencao' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token_gov_br>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n  \"conselho\": \"CRM\",\n  \"tipo\": \"RCE\",\n  \"documento\": \"123456\",\n  \"uf\": \"RJ\",\n  \"cnpj\": \"11111111111111\"\n}'"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/api-sncr/api/v1/numeracoes/receita-especial-retencao HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token_gov_br>\nContent-Type: application/json\n\n{\n  \"conselho\": \"CRM\",\n  \"tipo\": \"RCE\",\n  \"documento\": \"123456\",\n  \"uf\": \"RJ\",\n  \"cnpj\": \"11111111111111\"\n}"
+        }
+      ],
+      "responseExample": "{\n  \"inicio\": \"2602.6-53.0000001\",\n  \"fim\": \"2602.6-53.0000999\",\n  \"quantidade\": 1000,\n  \"mensagem\": \"Numeração gerada com sucesso.\"\n}"
+    }
+  ]
+}

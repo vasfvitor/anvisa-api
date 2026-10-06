@@ -22,7 +22,7 @@ ships a client that encodes it.
 | Dates | Integer **epoch milliseconds**. |
 | Downloads | The spec says `200 OK` with no content and nothing about `Accept`. Every download answers **500 "Could not find acceptable representation"** to `Accept: application/json` (all but `GET /udi/{id}/download`); send `Accept: */*`. `Content-Type` is always `application/vnd.ms-excel` even when the bytes are OOXML or a zip. `POST /assunto/downloadAssuntoFormulario` takes a **bare JSON integer** body, not the declared `PaginationBuilder`, and returns the file with **no `Content-Type` and no `Content-Disposition`**. An empty subfila is a **500** here, not the empty 404 `fila/consulta` gives. |
 | Filter keys | Verified live: `udi` accepts `nomeComercial` (substring), `udiDi` (exact), `cnpjDetentora`, `codigoGmdn`, `nuRegistro`; `nomeTecnico` accepts `nomeTecnico` (substring) and `categoriaProduto`; `termoGmdn` accepts `conteudo`. `POST /assunto/` is **broken** (500, body not bound). |
-| Coverage | The spec has 32 endpoints. The portal's doc pages describe **35 more** (certificados, empresa nacional/internacional, dossiê, alimentos, produtos de saúde) on the same base path, but all seven probed answer a plain Spring **404**: documented, not deployed. The same datasets exist as bulk CSV on [`dados.anvisa.gov.br/dados/CONSULTAS/`](https://dados.anvisa.gov.br/dados/CONSULTAS/) (for example `TA_CONSULTA_PRODUTOS_IRREGULARES_RESULTADO.CSV`, refreshed on weekdays); the alimentos files are republished here as Parquet, see [Dados abertos](#dados-abertos-parquet-on-github-pages). |
+| Coverage | The spec had 32 endpoints until 2026-10-01, when ANVISA published **27 more** (produtos saúde, certificados de boas práticas, certificados de medicamentos, tabaco; snapshot of 2026-10-06). Unauthenticated probes answer **401** like the wrapped ones, so they are live; the client does not wrap them yet. The empresa nacional/internacional, dossiê and alimentos pages left the portal menu without ever being served. Alimentos and other product families exist as bulk CSV on [`dados.anvisa.gov.br/dados/CONSULTAS/`](https://dados.anvisa.gov.br/dados/CONSULTAS/) (for example `TA_CONSULTA_PRODUTOS_IRREGULARES_RESULTADO.CSV`, refreshed on weekdays); the alimentos files are republished here as Parquet, see [Dados abertos](#dados-abertos-parquet-on-github-pages). |
 
 ## Layout
 
@@ -176,13 +176,13 @@ anvisa dados build --out dist2 --skip-unchanged dist/manifest.json   # 304s → 
 
 ## Scope
 
-Covered: all 32 endpoints of the published spec, as the `fila`, `lista`, `udi`,
+Covered: the 32 endpoints the spec had before 2026-10-01, as the `fila`, `lista`, `udi`,
 `nome_tecnico`, and `assunto` domains. That includes the eight file downloads and
 `servicosAssociados`, wrapped on 2026-09-08. From the open data, the two alimentos files
-(`anvisa.dados`). The domains the portal documents but the gateway does not serve yet (see the table) are
-saved under `spec/portal/`; a workflow re-fetches them twice a month, so the day ANVISA deploys
-them shows up as a diff. The SNGPC API (a
-separate service for pharmacies) is out of scope.
+(`anvisa.dados`). Not yet covered: the 27 endpoints ANVISA added on 2026-10-01 (`saude`,
+`certificado`, `certificadoMedicamento`, `tabaco`), recorded in `spec/` by the `drift` workflow
+and listed in [ROADMAP.md](ROADMAP.md). The SNGPC, SAMMED and SNCR APIs (separate services) are
+out of scope.
 
 What comes next, and what was ruled out and why, is in [ROADMAP.md](ROADMAP.md).
 

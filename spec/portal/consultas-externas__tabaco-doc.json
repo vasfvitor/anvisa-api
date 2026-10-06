@@ -1,0 +1,257 @@
+{
+  "slug": "tabaco-doc",
+  "rota": "consultas-externas/tabaco-doc",
+  "titulo": "Tabaco",
+  "formato": "ENDPOINTS",
+  "conteudo": [
+    {
+      "id": "findCertificado",
+      "path": "/api/v1/tabaco/tabacos",
+      "method": "POST",
+      "description": "Tabaco - Certificados. Retorna consulta de certificados.",
+      "filters": [
+        {
+          "name": "sorting",
+          "type": "object",
+          "description": "Ordenação por campo: objeto com o nome do campo e a direção (ASC ou DESC)."
+        },
+        {
+          "name": "page",
+          "type": "integer (int32)",
+          "description": "Número da página.",
+          "example": "1"
+        },
+        {
+          "name": "size",
+          "type": "integer (int32)",
+          "description": "Quantidade de itens por página.",
+          "example": "10"
+        },
+        {
+          "name": "column",
+          "type": "string",
+          "description": "Campo usado na ordenação."
+        },
+        {
+          "name": "order",
+          "type": "string: ASC | DESC",
+          "description": "Direção da ordenação."
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/tabaco/tabacos' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"page\": 1,\n    \"size\": 10,\n    \"filter\": {}\n  }'"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/tabaco/tabacos HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"page\": 1,\n  \"size\": 10,\n  \"filter\": {}\n}"
+        }
+      ],
+      "responseExample": "{\n  \"totalPages\": 0,\n  \"totalElements\": 0,\n  \"number\": 0,\n  \"size\": 0,\n  \"numberOfElements\": 0,\n  \"content\": [\n    {\n      \"nomeProduto\": \"string\",\n      \"tipoProduto\": \"string\",\n      \"processoFormatado\": \"string\",\n      \"processo\": \"string\",\n      \"cnpjEmpresa\": \"string\",\n      \"nomeEmpresa\": \"string\",\n      \"destino\": \"string\",\n      \"situacaoProdutoDescricao\": \"string\",\n      \"situacaoProdutoAtivo\": true,\n      \"observacao\": \"string\",\n      \"dataVencimento\": \"2026-01-01T00:00:00.000Z\",\n      \"codDocumento\": 0,\n      \"dataAtualizacao\": \"2026-01-01T00:00:00.000Z\",\n      \"embalagens\": [\n        {\n          \"idEmbalagem\": 0,\n          \"tipoEmbalagem\": \"string\",\n          \"qtdEmbalagem\": 0,\n          \"unidade\": \"string\",\n          \"descricaoEmbalagem\": \"string\",\n          \"origemFabricacao\": \"string\",\n          \"fabricantes\": [\n            {\n              \"idEmbalagem\": 0,\n              \"tipoFabricante\": \"string\",\n              \"cnpj\": \"string\",\n              \"codigoGginp\": \"string\",\n              \"fabricante\": \"string\",\n              \"uf\": \"string\",\n              \"cidade\": \"string\",\n              \"endereco\": \"string\",\n              \"pais\": \"string\",\n              \"etapaFabricacao\": \"string\"\n            }\n          ]\n        }\n      ],\n      \"dataRegistro\": \"2026-01-01T00:00:00.000Z\",\n      \"categoriaAditivos\": \"string\",\n      \"origem\": \"string\",\n      \"idProduto\": 0,\n      \"rotulos\": [\n        {\n          \"id\": 0,\n          \"descricao\": \"string\",\n          \"dataCriacao\": \"2026-01-01T00:00:00.000Z\",\n          \"nuExpediente\": \"string\",\n          \"dataFinalizacao\": \"2026-01-01T00:00:00.000Z\"\n        }\n      ],\n      \"processosMedidaCautelar\": [\n        \"string\"\n      ]\n    }\n  ],\n  \"sort\": {\n    \"sorted\": true,\n    \"empty\": true,\n    \"unsorted\": true\n  },\n  \"first\": true,\n  \"last\": true,\n  \"pageable\": {\n    \"paged\": true,\n    \"unpaged\": true,\n    \"pageNumber\": 0,\n    \"pageSize\": 0,\n    \"offset\": 0,\n    \"sort\": {\n      \"sorted\": true,\n      \"empty\": true,\n      \"unsorted\": true\n    }\n  },\n  \"empty\": true\n}"
+    },
+    {
+      "id": "findTipoTabaco",
+      "path": "/api/v1/tabaco/tipoTabaco",
+      "method": "GET",
+      "description": "Retorna a lista de tipos de tabaco.",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/tabaco/tipoTabaco' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/tabaco/tipoTabaco HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"id\": 0,\n    \"descricao\": \"string\",\n    \"ativo\": \"SIM\"\n  }\n]"
+    },
+    {
+      "id": "findSituacoes",
+      "path": "/api/v1/tabaco/situacoes",
+      "method": "GET",
+      "description": "Retorna a lista de situações.",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/tabaco/situacoes' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/tabaco/situacoes HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"descricao\": \"string\",\n    \"id\": {}\n  }\n]"
+    },
+    {
+      "id": "findOrigemTabaco",
+      "path": "/api/v1/tabaco/origemTabaco",
+      "method": "GET",
+      "description": "Retorna a lista de origens de tabaco.",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/tabaco/origemTabaco' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/tabaco/origemTabaco HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"descricao\": \"string\",\n    \"id\": {}\n  }\n]"
+    },
+    {
+      "id": "downloadRotuloSaneanteNotificado",
+      "path": "/api/v1/tabaco/embalagem/{rotulo}",
+      "method": "GET",
+      "description": "Faz o download do rótulo de embalagem informado.",
+      "filters": [
+        {
+          "name": "Authorization",
+          "type": "string",
+          "description": "Parâmetro de query, opcional. Token de acesso."
+        },
+        {
+          "name": "rotulo",
+          "type": "integer (int64)",
+          "description": "Parâmetro de caminho, obrigatório. Identificador do rótulo (campo rotulos[].id de GET /api/v1/tabaco/detailTabaco/{id})."
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/tabaco/embalagem/{rotulo}' \\\n  -H 'Accept: */*' \\\n  -H 'Authorization: Bearer <token>' \\\n  -OJ"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/tabaco/embalagem/{rotulo} HTTP/1.1\nHost: {{gatewayHost}}\nAccept: */*\nAuthorization: Bearer <token>"
+        }
+      ]
+    },
+    {
+      "id": "download_5",
+      "path": "/api/v1/tabaco/download",
+      "method": "GET",
+      "description": "Faz o download do relatório da consulta de tabaco, com os filtros enviados no parâmetro filtro.",
+      "filters": [
+        {
+          "name": "Authorization",
+          "type": "string",
+          "description": "Cabeçalho, opcional. Token de acesso Bearer, já incluído nos exemplos."
+        },
+        {
+          "name": "filtro",
+          "type": "PaginationBuilder",
+          "description": "Parâmetro de query, obrigatório. Filtros da consulta, no formato PaginationBuilder."
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/tabaco/download?page=1&size=10' \\\n  -H 'Accept: */*' \\\n  -H 'Authorization: Bearer <token>' \\\n  -OJ"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/tabaco/download?page=1&size=10 HTTP/1.1\nHost: {{gatewayHost}}\nAccept: */*\nAuthorization: Bearer <token>"
+        }
+      ]
+    },
+    {
+      "id": "downloadPDF",
+      "path": "/api/v1/tabaco/downloadPDF/{codDocumento}",
+      "method": "GET",
+      "description": "Retorna em PDF o documento informado.",
+      "filters": [
+        {
+          "name": "Authorization",
+          "type": "string",
+          "description": "Cabeçalho, opcional. Token de acesso Bearer, já incluído nos exemplos."
+        },
+        {
+          "name": "codDocumento",
+          "type": "string",
+          "description": "Parâmetro de caminho, obrigatório. Código do documento (campo codDocumento de POST /api/v1/tabaco/tabacos)."
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/tabaco/downloadPDF/{codDocumento}' \\\n  -H 'Accept: application/pdf' \\\n  -H 'Authorization: Bearer <token>' \\\n  -OJ"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/tabaco/downloadPDF/{codDocumento} HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/pdf\nAuthorization: Bearer <token>"
+        }
+      ]
+    },
+    {
+      "id": "detailTabaco",
+      "path": "/api/v1/tabaco/detailTabaco/{id}",
+      "method": "GET",
+      "description": "Retorna o detalhe do registro de tabaco informado.",
+      "filters": [
+        {
+          "name": "Authorization",
+          "type": "string",
+          "description": "Cabeçalho, obrigatório. Token de acesso Bearer, já incluído nos exemplos."
+        },
+        {
+          "name": "id",
+          "type": "string",
+          "description": "Parâmetro de caminho, obrigatório. Identificador do registro de tabaco."
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/tabaco/detailTabaco/{id}' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/tabaco/detailTabaco/{id} HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "{\n  \"nomeProduto\": \"string\",\n  \"tipoProduto\": \"string\",\n  \"processoFormatado\": \"string\",\n  \"processo\": \"string\",\n  \"cnpjEmpresa\": \"string\",\n  \"nomeEmpresa\": \"string\",\n  \"destino\": \"string\",\n  \"situacaoProdutoDescricao\": \"string\",\n  \"situacaoProdutoAtivo\": true,\n  \"observacao\": \"string\",\n  \"dataVencimento\": \"2026-01-01T00:00:00.000Z\",\n  \"codDocumento\": 0,\n  \"dataAtualizacao\": \"2026-01-01T00:00:00.000Z\",\n  \"embalagens\": [\n    {\n      \"idEmbalagem\": 0,\n      \"tipoEmbalagem\": \"string\",\n      \"qtdEmbalagem\": 0,\n      \"unidade\": \"string\",\n      \"descricaoEmbalagem\": \"string\",\n      \"origemFabricacao\": \"string\",\n      \"fabricantes\": [\n        {\n          \"idEmbalagem\": 0,\n          \"tipoFabricante\": \"string\",\n          \"cnpj\": \"string\",\n          \"codigoGginp\": \"string\",\n          \"fabricante\": \"string\",\n          \"uf\": \"string\",\n          \"cidade\": \"string\",\n          \"endereco\": \"string\",\n          \"pais\": \"string\",\n          \"etapaFabricacao\": \"string\"\n        }\n      ]\n    }\n  ],\n  \"dataRegistro\": \"2026-01-01T00:00:00.000Z\",\n  \"categoriaAditivos\": \"string\",\n  \"origem\": \"string\",\n  \"idProduto\": 0,\n  \"rotulos\": [\n    {\n      \"id\": 0,\n      \"descricao\": \"string\",\n      \"dataCriacao\": \"2026-01-01T00:00:00.000Z\",\n      \"nuExpediente\": \"string\",\n      \"dataFinalizacao\": \"2026-01-01T00:00:00.000Z\"\n    }\n  ],\n  \"processosMedidaCautelar\": [\n    \"string\"\n  ]\n}"
+    },
+    {
+      "id": "findDestinoTabaco",
+      "path": "/api/v1/tabaco/destinoTabaco",
+      "method": "GET",
+      "description": "Retorna a lista de destinos de tabaco.",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/tabaco/destinoTabaco' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/tabaco/destinoTabaco HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"descricao\": \"string\",\n    \"id\": {}\n  }\n]"
+    },
+    {
+      "id": "findCategoriaAditivo",
+      "path": "/api/v1/tabaco/categoriaAditivo",
+      "method": "GET",
+      "description": "Retorna a lista de categorias de aditivo.",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/tabaco/categoriaAditivo' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/tabaco/categoriaAditivo HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"id\": 0,\n    \"descricao\": \"string\",\n    \"ativo\": \"SIM\"\n  }\n]"
+    }
+  ]
+}

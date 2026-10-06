@@ -1,0 +1,123 @@
+{
+  "slug": "nome-tecnico-doc",
+  "rota": "consultas-externas/nome-tecnico-doc",
+  "titulo": "Nomes Técnicos de Produtos para Saúde",
+  "formato": "ENDPOINTS",
+  "conteudo": [
+    {
+      "id": "listar",
+      "path": "/api/v1/nomeTecnico",
+      "method": "POST",
+      "description": "Lista Nomes Técnicos de Produtos para Saúde. Retorna uma lista paginada de Nomes Técnicos de Produtos para Saúde com base nos filtros informados.",
+      "filters": [
+        {
+          "name": "size",
+          "type": "integer (int32)",
+          "description": "Quantidade de itens por página.",
+          "example": "10"
+        },
+        {
+          "name": "page",
+          "type": "integer (int32)",
+          "description": "Número da página.",
+          "example": "1"
+        },
+        {
+          "name": "filter.categoriaProduto",
+          "type": "string",
+          "description": "Categoria do produto (campo id de GET /api/v1/nomeTecnico/categorias).",
+          "example": "8"
+        },
+        {
+          "name": "filter.codigo",
+          "type": "string",
+          "description": "Código do nome técnico.",
+          "example": "2501230"
+        },
+        {
+          "name": "filter.nomeTecnico",
+          "type": "string",
+          "description": "Nome técnico.",
+          "example": "Compressas"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/nomeTecnico' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"size\": 10,\n    \"page\": \"1\",\n    \"filter\": {\n      \"categoriaProduto\": \"8\",\n      \"codigo\": \"2501230\",\n      \"nomeTecnico\": \"Compressas\"\n    }\n  }'"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/nomeTecnico HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"size\": 10,\n  \"page\": \"1\",\n  \"filter\": {\n    \"categoriaProduto\": \"8\",\n    \"codigo\": \"2501230\",\n    \"nomeTecnico\": \"Compressas\"\n  }\n}"
+        }
+      ],
+      "responseExample": "{\n  \"totalPages\": 0,\n  \"totalElements\": 0,\n  \"number\": 0,\n  \"size\": 0,\n  \"numberOfElements\": 0,\n  \"content\": [\n    {\n      \"codigo\": \"string\",\n      \"nomeTecnico\": \"string\",\n      \"descricao\": \"string\",\n      \"tipoProduto\": 0,\n      \"descricaoTipoProduto\": \"string\",\n      \"classeRisco\": \"string\",\n      \"dataAtualizacao\": \"2026-01-01T00:00:00.000Z\"\n    }\n  ],\n  \"sort\": {\n    \"sorted\": true,\n    \"empty\": true,\n    \"unsorted\": true\n  },\n  \"first\": true,\n  \"last\": true,\n  \"pageable\": {\n    \"paged\": true,\n    \"unpaged\": true,\n    \"pageNumber\": 0,\n    \"pageSize\": 0,\n    \"offset\": 0,\n    \"sort\": {\n      \"sorted\": true,\n      \"empty\": true,\n      \"unsorted\": true\n    }\n  },\n  \"empty\": true\n}"
+    },
+    {
+      "id": "download",
+      "path": "/api/v1/nomeTecnico/download",
+      "method": "POST",
+      "description": "Faz download do relatório de dossiê. Recebe JSON com column, count, order, page e filtros em filter[...] e gera um arquivo XLS para download.",
+      "filters": [
+        {
+          "name": "size",
+          "type": "integer (int32)",
+          "description": "Quantidade de itens por página.",
+          "example": "10"
+        },
+        {
+          "name": "page",
+          "type": "integer (int32)",
+          "description": "Número da página.",
+          "example": "1"
+        },
+        {
+          "name": "filter.categoriaProduto",
+          "type": "string",
+          "description": "Categoria do produto (campo id de GET /api/v1/nomeTecnico/categorias).",
+          "example": "8"
+        },
+        {
+          "name": "filter.codigo",
+          "type": "string",
+          "description": "Código do nome técnico.",
+          "example": "2501230"
+        },
+        {
+          "name": "filter.nomeTecnico",
+          "type": "string",
+          "description": "Nome técnico.",
+          "example": "Compressas"
+        }
+      ],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X POST '{{gatewayUrl}}/consultas-externas-api/api/v1/nomeTecnico/download' \\\n  -H 'Accept: */*' \\\n  -H 'Authorization: Bearer <token>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"size\": 10,\n    \"page\": \"1\",\n    \"filter\": {\n      \"categoriaProduto\": \"8\",\n      \"codigo\": \"2501230\",\n      \"nomeTecnico\": \"Compressas\"\n    }\n  }' \\\n  -OJ"
+        },
+        {
+          "type": "http",
+          "snippet": "POST {{gatewayUrl}}/consultas-externas-api/api/v1/nomeTecnico/download HTTP/1.1\nHost: {{gatewayHost}}\nAccept: */*\nAuthorization: Bearer <token>\nContent-Type: application/json\n\n{\n  \"size\": 10,\n  \"page\": \"1\",\n  \"filter\": {\n    \"categoriaProduto\": \"8\",\n    \"codigo\": \"2501230\",\n    \"nomeTecnico\": \"Compressas\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "id": "listar_1",
+      "path": "/api/v1/nomeTecnico/categorias",
+      "method": "GET",
+      "description": "Grupo populacional indicado. Retorna consulta de Catégorias.",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/consultas-externas-api/api/v1/nomeTecnico/categorias' \\\n  -H 'Accept: application/json' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/consultas-externas-api/api/v1/nomeTecnico/categorias HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"id\": 0,\n    \"descricao\": \"string\"\n  }\n]"
+    }
+  ]
+}

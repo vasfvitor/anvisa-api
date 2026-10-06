@@ -6,8 +6,27 @@ guess.
 
 ## Status (2026-09-08)
 
-All 32 endpoints of the published OpenAPI document are wrapped. What is left is verification of
-claims that come only from ANVISA's examples, ergonomics, and robustness.
+All 32 endpoints the OpenAPI document had until 2026-10-01 are wrapped. What is left is
+verification of claims that come only from ANVISA's examples, ergonomics, robustness, and the
+27 endpoints ANVISA added since.
+
+## New on the gateway (2026-10-01): 27 endpoints, 4 domains
+
+The `drift` run of 2026-10-01 went red because the spec grew from 32 to 59 operations
+(snapshot committed 2026-10-06). Unauthenticated probes answer 401, like the wrapped
+endpoints, where the undeployed routes used to answer a Spring 404: they are live.
+
+| Domain | Operations | Shape |
+|---|---|---|
+| `saude` (Produtos Saúde) | 4 | `POST /saude` paginated, `POST /saude/{numeroProcesso}` detail, PDF and Excel export per processo |
+| `certificado` (Boas Práticas) | 5 | paginated search, detail by id, `status`, `certificacaoConcedidaPor`, download |
+| `certificadoMedicamento` | 8 | same, plus `linhasCertificacao`, `formasFarmaceuticas`, `classesCertificacao` |
+| `tabaco` | 10 | `POST /tabaco/tabacos` paginated, detail, `embalagem/{rotulo}`, six lookup lists, Excel and PDF downloads |
+
+Wrapping them follows CONTRIBUTING.md: one recorded response per endpoint before any code, and
+the `POST` searches need their filter keys discovered the way `udi` and `nomeTecnico` were.
+Budget about 30 to 40 authenticated requests for the lot. The portal also gained two API
+families, SAMMED (preços CMED) and SNCR (receitas), saved under `spec/portal/` and out of scope.
 
 ## 0.5.0: verify, harden, convenience
 
@@ -75,6 +94,6 @@ entry in `anvisa/dados/catalog.py` plus one fixture (see CONTRIBUTING.md):
   `Referer: https://consultas.anvisa.gov.br/` and `Authorization: Guest`, and Cloudflare
   blocks Python's TLS fingerprint while letting curl through. Getting past that means
   disguising the client from a control the operator put there on purpose. Not doing it
-  unless ANVISA allowlists a declared User-Agent. Revisit if the official gateway deploys
-  these domains: the `drift` workflow will show them as a diff under `spec/portal/`.
+  unless ANVISA allowlists a declared User-Agent. Produtos para saúde and certificados are on
+  the official gateway since 2026-10-01 (see above); medicamentos, bulário and empresas are not.
 - **SNGPC**, a separate service for pharmacies.

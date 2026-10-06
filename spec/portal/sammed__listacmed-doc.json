@@ -1,0 +1,26 @@
+{
+  "slug": "sammed-listacmed-doc",
+  "rota": "sammed/listacmed-doc",
+  "titulo": "Lista CMED",
+  "formato": "ENDPOINTS",
+  "conteudo": [
+    {
+      "id": "recuperarListaCmedCompleta",
+      "path": "/listascmed/recuperar-lista-cmed-completa",
+      "method": "GET",
+      "description": "Recupera a lista completa de apresentações de medicamentos regulados pela CMED, com dados cadastrais e preços. Não recebe parâmetros e não é paginado: a resposta traz todos os produtos em um único array (dezenas de milhares de itens). Recomenda-se aceitar compressão gzip e usar timeout generoso.",
+      "filters": [],
+      "examples": [
+        {
+          "type": "curl",
+          "snippet": "curl -X GET '{{gatewayUrl}}/anvs-listacmed-service/api/v1/listascmed/recuperar-lista-cmed-completa' \\\n  -H 'Accept: application/json' \\\n  -H 'Accept-Encoding: gzip' \\\n  -H 'Authorization: Bearer <token>'"
+        },
+        {
+          "type": "http",
+          "snippet": "GET {{gatewayUrl}}/anvs-listacmed-service/api/v1/listascmed/recuperar-lista-cmed-completa HTTP/1.1\nHost: {{gatewayHost}}\nAccept: application/json\nAccept-Encoding: gzip\nAuthorization: Bearer <token>"
+        }
+      ],
+      "responseExample": "[\n  {\n    \"substancia\": \"PARACETAMOL\",\n    \"cnpj\": \"61.190.096/0001-92\",\n    \"laboratorio\": \"LABORATORIO EXEMPLO S.A.\",\n    \"codGgrem\": \"526718010036618\",\n    \"registro\": \"1023401230023\",\n    \"ean\": \"7896714200019\",\n    \"produto\": \"PARACETAMOL 500MG\",\n    \"apresentacao\": \"500 MG COM CT BL AL PLAS INC X 20\",\n    \"tipoDeProdutoStatusDoProduto\": \"Similar\",\n    \"regimeDePreco\": \"Regulado\",\n    \"pf0\": \"12,34\",\n    \"pmc0\": \"17,05\",\n    \"pmvg0\": \"9,68\",\n    \"restricaoHospitalar\": \"Não\",\n    \"icms0\": \"Não\",\n    \"listaDeConcessaoDeCreditoTributarioPisCofins\": \"Positiva\",\n    \"tarja\": \"Venda livre\",\n    \"comercializacaoUltimoPeriodo\": \"Sim\"\n  }\n]"
+    }
+  ]
+}

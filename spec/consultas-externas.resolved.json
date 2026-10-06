@@ -24,12 +24,28 @@
   ],
   "tags": [
     {
+      "name": "Consulta Certificado de Boas Práticas de Medicamentos",
+      "description": "Operações relacionadas a Certificado de Boas Práticas de Medicamentos para Consultas Externas API e Portal de APIs"
+    },
+    {
       "name": "Consulta Fila",
       "description": "Operações relacionadas à fila de análise para Consultas Externas API e Portal de APIs"
     },
     {
       "name": "Consulta Assuntos",
       "description": "Operações relacionadas a consulta de Assuntos para Consultas Externas API e Portal de APIs"
+    },
+    {
+      "name": "Consulta Certificado de Boas Práticas",
+      "description": "Operações relacionadas a Certificado de Boas Práticas para Consultas Externas API e Portal de APIs"
+    },
+    {
+      "name": "Consulta Tabaco",
+      "description": "Operações relacionadas a tabaco para Consultas Externas API e Portal de APIs"
+    },
+    {
+      "name": "Consulta Produtos Saúde",
+      "description": "Operações relacionadas a consulta Produtos de Saúde"
     },
     {
       "name": "Consulta Lista",
@@ -404,6 +420,510 @@
         "x-verified-filters": [
           "conteudo"
         ]
+      }
+    },
+    "/api/v1/tabaco/tabacos": {
+      "post": {
+        "tags": [
+          "Consulta Tabaco"
+        ],
+        "summary": "Tabaco - Certificados",
+        "description": "Retorna consulta de certificados'",
+        "operationId": "findCertificado",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaginationBuilder"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageConsultaTabacoDTO"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/saude": {
+      "post": {
+        "tags": [
+          "Consulta Produtos Saúde"
+        ],
+        "summary": "Retorna produtos saúde paginados",
+        "description": "Recebe JSON com column, count, order, page e filtros em filter[...]. Use os filtros específicos como nomeProduto, numeroRegistro, numeroProcesso, nomeTecnico, cnpj, etc.",
+        "operationId": "buscaProdutosSaude",
+        "requestBody": {
+          "description": "Payload completo de PaginationBuilder",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaginationBuilder"
+              },
+              "examples": {
+                "Filtro completo de consulta produtos de saúde": {
+                  "description": "Filtro completo de consulta produtos de saúde",
+                  "value": {
+                    "sorting": {
+                      "nomeProduto": "ASC"
+                    },
+                    "count": 10,
+                    "order": "ASC",
+                    "page": "1",
+                    "filter": {
+                      "nomeProduto": "1000MEDIC PROBE COVER",
+                      "razaoSocial": "1000MEDIC DISTRIBUIDORA IMPORTADORA EXPORTADORA DE MEDICAMENTOS LTDA",
+                      "nomeTecnico": "",
+                      "tipoAssunto": "true",
+                      "cnpj": "05993698000107",
+                      "situacaoNotificacaoRegistro": "1",
+                      "numeroProcesso": "25351255616201719",
+                      "registro": "80207450001",
+                      "numeroRegistro": "80207459001"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageConsultaProdutoSaude"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/saude/{numeroProcesso}": {
+      "post": {
+        "tags": [
+          "Consulta Produtos Saúde"
+        ],
+        "summary": "Retorna detalhe de produtos saúde",
+        "description": "Recebe JSON com column, count, order, page e filtros em filter[...]. Use os filtros específicos como nomeProduto, numeroRegistro, numeroProcesso, nomeTecnico, cnpj, etc.",
+        "operationId": "detailProdutoSaude",
+        "parameters": [
+          {
+            "name": "numeroProcesso",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "Payload completo de DetalheProdutoSaude",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DetalheProdutoSaude"
+              },
+              "examples": {
+                "Filtro completo de consulta produtos de saúde e número de Processo": {
+                  "description": "Filtro completo de consulta produtos de saúde e número de Processo",
+                  "value": {
+                    "sorting": {
+                      "nomeProduto": "ASC"
+                    },
+                    "count": 10,
+                    "order": "ASC",
+                    "page": "1",
+                    "filter": {
+                      "nomeProduto": "1000MEDIC PROBE COVER",
+                      "razaoSocial": "1000MEDIC DISTRIBUIDORA IMPORTADORA EXPORTADORA DE MEDICAMENTOS LTDA",
+                      "nomeTecnico": "",
+                      "tipoAssunto": "true",
+                      "cnpj": "05993698000107",
+                      "situacaoNotificacaoRegistro": "1",
+                      "numeroProcesso": "25351255616201719",
+                      "registro": "80207450001",
+                      "numeroRegistro": "80207459001"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DetalheProdutoSaude"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/nomeTecnico": {
@@ -1426,6 +1946,741 @@
         "x-empty-queue": "A subfila with nothing queued answers HTTP 404 with an empty body, not an empty array (88 of 314 subfilas on 2026-09-06, e.g. 1721 and 2609). An unknown id gets the same."
       }
     },
+    "/api/v1/certificadoMedicamento/download": {
+      "post": {
+        "tags": [
+          "Consulta Certificado de Boas Práticas de Medicamentos"
+        ],
+        "summary": "Faz o download do relatório de certificados",
+        "description": "Recebe JSON com page, order, sorting e filtros em filter[...] e gera um arquivo para download.",
+        "operationId": "download_1",
+        "requestBody": {
+          "description": "Payload completo de PaginationBuilder",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaginationBuilder"
+              },
+              "examples": {
+                "Certificados Medicamento": {
+                  "description": "Certificados Medicamento",
+                  "value": {
+                    "size": "10",
+                    "page": "1",
+                    "filter": {
+                      "nacional": true,
+                      "internacional": true,
+                      "certificacaoConcedidaPor": "2",
+                      "classesCertificacao": "27702",
+                      "formasFarmaceuticas": "53",
+                      "linhasCertificacao": "12",
+                      "status": "0,1,2,3",
+                      "cnpjCertificada": "0",
+                      "cnpjSolicitante": "0",
+                      "ufs": "MG",
+                      "codigoUnico": "C011812",
+                      "pais": "182",
+                      "contexto": "certificadoMedicamento",
+                      "dataPublicacaoInicial": "01/12/2024 03:00:00",
+                      "dataPublicacaoFinal": "30/01/2025 03:00:00",
+                      "dataValidadeInicial": "01/12/2024 03:00:00",
+                      "dataValidadeFinal": "30/01/2025 03:00:00",
+                      "liberacaoSim": true,
+                      "liberacaoNao": true
+                    }
+                  }
+                },
+                "Certificados Genéricos": {
+                  "description": "Certificados Genéricos",
+                  "value": {
+                    "size": "10",
+                    "page": "1",
+                    "filter": {
+                      "nacional": true,
+                      "internacional": false,
+                      "certificacaoConcedidaPor": "3,4",
+                      "status": "0,3",
+                      "cnpjCertificada": "76475789000107",
+                      "ufs": "SP,MG",
+                      "contexto": "certificado",
+                      "dataPublicacaoInicial": "01/12/2024 03:00:00",
+                      "dataPublicacaoFinal": "30/01/2025 03:00:00",
+                      "dataValidadeInicial": "01/12/2024 03:00:00",
+                      "dataValidadeFinal": "30/01/2025 03:00:00",
+                      "liberacaoSim": true,
+                      "liberacaoNao": false
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/certificadoMedicamento/": {
+      "post": {
+        "tags": [
+          "Consulta Certificado de Boas Práticas de Medicamentos"
+        ],
+        "summary": "Retorna certificados paginados",
+        "description": "Recebe JSON com page, order, sorting e filtros em filter[...]. Para certificados medicamentos, use contexto = \"certificadoMedicamento\" e inclua filtros específicos; para certificados genéricos, use contexto = \"certificado\" e não inclua classesCertificacao, formasFarmaceuticas ou linhasCertificacao.",
+        "operationId": "findCertificado_1",
+        "requestBody": {
+          "description": "Payload completo de PaginationBuilder",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaginationBuilder"
+              },
+              "examples": {
+                "Certificados Medicamento": {
+                  "description": "Certificados Medicamento",
+                  "value": {
+                    "size": "10",
+                    "page": "1",
+                    "filter": {
+                      "nacional": true,
+                      "internacional": true,
+                      "certificacaoConcedidaPor": "2",
+                      "classesCertificacao": "27702",
+                      "formasFarmaceuticas": "53",
+                      "linhasCertificacao": "12",
+                      "status": "0,1,2,3",
+                      "cnpjCertificada": "0",
+                      "cnpjSolicitante": "0",
+                      "ufs": "MG",
+                      "codigoUnico": "C011812",
+                      "pais": "182",
+                      "contexto": "certificadoMedicamento",
+                      "dataPublicacaoInicial": "01/12/2024 03:00:00",
+                      "dataPublicacaoFinal": "30/01/2025 03:00:00",
+                      "dataValidadeInicial": "01/12/2024 03:00:00",
+                      "dataValidadeFinal": "30/01/2025 03:00:00",
+                      "liberacaoSim": true,
+                      "liberacaoNao": true
+                    }
+                  }
+                },
+                "Certificados Genéricos": {
+                  "description": "Certificados Genéricos",
+                  "value": {
+                    "size": "10",
+                    "page": "1",
+                    "filter": {
+                      "nacional": true,
+                      "internacional": false,
+                      "certificacaoConcedidaPor": "3,4",
+                      "status": "0,3",
+                      "cnpjCertificada": "76475789000107",
+                      "ufs": "SP,MG",
+                      "contexto": "certificado",
+                      "dataPublicacaoInicial": "01/12/2024 03:00:00",
+                      "dataPublicacaoFinal": "30/01/2025 03:00:00",
+                      "dataValidadeInicial": "01/12/2024 03:00:00",
+                      "dataValidadeFinal": "30/01/2025 03:00:00",
+                      "liberacaoSim": true,
+                      "liberacaoNao": false
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageCertificadoResultado"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/certificado/download": {
+      "post": {
+        "tags": [
+          "Consulta Certificado de Boas Práticas"
+        ],
+        "summary": "Faz o download do relatório de certificados",
+        "description": "Recebe JSON com page, order, sorting e filtros em filter[...] e gera um arquivo para download.",
+        "operationId": "download_2",
+        "requestBody": {
+          "description": "Payload completo de PaginationBuilder",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaginationBuilder"
+              },
+              "examples": {
+                "Certificados": {
+                  "description": "Certificados",
+                  "value": {
+                    "size": "10",
+                    "page": "1",
+                    "filter": {
+                      "nacional": true,
+                      "internacional": false,
+                      "certificacaoConcedidaPor": "3,4",
+                      "status": "0,3",
+                      "cnpjCertificada": "76475789000107",
+                      "ufs": "SP,MG",
+                      "contexto": "certificado",
+                      "dataPublicacaoInicial": "01/12/2024 03:00:00",
+                      "dataPublicacaoFinal": "30/01/2025 03:00:00",
+                      "dataValidadeInicial": "01/12/2024 03:00:00",
+                      "dataValidadeFinal": "30/01/2025 03:00:00",
+                      "liberacaoSim": true,
+                      "liberacaoNao": false
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/certificado/": {
+      "post": {
+        "tags": [
+          "Consulta Certificado de Boas Práticas"
+        ],
+        "summary": "Retorna certificados paginados",
+        "description": "Recebe JSON com page, order, sorting e filtros em filter[...]. Para certificados medicamentos, use contexto = \"certificadoMedicamento\" e inclua filtros específicos; para certificados genéricos, use contexto = \"certificado\" e não inclua classesCertificacao, formasFarmaceuticas ou linhasCertificacao.",
+        "operationId": "findCertificado_2",
+        "requestBody": {
+          "description": "Payload completo de PaginationBuilder",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaginationBuilder"
+              },
+              "examples": {
+                "Certificados": {
+                  "description": "Certificados",
+                  "value": {
+                    "size": "10",
+                    "page": "1",
+                    "filter": {
+                      "tipoCertificado": "1",
+                      "nacional": true,
+                      "internacional": false,
+                      "certificacaoConcedidaPor": "3,4",
+                      "status": "0,3",
+                      "cnpjCertificada": "76475789000107",
+                      "ufs": "SP,MG",
+                      "contexto": "certificado",
+                      "dataPublicacaoInicial": "01/12/2024 03:00:00",
+                      "dataPublicacaoFinal": "30/01/2025 03:00:00",
+                      "dataValidadeInicial": "01/12/2024 03:00:00",
+                      "dataValidadeFinal": "30/01/2025 03:00:00",
+                      "liberacaoSim": true,
+                      "liberacaoNao": false
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageCertificadoResultado"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/assunto/download": {
       "post": {
         "tags": [
@@ -1433,7 +2688,7 @@
         ],
         "summary": "Faz download do relatório de assunto",
         "description": "Exports assuntos as `consulta_assuntos.xls` (BIFF .xls). An empty `filter` exports all 2,599 assuntos, about 5 MB. `filter.codigosAssunto` (an array of ids) does bind here, unlike POST /api/v1/assunto/ which cannot bind its body at all: `{\"filter\": {\"codigosAssunto\": [10013]}}` returned a 13 KB file on 2026-09-08.",
-        "operationId": "download_1",
+        "operationId": "download_3",
         "requestBody": {
           "description": "Payload completo de PaginationBuilder para exportação",
           "content": {
@@ -2071,7 +3326,7 @@
         ],
         "summary": "Retorna o arquivo do detalhe do UDI",
         "description": "The device detail as `udi.xlsx` (OOXML, one sheet \"UDI-DI - Dispositivo\": a header row plus one row). The only download that also works with `Accept: application/json`.",
-        "operationId": "download_2",
+        "operationId": "download_4",
         "parameters": [
           {
             "name": "id",
@@ -2971,6 +4226,1589 @@
           }
         },
         "x-accept": "*/*"
+      }
+    },
+    "/api/v1/tabaco/tipoTabaco": {
+      "get": {
+        "tags": [
+          "Consulta Tabaco"
+        ],
+        "operationId": "findTipoTabaco",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TipoProdutoTabaco"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tabaco/situacoes": {
+      "get": {
+        "tags": [
+          "Consulta Tabaco"
+        ],
+        "operationId": "findSituacoes",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChaveValorObject"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tabaco/origemTabaco": {
+      "get": {
+        "tags": [
+          "Consulta Tabaco"
+        ],
+        "operationId": "findOrigemTabaco",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChaveValorObject"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tabaco/embalagem/{rotulo}": {
+      "get": {
+        "tags": [
+          "Consulta Tabaco"
+        ],
+        "operationId": "downloadRotuloSaneanteNotificado",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "rotulo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tabaco/download": {
+      "get": {
+        "tags": [
+          "Consulta Tabaco"
+        ],
+        "operationId": "download_5",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "filtro",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/PaginationBuilder"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tabaco/downloadPDF/{codDocumento}": {
+      "get": {
+        "tags": [
+          "Consulta Tabaco"
+        ],
+        "operationId": "downloadPDF",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "codDocumento",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tabaco/detailTabaco/{id}": {
+      "get": {
+        "tags": [
+          "Consulta Tabaco"
+        ],
+        "operationId": "detailTabaco",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConsultaTabacoDTO"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tabaco/destinoTabaco": {
+      "get": {
+        "tags": [
+          "Consulta Tabaco"
+        ],
+        "operationId": "findDestinoTabaco",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChaveValorObject"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tabaco/categoriaAditivo": {
+      "get": {
+        "tags": [
+          "Consulta Tabaco"
+        ],
+        "operationId": "findCategoriaAditivo",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CategoriaAditivo"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/saude/downloadPDF/{numeroProcesso}": {
+      "get": {
+        "tags": [
+          "Consulta Produtos Saúde"
+        ],
+        "summary": "Exporta detalhes do produto de saúde em PDF",
+        "description": "Gera o arquivo PDF contendo os detalhes do produto de saúde.",
+        "operationId": "downloadPDF_1",
+        "parameters": [
+          {
+            "name": "numeroProcesso",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Arquivo PDF gerado com sucesso",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/saude/downloadExcel/{numeroProcesso}": {
+      "get": {
+        "tags": [
+          "Consulta Produtos Saúde"
+        ],
+        "summary": "Exporta detalhes do produto de saúde em Excel",
+        "description": "Gera o arquivo Excel contendo os detalhes do produto de saúde.",
+        "operationId": "downloadExcel",
+        "parameters": [
+          {
+            "name": "numeroProcesso",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Arquivo Excel gerado com sucesso",
+            "content": {
+              "application/vnd.ms-excel": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/nomeTecnico/categorias": {
@@ -3880,6 +6718,1291 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/TipoProduto"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/certificadoMedicamento/{id}": {
+      "get": {
+        "tags": [
+          "Consulta Certificado de Boas Práticas de Medicamentos"
+        ],
+        "summary": "Retorna o certificado detalhado",
+        "description": "Retorna o certificado detalhado de acordo com o ID informado.",
+        "operationId": "detailCertificado",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CertificadoDetalhe"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/certificadoMedicamento/status": {
+      "get": {
+        "tags": [
+          "Consulta Certificado de Boas Práticas de Medicamentos"
+        ],
+        "summary": "Retorna status de certificados",
+        "description": "Retorna uma lista de 'status' como pares chave-valor.",
+        "operationId": "findStatus",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChaveValorInteger"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/certificadoMedicamento/linhasCertificacao": {
+      "get": {
+        "tags": [
+          "Consulta Certificado de Boas Práticas de Medicamentos"
+        ],
+        "summary": "Retorna linhas de certificação",
+        "description": "Retorna uma lista de linhas de certificação (LinhaCbpf).",
+        "operationId": "findLinhasCertificacao",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LinhaCbpf"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/certificadoMedicamento/formasFarmaceuticas": {
+      "get": {
+        "tags": [
+          "Consulta Certificado de Boas Práticas de Medicamentos"
+        ],
+        "summary": "Retorna formas farmacêuticas básicas",
+        "description": "Retorna uma lista de formas farmacêuticas básicas (FormaFarmaceuticaBasica).",
+        "operationId": "findFormasCertificacao",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FormaFarmaceuticaBasica"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/certificadoMedicamento/classesCertificacao": {
+      "get": {
+        "tags": [
+          "Consulta Certificado de Boas Práticas de Medicamentos"
+        ],
+        "summary": "Retorna classes de certificação",
+        "description": "Retorna uma lista de classes de certificação (ClasseCertificacao).",
+        "operationId": "findClassesCertificacao",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClasseCertificacao"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/certificadoMedicamento/certificacaoConcedidaPor": {
+      "get": {
+        "tags": [
+          "Consulta Certificado de Boas Práticas de Medicamentos"
+        ],
+        "summary": "Retorna fontes de certificação concedida",
+        "description": "Retorna uma lista de valores para 'Certificação Concedida Por'.",
+        "operationId": "findCertificacaoConcedidaPor",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EmissaoCertificadoDTO"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/certificado/{id}": {
+      "get": {
+        "tags": [
+          "Consulta Certificado de Boas Práticas"
+        ],
+        "summary": "Retorna o certificado detalhado",
+        "description": "Retorna o certificado detalhado de acordo com o ID informado.",
+        "operationId": "detailCertificado_1",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/CertificadoDetalhe"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/certificado/status": {
+      "get": {
+        "tags": [
+          "Consulta Certificado de Boas Práticas"
+        ],
+        "summary": "Retorna status de certificados",
+        "description": "Retorna uma lista de 'status' como pares chave-valor.",
+        "operationId": "findStatus_1",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ChaveValorInteger"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal error OR request validation failure (see ErroApi.mensagem / mensagem_detalhada).",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErroApi"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Burst-Capacity": {
+                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
+              },
+              "X-RateLimit-Replenish-Rate": {
+                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/certificado/certificacaoConcedidaPor": {
+      "get": {
+        "tags": [
+          "Consulta Certificado de Boas Práticas"
+        ],
+        "summary": "Retorna fontes de certificação concedida",
+        "description": "Retorna uma lista de valores para 'Certificação Concedida Por'.",
+        "operationId": "findCertificacaoConcedidaPor_1",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EmissaoCertificadoDTO"
                   }
                 }
               }
@@ -5023,6 +9146,285 @@
           }
         }
       },
+      "CPSEmpresa": {
+        "type": "object",
+        "properties": {
+          "cnpj": {
+            "type": "string"
+          },
+          "razaoSocial": {
+            "type": "string"
+          }
+        }
+      },
+      "CPSMensagem": {
+        "type": "object",
+        "properties": {
+          "situacao": {
+            "type": "string"
+          },
+          "resolucao": {
+            "type": "string"
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "negativo": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CampoCertificacao": {
+        "type": "object",
+        "properties": {
+          "ordem": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "campo": {
+            "type": "string"
+          },
+          "valores": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ValorCertificacao"
+            }
+          },
+          "alteracaoCertificacaoForAll": {
+            "type": "string",
+            "writeOnly": true,
+            "enum": [
+              "PROCESSO",
+              "CANCELAMENTO",
+              "INCLUSAO",
+              "RENOVACAO"
+            ]
+          }
+        }
+      },
+      "CategoriaAditivo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "ativo": {
+            "type": "string",
+            "enum": [
+              "SIM",
+              "NAO"
+            ]
+          }
+        }
+      },
+      "CertificadoDetalhe": {
+        "type": "object",
+        "properties": {
+          "idCertificado": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "empresaSolicitante": {
+            "type": "string"
+          },
+          "cnpj": {
+            "type": "string"
+          },
+          "endereco": {
+            "type": "string"
+          },
+          "cidade": {
+            "type": "string"
+          },
+          "uf": {
+            "type": "string"
+          },
+          "empresaCertificada": {
+            "type": "string"
+          },
+          "codigoUnico": {
+            "type": "string"
+          },
+          "cnpjCertificada": {
+            "type": "string"
+          },
+          "enderecoCertificada": {
+            "type": "string"
+          },
+          "cidadeCertificada": {
+            "type": "string"
+          },
+          "ufCertificada": {
+            "type": "string"
+          },
+          "paisCertificado": {
+            "type": "string"
+          },
+          "paisSolicitante": {
+            "type": "string"
+          },
+          "tipoCertificado": {
+            "type": "string"
+          },
+          "assunto": {
+            "type": "string"
+          },
+          "dataPublicacao": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "datavalidade": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resolucao": {
+            "type": "string"
+          },
+          "dataResolucao": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "numeroDou": {
+            "type": "string"
+          },
+          "numeroExpediente": {
+            "type": "string"
+          },
+          "motivo": {
+            "$ref": "#/components/schemas/Motivo"
+          },
+          "certificacaoConcedidaPor": {
+            "$ref": "#/components/schemas/TipoEmissao"
+          },
+          "tipoAssunto": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "codSituacao": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "contexto": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "VALIDO",
+              "INDEFERIDO",
+              "CANCELADO",
+              "VENCIDO"
+            ]
+          },
+          "linhasCertificacao": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinhaCertificacao"
+            }
+          },
+          "linhasNoProcesso": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinhaCertificacao"
+            }
+          },
+          "tipoAlteracao": {
+            "type": "string",
+            "enum": [
+              "PROCESSO",
+              "CANCELAMENTO",
+              "INCLUSAO",
+              "RENOVACAO"
+            ]
+          }
+        }
+      },
+      "CertificadoResultado": {
+        "type": "object",
+        "properties": {
+          "idCertificado": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "empresaSolicitante": {
+            "type": "string"
+          },
+          "cnpj": {
+            "type": "string"
+          },
+          "empresaCertificada": {
+            "type": "string"
+          },
+          "codigoUnico": {
+            "type": "string"
+          },
+          "cnpjCertificada": {
+            "type": "string"
+          },
+          "tipoCertificado": {
+            "type": "string"
+          },
+          "assunto": {
+            "type": "string"
+          },
+          "dataPublicacao": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "datavalidade": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "string"
+          },
+          "certificacaoConcedidaPor": {
+            "type": "string"
+          },
+          "codCertificacaoConcedidaPor": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dataAtualizacao": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "numeroExpediente": {
+            "type": "string"
+          },
+          "numeroProcesso": {
+            "type": "string"
+          },
+          "enderecoSolicitante": {
+            "type": "string"
+          },
+          "cidadeSolicitante": {
+            "type": "string"
+          },
+          "estadoSolicitante": {
+            "type": "string"
+          },
+          "paisSolicitante": {
+            "type": "string"
+          },
+          "enderecoCertificado": {
+            "type": "string"
+          },
+          "cidadeCertificado": {
+            "type": "string"
+          },
+          "estadoCertificado": {
+            "type": "string"
+          },
+          "paisCertificado": {
+            "type": "string"
+          }
+        }
+      },
       "ChaveValorInteger": {
         "type": "object",
         "properties": {
@@ -5044,6 +9446,36 @@
           "id": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "ChaveValorObject": {
+        "type": "object",
+        "properties": {
+          "descricao": {
+            "type": "string"
+          },
+          "id": {
+            "type": "object"
+          }
+        }
+      },
+      "ClasseCertificacao": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "ativa": {
+            "type": "string",
+            "enum": [
+              "SIM",
+              "NAO"
+            ]
           }
         }
       },
@@ -5070,6 +9502,20 @@
             }
           },
           "fatoGerador": {
+            "type": "string"
+          }
+        }
+      },
+      "ConsultaEmbalagemDTO": {
+        "type": "object",
+        "properties": {
+          "tipoEmbalagem": {
+            "type": "string"
+          },
+          "qtdEmbalagem": {
+            "type": "number"
+          },
+          "unidade": {
             "type": "string"
           }
         }
@@ -5128,6 +9574,136 @@
           }
         }
       },
+      "ConsultaProdutoSaude": {
+        "type": "object",
+        "properties": {
+          "processo": {
+            "type": "string"
+          },
+          "empresa": {
+            "$ref": "#/components/schemas/CPSEmpresa"
+          },
+          "produto": {
+            "type": "string"
+          },
+          "mensagem": {
+            "$ref": "#/components/schemas/CPSMensagem"
+          },
+          "registro": {
+            "type": "string"
+          },
+          "situacao": {
+            "type": "string"
+          },
+          "dataVencimento": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cancelado": {
+            "type": "number"
+          },
+          "dataCancelamento": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "codigoSituacaoAssuntoDoc": {
+            "type": "number"
+          },
+          "dataInicioVigencia": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "siglaRiscoProduto": {
+            "type": "string"
+          },
+          "dataAtualizacao": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "vencimento": {
+            "$ref": "#/components/schemas/DPSVencimento"
+          }
+        }
+      },
+      "ConsultaTabacoDTO": {
+        "type": "object",
+        "properties": {
+          "nomeProduto": {
+            "type": "string"
+          },
+          "tipoProduto": {
+            "type": "string"
+          },
+          "processoFormatado": {
+            "type": "string"
+          },
+          "processo": {
+            "type": "string"
+          },
+          "cnpjEmpresa": {
+            "type": "string"
+          },
+          "nomeEmpresa": {
+            "type": "string"
+          },
+          "destino": {
+            "type": "string"
+          },
+          "situacaoProdutoDescricao": {
+            "type": "string"
+          },
+          "situacaoProdutoAtivo": {
+            "type": "boolean"
+          },
+          "observacao": {
+            "type": "string"
+          },
+          "dataVencimento": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "codDocumento": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "dataAtualizacao": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "embalagens": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConsultaEmbalagemDTO"
+            }
+          },
+          "dataRegistro": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "categoriaAditivos": {
+            "type": "string"
+          },
+          "origem": {
+            "type": "string"
+          },
+          "idProduto": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "rotulos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RotuloDTO"
+            }
+          },
+          "processosMedidaCautelar": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
       "DI": {
         "type": "object",
         "properties": {
@@ -5136,6 +9712,137 @@
           },
           "entidadeEmissora": {
             "type": "string"
+          }
+        }
+      },
+      "DPSAnexo": {
+        "type": "object",
+        "properties": {
+          "anexoCod": {
+            "type": "string"
+          },
+          "nuExpediente": {
+            "type": "string"
+          },
+          "nomeArquivo": {
+            "type": "string"
+          },
+          "tipoAnexo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "tipoArquivo": {
+            "type": "string"
+          },
+          "dtEnvio": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "nuProcesso": {
+            "type": "string"
+          },
+          "descricaoTipoAnexo": {
+            "type": "string"
+          },
+          "nomeCompleto": {
+            "type": "string"
+          }
+        }
+      },
+      "DPSApresentacao": {
+        "type": "object",
+        "properties": {
+          "modelos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "componente": {
+            "type": "string"
+          },
+          "apresentacao": {
+            "type": "string"
+          }
+        }
+      },
+      "DPSEmpresa": {
+        "type": "object",
+        "properties": {
+          "cnpj": {
+            "type": "string"
+          },
+          "razaoSocial": {
+            "type": "string"
+          },
+          "autorizacao": {
+            "type": "string"
+          }
+        }
+      },
+      "DPSFabricante": {
+        "type": "object",
+        "properties": {
+          "atividade": {
+            "type": "string"
+          },
+          "razaoSocial": {
+            "type": "string"
+          },
+          "pais": {
+            "type": "string"
+          },
+          "local": {
+            "type": "string"
+          },
+          "cnpjOuCodigoUnico": {
+            "type": "string"
+          },
+          "endereco": {
+            "type": "string"
+          }
+        }
+      },
+      "DPSMensagem": {
+        "type": "object",
+        "properties": {
+          "situacao": {
+            "type": "string"
+          },
+          "resolucao": {
+            "type": "string"
+          },
+          "motivo": {
+            "type": "string"
+          },
+          "negativo": {
+            "type": "boolean"
+          }
+        }
+      },
+      "DPSRisco": {
+        "type": "object",
+        "properties": {
+          "sigla": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
+          }
+        }
+      },
+      "DPSVencimento": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "vencido": {
+            "type": "boolean"
           }
         }
       },
@@ -5244,6 +9951,87 @@
             "type": "string"
           },
           "pais": {
+            "type": "string"
+          }
+        }
+      },
+      "DetalheProdutoSaude": {
+        "type": "object",
+        "properties": {
+          "produto": {
+            "type": "string"
+          },
+          "empresa": {
+            "$ref": "#/components/schemas/DPSEmpresa"
+          },
+          "mensagem": {
+            "$ref": "#/components/schemas/DPSMensagem"
+          },
+          "nomeTecnico": {
+            "type": "string"
+          },
+          "registro": {
+            "type": "string"
+          },
+          "cancelado": {
+            "type": "boolean"
+          },
+          "dataCancelamento": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "processo": {
+            "type": "string"
+          },
+          "apresentacoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DPSApresentacao"
+            }
+          },
+          "apresentacoesPage": {
+            "$ref": "#/components/schemas/PageDPSApresentacao"
+          },
+          "fabricantes": {
+            "uniqueItems": true,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DPSFabricante"
+            }
+          },
+          "risco": {
+            "$ref": "#/components/schemas/DPSRisco"
+          },
+          "vencimento": {
+            "$ref": "#/components/schemas/DPSVencimento"
+          },
+          "publicacao": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "apresentacaoModelo": {
+            "type": "boolean"
+          },
+          "arquivos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DPSAnexo"
+            }
+          },
+          "processoMedidaCautelar": {
+            "type": "string"
+          },
+          "tooltip": {
+            "type": "string"
+          },
+          "dataInicioVigencia": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "codigoSituacaoAssuntoDoc": {
+            "type": "number"
+          },
+          "situacao": {
             "type": "string"
           }
         }
@@ -5519,6 +10307,55 @@
           }
         }
       },
+      "DocumentoCertificacao": {
+        "type": "object",
+        "properties": {
+          "codDocumentoPeticao": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "codSituacao": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "situacao": {
+            "type": "string"
+          },
+          "dtPublicacao": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dtValidade": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "assunto": {
+            "type": "string"
+          },
+          "dataResolucao": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resolucao": {
+            "type": "string"
+          },
+          "numeroDou": {
+            "type": "string"
+          },
+          "tipoCertificado": {
+            "type": "string"
+          },
+          "expediente": {
+            "type": "string"
+          },
+          "vigente": {
+            "type": "boolean"
+          },
+          "indeferido": {
+            "type": "boolean"
+          }
+        }
+      },
       "EmbalagemDTO": {
         "type": "object",
         "properties": {
@@ -5532,6 +10369,21 @@
           "qtdPorEmbalagem": {
             "type": "integer",
             "format": "int64"
+          }
+        }
+      },
+      "EmissaoCertificadoDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "descricaoDetalhada": {
+            "type": "string"
           }
         }
       },
@@ -5572,6 +10424,25 @@
           },
           "expeditenteFormatado": {
             "type": "string"
+          }
+        }
+      },
+      "FormaFarmaceuticaBasica": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "ativa": {
+            "type": "string",
+            "enum": [
+              "SIM",
+              "NAO"
+            ]
           }
         }
       },
@@ -5648,6 +10519,83 @@
           }
         }
       },
+      "LinhaCbpf": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "ativa": {
+            "type": "string",
+            "enum": [
+              "SIM",
+              "NAO"
+            ]
+          }
+        }
+      },
+      "LinhaCertificacao": {
+        "type": "object",
+        "properties": {
+          "cod": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "ordem": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "tipoProduto": {
+            "type": "string"
+          },
+          "documento": {
+            "$ref": "#/components/schemas/DocumentoCertificacao"
+          },
+          "campos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CampoCertificacao"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "VIGENTE",
+              "INDEFERIDA",
+              "CANCELADA"
+            ]
+          },
+          "algumCampoComValorCancelado": {
+            "type": "boolean"
+          },
+          "dataCancelamento": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "dataIndeferimento": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Motivo": {
+        "type": "object",
+        "properties": {
+          "tipo": {
+            "type": "string"
+          },
+          "descricao": {
+            "type": "string"
+          }
+        }
+      },
       "NomeTecnicoDTO": {
         "type": "object",
         "properties": {
@@ -5678,6 +10626,52 @@
           }
         }
       },
+      "PageCertificadoResultado": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CertificadoResultado"
+            }
+          },
+          "sort": {
+            "$ref": "#/components/schemas/Sort"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
       "PageConsultaAssunto": {
         "type": "object",
         "properties": {
@@ -5705,6 +10699,144 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ConsultaAssunto"
+            }
+          },
+          "sort": {
+            "$ref": "#/components/schemas/Sort"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageConsultaProdutoSaude": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConsultaProdutoSaude"
+            }
+          },
+          "sort": {
+            "$ref": "#/components/schemas/Sort"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageConsultaTabacoDTO": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ConsultaTabacoDTO"
+            }
+          },
+          "sort": {
+            "$ref": "#/components/schemas/Sort"
+          },
+          "first": {
+            "type": "boolean"
+          },
+          "last": {
+            "type": "boolean"
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "empty": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PageDPSApresentacao": {
+        "type": "object",
+        "properties": {
+          "totalPages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "number": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "size": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DPSApresentacao"
             }
           },
           "sort": {
@@ -6016,6 +11148,28 @@
           }
         }
       },
+      "RotuloDTO": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "dataCriacao": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "nuExpediente": {
+            "type": "string"
+          },
+          "dataFinalizacao": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
       "Servico": {
         "type": "object",
         "properties": {
@@ -6130,6 +11284,18 @@
           }
         }
       },
+      "TipoEmissao": {
+        "type": "object",
+        "properties": {
+          "codigo": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "descricao": {
+            "type": "string"
+          }
+        }
+      },
       "TipoProduto": {
         "type": "object",
         "properties": {
@@ -6151,6 +11317,25 @@
           },
           "descricao": {
             "type": "string"
+          }
+        }
+      },
+      "TipoProdutoTabaco": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "descricao": {
+            "type": "string"
+          },
+          "ativo": {
+            "type": "string",
+            "enum": [
+              "SIM",
+              "NAO"
+            ]
           }
         }
       },
@@ -6208,6 +11393,26 @@
               "EM_CARENCIA",
               "CONSOLIDADO"
             ]
+          }
+        }
+      },
+      "ValorCertificacao": {
+        "type": "object",
+        "properties": {
+          "valor": {
+            "type": "string"
+          },
+          "tipoAlteracao": {
+            "type": "string",
+            "enum": [
+              "PROCESSO",
+              "CANCELAMENTO",
+              "INCLUSAO",
+              "RENOVACAO"
+            ]
+          },
+          "cancelado": {
+            "type": "boolean"
           }
         }
       },
