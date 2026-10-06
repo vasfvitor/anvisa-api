@@ -42,6 +42,22 @@ Code:
 Kept out of 0.5.0 because it changes the public shape of the package and deserves its own
 release. The synchronous client stays.
 
+## Open data (`anvisa.dados`)
+
+Started 2026-10-06 with the two alimentos files, published daily as Parquet on GitHub Pages. The
+TLS concern that kept this out of scope is gone: the chain verifies with httpx 0.28.1 and certifi
+2026.07.22 (checked from a workstation and by `pytest -m live -k dados`). Next, each one catalog
+entry in `anvisa/dados/catalog.py` plus one fixture (see CONTRIBUTING.md):
+
+- **Saneantes** (`TA_CONSULTA_SANEANTES.CSV`, 25 MB). Its dates are `mm/dd/yyyy` (`06/21/2031`):
+  set `timestamp_formats` on the entry; the 20% null guard catches a wrong guess.
+- **Cosméticos** (`TA_CONSULTA_COSMETICOS.CSV`, 228 MB). `parse.normalize` holds a whole file in
+  memory (fine at 34 MB); stream it before adding this one.
+- Medicamentos, produtos para saúde, tabaco, cannabis: same folder, not profiled yet.
+- **Keep the previous build live** for a day after a deploy (copy its `data/<id>/` into the new
+  artifact), so a browser session open across a deploy never sees a 404. Today it re-reads the
+  manifest instead.
+
 ## Later, if there is demand
 
 - **Reading the spreadsheets.** Downloads return bytes. An optional extra (`anvisa[xlsx]`, on
@@ -61,8 +77,4 @@ release. The synchronous client stays.
   disguising the client from a control the operator put there on purpose. Not doing it
   unless ANVISA allowlists a declared User-Agent. Revisit if the official gateway deploys
   these domains: the `drift` workflow will show them as a diff under `spec/portal/`.
-- **The open-data CSV exports** (`dados.anvisa.gov.br/dados/CONSULTAS/`) as a `dados` domain.
-  Sanctioned and reachable, but the host's certificate chain fails verification from Python
-  (an ICP-Brasil chain, likely a missing intermediate). Worth a `dados` domain the day the
-  chain is handled properly (bundled chain or the `truststore` package); not before.
 - **SNGPC**, a separate service for pharmacies.

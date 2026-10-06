@@ -22,7 +22,7 @@ ships a client that encodes it.
 | Dates | Integer **epoch milliseconds**. |
 | Downloads | The spec says `200 OK` with no content and nothing about `Accept`. Every download answers **500 "Could not find acceptable representation"** to `Accept: application/json` (all but `GET /udi/{id}/download`); send `Accept: */*`. `Content-Type` is always `application/vnd.ms-excel` even when the bytes are OOXML or a zip. `POST /assunto/downloadAssuntoFormulario` takes a **bare JSON integer** body, not the declared `PaginationBuilder`, and returns the file with **no `Content-Type` and no `Content-Disposition`**. An empty subfila is a **500** here, not the empty 404 `fila/consulta` gives. |
 | Filter keys | Verified live: `udi` accepts `nomeComercial` (substring), `udiDi` (exact), `cnpjDetentora`, `codigoGmdn`, `nuRegistro`; `nomeTecnico` accepts `nomeTecnico` (substring) and `categoriaProduto`; `termoGmdn` accepts `conteudo`. `POST /assunto/` is **broken** (500, body not bound). |
-| Coverage | The spec has 32 endpoints. The portal's doc pages describe **35 more** (certificados, empresa nacional/internacional, dossiê, alimentos, produtos de saúde) on the same base path, but all seven probed answer a plain Spring **404**: documented, not deployed. The same datasets exist as bulk CSV on [`dados.anvisa.gov.br/dados/CONSULTAS/`](https://dados.anvisa.gov.br/dados/CONSULTAS/) (for example `TA_CONSULTA_PRODUTOS_IRREGULARES_RESULTADO.CSV`, refreshed on weekdays). |
+| Coverage | The spec has 32 endpoints. The portal's doc pages describe **35 more** (certificados, empresa nacional/internacional, dossiê, alimentos, produtos de saúde) on the same base path, but all seven probed answer a plain Spring **404**: documented, not deployed. The same datasets exist as bulk CSV on [`dados.anvisa.gov.br/dados/CONSULTAS/`](https://dados.anvisa.gov.br/dados/CONSULTAS/) (for example `TA_CONSULTA_PRODUTOS_IRREGULARES_RESULTADO.CSV`, refreshed on weekdays); the alimentos files are republished here as Parquet, see [Dados abertos](#dados-abertos-parquet-on-github-pages). |
 
 ## Layout
 
@@ -31,6 +31,7 @@ spec/       ANVISA's OpenAPI document (as published, only reformatted) + an Open
             with the corrections above + the resolved spec. Language-neutral source of truth.
             spec/portal/ holds the portal's own doc pages and menu, fetched by snapshot.py.
 fixtures/   Real responses recorded from the API, with a manifest. Shared test fixtures.
+            fixtures/dados/ holds byte-exact samples of the open-data CSVs.
 packages/python/   The `anvisa` Python library and CLI.
 ```
 
@@ -109,18 +110,76 @@ raises typed exceptions (`MissingFilterError`, `InvalidPageError`, `MalformedReq
 ### Development
 
 ```bash
-cd packages/python && uv sync
+cd packages/python && uv sync --extra dados
 uv run pytest             # fixture-only, no network
-uv run pytest -m live     # 4 real requests; needs credentials
+uv run pytest -m live     # 5 real requests; the 4 API ones need credentials
 make spec && make models  # at the repo root; a non-empty git diff means the overlay drifted
 make snapshot             # re-download the spec and portal docs; a diff means ANVISA changed them
+```
+
+## Dados abertos: Parquet on GitHub Pages
+
+The Consultas Externas API has no food products. ANVISA publishes them as bulk CSV on
+[dados.anvisa.gov.br](https://dados.anvisa.gov.br/dados/CONSULTAS/PRODUTOS/), refreshed on
+weekdays, with no CORS headers, so a browser cannot read them. A daily workflow here
+(`.github/workflows/dados.yml`) converts them to typed, sorted Parquet and publishes them on
+GitHub Pages, at <https://vasfvitor.github.io/anvisa-api/> once Pages is enabled:
+
+| Table | Source | Rows (2026-10-05) | One row per |
+|---|---|---|---|
+| `alimentos` | `TA_CONSULTA_ALIMENTOS.CSV` | 66,681 | apresentação of a registered or notified food product, sorted by `nu_cnpj_empresa`, `nu_processo` |
+| `alimentos_resultado` | `TA_CONSULTA_ALIMENTOS_RESULTADO.CSV` | 66,941 | apresentação detail (embalagem, tabela nutricional, alergênicos); join on `co_seq_apresentacao_produto` |
+
+Column names are ANVISA's, lowercased, so the
+[data dictionary](https://dados.anvisa.gov.br/dados/CONSULTAS/PRODUTOS/Documentacao_e_Dicionario_de_Dados_Regularizados_Alimentos.pdf)
+applies. Timestamps are naive **Brasília local time**, as ANVISA writes them.
+
+What the files don't tell you (verified on the 2026-10-05 files):
+
+| Behavior | Reality |
+|---|---|
+| Encoding | **Windows-1252**, not Latin-1: `–` `’` `“ ”` `™` are bytes 0x96, 0x92, 0x93/0x94, 0x99. |
+| Quoting | `;`-separated, text in `"..."`, but quotes **inside** a value are not escaped (`biscoito tipo "cookies"`; a value ending in `"` is written `...brilhante. ""`), and values contain LF and CRLF. DuckDB's strict reader refuses the file, its lenient one merges records, Python's `csv` splits two. A quote closes a field only before `;` or a line break; read that way, every record has the header's field count. |
+| `DT_VENCIMENTO_REGISTRO` | Month and year, **`MMYYYY`** (`122029`), three rows `MM/YYYY`. Published as a DATE on the first of the month. Every notificação carries `122029`, a placeholder; registros expire 5, 10, 15 or 20 years after `DT_REGULARIZACAO`. |
+| Text | `MARCAS` and `NO_PRODUTO` carry HTML entities (`L&apos;ANA MED`, `&quot;`, `&#8208;`), decoded on the way. Some values end in `\xa0\r\n`; every value is stripped. `ST_PRODUTO_ATIVO` is `S`/`N` plus one `X` (NULL in the BOOLEAN). |
+| Server | ETag and Last-Modified on every file; `If-None-Match` answers **304**, so an unchanged day costs two empty responses. TLS verifies with certifi. |
+
+`manifest.json` is the entry point (`schema_version` 1): for each table, its `path` (relative
+to the manifest, under `data/<build_id>/`), rows, bytes, sha256, column names and types, sort
+order, the source file's ETag and ANVISA's load time, and `nulls_added`, the count of values per
+typed column that did not parse (the build fails if a column loses more than 20%). Data paths
+are immutable: a new build gets a new directory and the previous one disappears with the next
+deploy.
+
+For a frontend on DuckDB-WASM: fetch `manifest.json` (add `?t=<now>` to bypass the 10-minute
+Pages cache), resolve `tables.alimentos.path` against the manifest URL, and query it with
+`read_parquet`. Lookups by `nu_cnpj_empresa` or `nu_processo` read the footer and one ~360 KB row
+group over HTTP Range; name and brand searches (`ILIKE`) read the whole file once (3.3 MB, then
+cached). The detail of a row is `alimentos_resultado WHERE co_seq_apresentacao_produto = ?`. A
+404 on a data path means a deploy happened mid-session: re-read the manifest.
+
+```sql
+-- duckdb, anywhere: the path comes from manifest.json
+SELECT no_produto, marcas, situacao_registro
+FROM 'https://vasfvitor.github.io/anvisa-api/data/<build_id>/alimentos.parquet'
+WHERE nu_cnpj_empresa = '40208221000174';
+```
+
+The same build runs locally (no credentials; DuckDB comes with the `dados` extra):
+
+```bash
+pip install 'anvisa[dados]'
+anvisa dados list
+anvisa dados build --out dist                     # dist/manifest.json, index.html, data/<id>/
+anvisa dados build --out dist2 --skip-unchanged dist/manifest.json   # 304s → {"skipped": true}
 ```
 
 ## Scope
 
 Covered: all 32 endpoints of the published spec, as the `fila`, `lista`, `udi`,
 `nome_tecnico`, and `assunto` domains. That includes the eight file downloads and
-`servicosAssociados`, wrapped on 2026-09-08. The domains the portal documents but the gateway does not serve yet (see the table) are
+`servicosAssociados`, wrapped on 2026-09-08. From the open data, the two alimentos files
+(`anvisa.dados`). The domains the portal documents but the gateway does not serve yet (see the table) are
 saved under `spec/portal/`; a workflow re-fetches them twice a month, so the day ANVISA deploys
 them shows up as a diff. The SNGPC API (a
 separate service for pharmacies) is out of scope.

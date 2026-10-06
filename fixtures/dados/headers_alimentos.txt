@@ -1,0 +1,9 @@
+HTTP/2 200
+Content-Type: application/octet-stream
+Content-Length: 33698027
+Last-Modified: Mon, 05 Oct 2026 15:26:22 GMT
+ETag: "20230eb-65d1981268f1f"
+Accept-Ranges: bytes
+Cache-Control: public
+
+body: 33,698,027 bytes, Windows-1252, 66,681 records (not kept); alimentos_head.csv is the header plus 38 of those records, cut byte for byte. No Access-Control-Allow-Origin header. If-None-Match or If-Modified-Since with these values answers 304 with an empty body.

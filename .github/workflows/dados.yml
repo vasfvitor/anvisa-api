@@ -1,0 +1,58 @@
+name: dados
+
+# Daily: download ANVISA's open-data CSVs (dados.anvisa.gov.br), convert them to Parquet and
+# deploy them, with manifest.json and index.html, to GitHub Pages. The build asks for the files
+# with the ETags of the published manifest; when ANVISA changed nothing and the commit is the one
+# that built the live site, nothing is uploaded and the previous deploy stays live. No secrets.
+# One-time setup: Settings → Pages → Source: GitHub Actions.
+
+on:
+  schedule:
+    - cron: "0 21 * * *"   # 18:00 America/Sao_Paulo; ANVISA's ETL lands around 15:30 UTC on weekdays
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write      # deploy-pages
+  id-token: write   # deploy-pages proves the deployment came from this workflow
+
+# Never cancel a deploy halfway; a second run waits for the first.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install uv and Python 3.12
+        uses: astral-sh/setup-uv@v10.0.1   # no floating major tag on this action
+        with:
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: packages/python/uv.lock
+      - name: Sync from the lockfile, with DuckDB
+        run: uv sync --locked --extra dados
+        working-directory: packages/python
+      - name: Read the Pages URL   # also fails early if Pages is not enabled
+        id: pages
+        uses: actions/configure-pages@v6
+      - name: Build (skipped when nothing changed)
+        working-directory: packages/python
+        env:
+          PUBLISHED: ${{ steps.pages.outputs.base_url }}/manifest.json
+        run: uv run anvisa dados build --out "$GITHUB_WORKSPACE/dist" --skip-unchanged "$PUBLISHED"
+      - name: Upload the site
+        if: hashFiles('dist/manifest.json') != ''
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+      - name: Deploy
+        if: hashFiles('dist/manifest.json') != ''
+        id: deploy
+        uses: actions/deploy-pages@v5

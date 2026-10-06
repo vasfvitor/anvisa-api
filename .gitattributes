@@ -1,0 +1,2 @@
+# Samples cut byte for byte from ANVISA (Windows-1252, mixed LF/CRLF inside fields): never normalize
+fixtures/dados/*.csv -text

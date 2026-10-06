@@ -1,0 +1,9 @@
+{
+  "recorded": "2026-10-06",
+  "notes": "Real files from ANVISA's open-data server, https://dados.anvisa.gov.br/dados/CONSULTAS/PRODUTOS/ (no auth). The CSVs are too big to keep, so headers_*.txt holds the response headers and *_head.csv the header row plus a handful of records copied byte for byte (never re-encode them; .gitattributes marks them -text). Records were chosen to cover the format's edge cases: Windows-1252 bytes 0x92/0x96/0x99, quotes inside quoted fields that ANVISA does not escape, line breaks inside fields, HTML entities in MARCAS and NO_PRODUTO, DT_VENCIMENTO_REGISTRO as MMYYYY and MM/YYYY, ST_PRODUTO_ATIVO = X, CNPJs with leading zeros, and resultado rows that join main rows on CO_SEQ_APRESENTACAO_PRODUTO.",
+  "responses": [
+    {"name": "alimentos", "method": "GET", "path": "/dados/CONSULTAS/PRODUTOS/TA_CONSULTA_ALIMENTOS.CSV", "status": 200, "file": "headers_alimentos.txt", "sample": "alimentos_head.csv", "note": "33,698,027 bytes, not kept"},
+    {"name": "alimentos_resultado", "method": "GET", "path": "/dados/CONSULTAS/PRODUTOS/TA_CONSULTA_ALIMENTOS_RESULTADO.CSV", "status": 200, "file": "headers_alimentos_resultado.txt", "sample": "alimentos_resultado_head.csv", "note": "23,212,778 bytes, not kept"},
+    {"name": "alimentos_not_modified", "method": "HEAD", "path": "/dados/CONSULTAS/PRODUTOS/TA_CONSULTA_ALIMENTOS.CSV", "status": 304, "request_headers": {"If-None-Match": "\"20230eb-65d1981268f1f\""}, "note": "also 304 for If-Modified-Since: Mon, 05 Oct 2026 15:26:22 GMT; no body"}
+  ]
+}

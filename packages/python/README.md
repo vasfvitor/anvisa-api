@@ -36,4 +36,8 @@ of the gateway's rate limit (burst 25, 1 request/s) so loops never hit 429, 1-ba
 pages against 0-based responses, required filter keys, and typed exceptions for the
 validation errors ANVISA reports as HTTP 500.
 
+Open data, no credentials: `pip install 'anvisa[dados]'` adds `anvisa dados build`, which turns
+ANVISA's alimentos CSVs from dados.anvisa.gov.br (Windows-1252, unescaped quotes) into typed,
+sorted Parquet plus a `manifest.json`.
+
 Full write-up, spec overlay and recorded fixtures: https://github.com/vasfvitor/anvisa-api

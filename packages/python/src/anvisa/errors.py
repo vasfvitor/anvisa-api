@@ -100,6 +100,16 @@ class NoResultError(RequestRejectedError):
     A plain HTTP 404 stays `NotFoundError`; this is ANVISA's 500-shaped version."""
 
 
+class DadosError(AnvisaError):
+    """Building the open-data Parquet failed: a download, a malformed file, or a data-quality
+    guard (see `anvisa.dados`)."""
+
+
+class SchemaDriftError(DadosError):
+    """An open-data CSV's header no longer matches the catalog: ANVISA added, removed, renamed
+    or reordered columns."""
+
+
 _MISSING_FILTER = re.compile(r"Filtro '(\w+)' não informado")
 
 

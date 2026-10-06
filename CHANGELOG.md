@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- `anvisa.dados` and `anvisa dados list|build`: ANVISA's open-data alimentos CSVs
+  (`TA_CONSULTA_ALIMENTOS.CSV`, `TA_CONSULTA_ALIMENTOS_RESULTADO.CSV`) to typed, sorted Parquet
+  plus `manifest.json` (schema version 1) and `index.html`. DuckDB does the conversion and comes
+  with the new `dados` extra (`pip install 'anvisa[dados]'`); `import anvisa` does not need it.
+  Downloads are conditional on the published ETags (`--skip-unchanged`), and a run where nothing
+  changed writes nothing.
+- The CSVs are Windows-1252 with unescaped quotes inside quoted fields, which no stock reader
+  handles; `anvisa.dados.parse` reads them by the rule that a quote closes a field only before
+  `;` or a line break, and every record of both files comes out whole. `DT_VENCIMENTO_REGISTRO`
+  is `MMYYYY` and becomes a DATE. Byte-exact samples in `fixtures/dados/`.
+- New errors `DadosError` and `SchemaDriftError` (a changed CSV header).
+- `.github/workflows/dados.yml`: daily build, deployed to GitHub Pages when something changed.
+  CI installs the `dados` extra so the Parquet tests run on every Python version.
+
 - `spec/snapshot.py` normalizes the OpenAPI documents before writing them: `responses` and
   `components.schemas` sorted by key, Keycloak `nonce` stripped from the OAuth 2.0 URLs. The 2026-09-15
   `drift` run went red on exactly that noise. Snapshots, `resolved.json` and `models.py` are

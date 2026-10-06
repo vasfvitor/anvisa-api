@@ -26,6 +26,10 @@ dependencies = [
   "typer>=0.12",
 ]
 
+[project.optional-dependencies]
+# `anvisa dados build`: ANVISA's open-data CSVs → Parquet. Only anvisa.dados.convert imports it.
+dados = ["duckdb>=1.2"]
+
 [project.urls]
 Repository = "https://github.com/vasfvitor/anvisa-api"
 

@@ -8,15 +8,18 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from datetime import datetime
 from enum import Enum
+from pathlib import Path
 from typing import Any
 
+import httpx
 import typer
 from pydantic import BaseModel
 from rich.console import Console
 from rich.table import Table
 
-from . import __version__
+from . import __version__, dados
 from .client import Client
+from .dados.convert import ROW_GROUP_SIZE
 from .download import Download
 from .errors import AnvisaError, CredentialsError
 
@@ -49,11 +52,15 @@ lista_app = typer.Typer(
     no_args_is_help=True,
 )
 nome_tecnico_app = typer.Typer(help="Nomes técnicos de produtos para saúde.", no_args_is_help=True)
+dados_app = typer.Typer(
+    help="Dados abertos (dados.anvisa.gov.br): CSV → Parquet.", no_args_is_help=True
+)
 app.add_typer(fila_app, name="fila")
 app.add_typer(lista_app, name="lista")
 app.add_typer(udi_app, name="udi")
 app.add_typer(nome_tecnico_app, name="nome-tecnico")
 app.add_typer(assunto_app, name="assunto")
+app.add_typer(dados_app, name="dados")
 
 
 def _version(value: bool) -> None:
@@ -81,6 +88,11 @@ def main(
 def make_client() -> Client:
     """Separate so tests can swap in a client with a mocked transport."""
     return Client.from_env()
+
+
+def dados_http() -> httpx.Client:
+    """Separate so tests can swap in a client with a mocked transport."""
+    return dados.fetch.http_client()
 
 
 @contextmanager
@@ -459,3 +471,74 @@ def assunto_formulario(
     """Baixa o arquivo de um formulário de assunto (a resposta não traz nome nem tipo)."""
     with handle_errors(), make_client() as client:
         write(client.assunto.formulario(id), out, f"formulario_{id}")
+
+
+# --- dados ------------------------------------------------------------------
+
+
+@dados_app.command("list")
+def dados_list(ctx: typer.Context) -> None:
+    """Os arquivos do catálogo: nome da tabela, grupo e URL de origem."""
+    rows = [
+        {"name": d.name, "group": d.group, "title": d.title, "url": d.url} for d in dados.CATALOG
+    ]
+    if ctx.obj == Format.json:
+        typer.echo(json.dumps(rows, ensure_ascii=False, indent=2))
+        return
+    table = Table(title="Dados abertos")
+    for column in rows[0]:
+        table.add_column(column)
+    for row in rows:
+        table.add_row(*row.values())
+    Console().print(table)
+
+
+@dados_app.command("build")
+def dados_build(
+    out: Path = typer.Option(..., "--out", "-o", help="directory to write the site into"),
+    dataset: list[str] = typer.Option(
+        None, "--dataset", "-d", help="a table name or group; repeat for more (default: all)"
+    ),
+    skip_unchanged: str | None = typer.Option(
+        None,
+        "--skip-unchanged",
+        metavar="MANIFEST",
+        help="URL or path of the published manifest.json: download only what changed, "
+        "and write nothing if nothing did",
+    ),
+    commit: str | None = typer.Option(
+        None, envvar="GITHUB_SHA", help="recorded in the manifest; a new commit forces a build"
+    ),
+    workdir: Path | None = typer.Option(
+        None, "--workdir", help="keep the downloaded CSVs here (default: a temporary directory)"
+    ),
+    row_group_size: int = typer.Option(
+        ROW_GROUP_SIZE, "--row-group-size", min=1, help="DuckDB rounds it up to a multiple of 2048"
+    ),
+) -> None:
+    """Baixa os CSVs, converte para Parquet e escreve manifest.json + index.html em --out.
+
+    Progress goes to stderr; stdout gets one JSON object (the build, or `skipped`)."""
+    with handle_errors(), dados_http() as http:
+        result = dados.build(
+            out,
+            datasets=dados.select(dataset) if dataset else dados.CATALOG,
+            workdir=workdir,
+            skip_unchanged=skip_unchanged,
+            commit=commit,
+            http=http,
+            row_group_size=row_group_size,
+            log=lambda message: typer.echo(message, err=True),
+        )
+    if isinstance(result, dados.Unchanged):
+        summary = {"skipped": True, "reason": "unchanged", "published_build_id": result.build_id}
+    else:
+        summary = {
+            "build_id": result["build_id"],
+            "out": str(out),
+            "tables": {
+                name: {k: t[k] for k in ("rows", "bytes", "nulls_added", "rejected_records")}
+                for name, t in result["tables"].items()
+            },
+        }
+    typer.echo(json.dumps(summary, ensure_ascii=False, indent=2))

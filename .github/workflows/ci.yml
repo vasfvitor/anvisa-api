@@ -34,7 +34,9 @@ jobs:
           enable-cache: true
           cache-dependency-glob: packages/python/uv.lock
       - name: Sync from the lockfile
-        run: uv sync --locked   # fails if uv.lock is stale, instead of silently re-resolving
+        # fails if uv.lock is stale, instead of silently re-resolving; the dados extra brings
+        # DuckDB so the Parquet tests run instead of skipping
+        run: uv sync --locked --extra dados
       - name: Lint
         run: uv run ruff check .
       - name: Check formatting

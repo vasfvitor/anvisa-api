@@ -1,0 +1,9 @@
+HTTP/2 200
+Content-Type: application/octet-stream
+Content-Length: 23212778
+Last-Modified: Mon, 05 Oct 2026 15:26:34 GMT
+ETag: "16232ea-65d1981d97a3d"
+Accept-Ranges: bytes
+Cache-Control: public
+
+body: 23,212,778 bytes, Windows-1252, 66,941 records (not kept); alimentos_resultado_head.csv is the header plus 20 of those records, cut byte for byte.
