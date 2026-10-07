@@ -150,6 +150,7 @@ What the files don't tell you (verified on the 2026-10-05 files):
 | Registration numbers | `NU_REGISTRO_PRODUTO` always equals `NU_REGISTRO_NOTIFICACAO_PRODUTO` when present. For notificações the latter equals `NU_PROCESSO`; for registros it is the 9-digit registro. `NU_REGISTRO` is per apresentação: registro + 4-digit suffix (13 digits, like an old processo). |
 | Products | Within one `CO_SEQ_PRODUTO`, processo, CNPJ, situação, name and brands never differ: it is a clean grouping unit (50,474 products, up to 64 apresentações each, p99 = 8). `alimentos_resultado.CO_PRODUTO` equals it on every joined row. |
 | Detail coverage | 94 apresentações have no `alimentos_resultado` row, all active, regularized 2025-06 to 2026-10: ANVISA's detail export lags new notificações. |
+| Completeness | ANVISA's own panel (`consultas.anvisa.gov.br/#/alimentos/`) shows nothing these two files lack: product page and apresentação page compared by hand on 2026-10-06. |
 
 `manifest.json` is the entry point (`schema_version` 1): for each table, its `path` (relative
 to the manifest, under `data/<build_id>/`), rows, bytes, sha256, column names and types, sort
