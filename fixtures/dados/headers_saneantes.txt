@@ -1,0 +1,9 @@
+HTTP/2 200
+Content-Type: application/octet-stream
+Content-Length: 24570558
+Last-Modified: Mon, 05 Oct 2026 15:26:11 GMT
+ETag: "176eabe-65d198083fd55"
+Accept-Ranges: bytes
+Cache-Control: public
+
+body: 24,570,558 bytes, Windows-1252, 144,384 records (not kept); saneantes_head.csv is the header plus a few dozen of those records, cut byte for byte. No Access-Control-Allow-Origin header. Dates are mm/dd/yyyy HH:MM:SS (DT_VENCIMENTO_PRODUTO has 8,563 empty values and years up to 3033); IS_REGISTRADO is 0/1; one product name holds `"AS MENINAS"` followed by CRLF CRLF inside the quoted value.

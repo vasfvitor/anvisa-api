@@ -33,6 +33,7 @@ class Dataset:
     formats: dict[str, tuple[str, ...]] = field(default_factory=dict)  # per-column overrides
     unescape: frozenset[str] = frozenset()  # VARCHAR columns that carry HTML entities
     row_group_size: int | None = None  # rows per Parquet row group; None = the build's default
+    load_time: str = "DT_CARGA_ETL"  # TIMESTAMP column whose max is when ANVISA produced the file
 
     @property
     def url(self) -> str:
@@ -113,7 +114,32 @@ ALIMENTOS_RESULTADO = Dataset(
     row_group_size=2048,
 )
 
-CATALOG: tuple[Dataset, ...] = (ALIMENTOS, ALIMENTOS_RESULTADO)
+SANEANTES = Dataset(
+    name="saneantes",
+    group="saneantes",
+    file="TA_CONSULTA_SANEANTES.CSV",
+    title="Saneantes: registros e notificações",
+    # Profiled 2026-10-06 on the 2026-10-05 file: 144,384 records, all 10 fields wide once a
+    # `"` + line break inside a product name is read as part of the value (see parse.py).
+    columns={
+        "NO_PRODUTO": "VARCHAR",  # 36 with inner quotes, 182 with line breaks, one &#8207;
+        "NU_PROCESSO": "VARCHAR",  # digits only; 17 on 137,771 rows, 15 on 5,420, 13 on 1,184
+        "NU_CNPJ_EMPRESA": "VARCHAR",  # always 14 digits
+        "NO_RAZAO_SOCIAL_EMPRESA": "VARCHAR",  # 1,502 end in whitespace; stripped
+        "ST_PRODUTO_ATIVO": "BOOLEAN",  # S 88,238 / N 56,146
+        "NU_REGISTRO_PRODUTO": "VARCHAR",  # 9 digits on registros (one 10), empty on notificações
+        "DT_VENCIMENTO_PRODUTO": "TIMESTAMP",  # 8,563 empty; years 2001 to 3033 (sic)
+        "IS_REGISTRADO": "BOOLEAN",  # 0 = notificado (115,561), 1 = registrado (28,823)
+        "NU_EXPEDIENTE": "VARCHAR",  # 9 or 10 digits, leading zeros; unique per record
+        "DT_ATUALIZACAO": "TIMESTAMP",  # the same value on every row: ANVISA's load time
+    },
+    sort=("NU_CNPJ_EMPRESA", "NU_PROCESSO"),
+    timestamp_formats=("%m/%d/%Y %H:%M:%S", "%m/%d/%Y"),  # month first, unlike alimentos
+    unescape=frozenset({"NO_PRODUTO"}),
+    load_time="DT_ATUALIZACAO",
+)
+
+CATALOG: tuple[Dataset, ...] = (ALIMENTOS, ALIMENTOS_RESULTADO, SANEANTES)
 
 
 def select(names: Iterable[str], catalog: tuple[Dataset, ...] = CATALOG) -> tuple[Dataset, ...]:

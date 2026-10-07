@@ -4,6 +4,7 @@
   "responses": [
     {"name": "alimentos", "method": "GET", "path": "/dados/CONSULTAS/PRODUTOS/TA_CONSULTA_ALIMENTOS.CSV", "status": 200, "file": "headers_alimentos.txt", "sample": "alimentos_head.csv", "note": "33,698,027 bytes, not kept"},
     {"name": "alimentos_resultado", "method": "GET", "path": "/dados/CONSULTAS/PRODUTOS/TA_CONSULTA_ALIMENTOS_RESULTADO.CSV", "status": 200, "file": "headers_alimentos_resultado.txt", "sample": "alimentos_resultado_head.csv", "note": "23,212,778 bytes, not kept"},
+    {"name": "saneantes", "method": "GET", "path": "/dados/CONSULTAS/PRODUTOS/TA_CONSULTA_SANEANTES.CSV", "status": 200, "file": "headers_saneantes.txt", "sample": "saneantes_head.csv", "note": "24,570,558 bytes, not kept; 23 records chosen for: CNPJs with leading zeros, inactive products, cp1252 bytes, line breaks and CRLF in names, registrados, inner quotes, a 10-digit registro, a 14-digit processo, a 3033 expiry, empty expiries, a notificado with a registro, &#8207; in a name, and `\"AS MENINAS\"` followed by CRLF CRLF inside a quoted name"},
     {"name": "alimentos_not_modified", "method": "HEAD", "path": "/dados/CONSULTAS/PRODUTOS/TA_CONSULTA_ALIMENTOS.CSV", "status": 304, "request_headers": {"If-None-Match": "\"20230eb-65d1981268f1f\""}, "note": "also 304 for If-Modified-Since: Mon, 05 Oct 2026 15:26:22 GMT; no body"}
   ]
 }

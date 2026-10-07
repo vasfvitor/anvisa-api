@@ -18,7 +18,7 @@ from typer.testing import CliRunner
 
 from anvisa import cli
 from anvisa.dados import CATALOG, Unchanged, build, select
-from anvisa.dados.catalog import ALIMENTOS, ALIMENTOS_RESULTADO, TYPES
+from anvisa.dados.catalog import ALIMENTOS, ALIMENTOS_RESULTADO, SANEANTES, TYPES
 from anvisa.dados.fetch import download, http_client
 from anvisa.dados.parse import (
     check_header,
@@ -34,10 +34,12 @@ DADOS = Path(__file__).resolve().parents[3] / "fixtures" / "dados"
 SAMPLES = {
     ALIMENTOS.name: "alimentos_head.csv",
     ALIMENTOS_RESULTADO.name: "alimentos_resultado_head.csv",
+    SANEANTES.name: "saneantes_head.csv",
 }
 HEADERS = {
     ALIMENTOS.name: "headers_alimentos.txt",
     ALIMENTOS_RESULTADO.name: "headers_alimentos_resultado.txt",
+    SANEANTES.name: "headers_saneantes.txt",
 }
 NOW = datetime(2026, 10, 6, 21, 3, 12, tzinfo=timezone.utc)
 needs_duckdb = pytest.mark.skipif(
@@ -50,7 +52,7 @@ def sample(ds) -> Path:
 
 
 def sample_records(ds) -> list[list[str]]:
-    return list(records(decode(sample(ds).read_bytes())))
+    return list(records(decode(sample(ds).read_bytes()), len(ds.columns)))
 
 
 def write_dialect(path: Path, rows: list[list[str]]) -> Path:
@@ -113,8 +115,9 @@ def test_catalog_is_consistent():
         assert all(ds.columns[c] == "VARCHAR" for c in ds.unescape)
         assert all(ds.columns[c] in ("DATE", "TIMESTAMP") for c in ds.formats)
         assert ds.url.startswith("https://dados.anvisa.gov.br/") and ds.url.endswith(ds.file)
-    assert select(["alimentos"]) == CATALOG  # the group
+    assert select(["alimentos"]) == (ALIMENTOS, ALIMENTOS_RESULTADO)  # the group
     assert select(["alimentos_resultado"]) == (ALIMENTOS_RESULTADO,)
+    assert select(["saneantes", "alimentos_resultado"]) == (ALIMENTOS_RESULTADO, SANEANTES)
     with pytest.raises(DadosError, match="unknown dataset"):
         select(["cosmeticos"])
 
@@ -149,6 +152,21 @@ def test_dialect_keeps_every_record_whole():
     ending = next(r for r in detail.values() if r[15] == "3929988")
     assert ending[12].endswith('brilhante. "')  # written as `brilhante. "";"Contém...`
     assert ending[13] == "Contém Glúten - Não | Contém Lactose - Não"
+    # saneantes: an inner `"` followed by CRLF CRLF, which only the record width disambiguates
+    meninas = [r[0] for r in sample_records(SANEANTES) if "AS MENINAS" in r[0]]
+    assert any(n.endswith('"AS MENINAS"\r\n\r\nSPRAY') for n in meninas), meninas
+
+
+def test_records_tells_inner_quotes_from_truncation():
+    """A `"` + line break inside a non-last field is read as part of the value only when the
+    width-blind reading of the same span cannot parse; a truncated record stays a short one."""
+    normal = '"X";"1";"2"\n'
+    inner = '"A "B"\n\nC";"1";"2"\n'
+    assert list(records(inner + normal, 3)) == [['A "B"\n\nC', "1", "2"], ["X", "1", "2"]]
+    truncated = '"A";"1"\n'
+    assert list(records(truncated + normal, 3)) == [["A", "1"], ["X", "1", "2"]]
+    # the same truncated record, but the next one begins with a bare field: still two records
+    assert list(records(truncated + '7;"1";"2"\n', 3)) == [["A", "1"], ["7", "1", "2"]]
 
 
 def test_decode_is_windows_1252():
@@ -307,6 +325,42 @@ def test_convert_guard_fails_on_malformed_records(tmp_path):
 
 
 @needs_duckdb
+def test_convert_saneantes_values(tmp_path):
+    """Month-first dates, 0/1 booleans, the load time from DT_ATUALIZACAO, and the inner quote
+    followed by CRLF CRLF kept inside the product name."""
+    import duckdb
+
+    from anvisa.dados.convert import convert
+
+    csv = tmp_path / SANEANTES.file
+    csv.write_bytes(sample(SANEANTES).read_bytes())
+    stats = convert(SANEANTES, csv, tmp_path / "s.parquet")
+    assert stats.rows == 23 and stats.rejected == ()
+    assert stats.loaded_at == "2026-10-05T00:00:00"
+    assert all(v == 0 for v in stats.nulls_added.values())
+    con = duckdb.connect()
+    first = con.execute(
+        "SELECT dt_vencimento_produto, is_registrado, st_produto_ativo, nu_cnpj_empresa "
+        f"FROM '{tmp_path}/s.parquet' WHERE nu_processo = '25351650678202111'"
+    ).fetchone()
+    assert first == (datetime(2031, 6, 21, 10, 1, 26), False, True, "08409808000139")
+    kinds = con.execute(
+        f"SELECT is_registrado, count(*) FROM '{tmp_path}/s.parquet' GROUP BY 1 ORDER BY 1"
+    ).fetchall()
+    assert [k for k, _ in kinds] == [False, True]
+    names = con.execute(
+        f"SELECT no_produto FROM '{tmp_path}/s.parquet' WHERE no_produto LIKE '%AS MENINAS%'"
+        " ORDER BY 1"
+    ).fetchall()
+    assert ('AROMATIZADOR DE AMBIENTE "AS MENINAS"\r\n\r\nSPRAY',) in names  # whole, CRLFs kept
+    assert ('AROMATIZADOR DE AMBIENTE "AS MENINAS"',) in names  # its sibling, a separate record
+    aquaflex = con.execute(
+        f"SELECT no_produto FROM '{tmp_path}/s.parquet' WHERE no_produto LIKE 'AQUAFLEX%'"
+    ).fetchone()[0]
+    assert aquaflex.endswith("‏")  # &#8207; decoded, and that is what ANVISA wrote
+
+
+@needs_duckdb
 def test_parquet_is_sorted_in_small_row_groups(tmp_path):
     """DuckDB rounds ROW_GROUP_SIZE up to a multiple of 2048, so this needs > 4096 rows."""
     import duckdb
@@ -347,7 +401,7 @@ def test_build_end_to_end(fake_dados, tmp_path):
     assert manifest["schema_version"] == 1 and manifest["build_id"] == "20261006T210312Z"
     assert manifest["built_at"] == "2026-10-06T21:03:12Z" and manifest["commit"] == "abc123"
     assert manifest["generator"].startswith("anvisa-python/")
-    assert set(manifest["tables"]) == {"alimentos", "alimentos_resultado"}
+    assert set(manifest["tables"]) == {"alimentos", "alimentos_resultado", "saneantes"}
     main = manifest["tables"]["alimentos"]
     assert main["path"] == "data/20261006T210312Z/alimentos.parquet"
     parquet = out / main["path"]
@@ -406,11 +460,11 @@ def test_build_rebuilds_when_one_file_changed(fake_dados, tmp_path):
         result = build(
             tmp_path / "second", http=http, skip_unchanged=FakeDados.MANIFEST_URL, commit="abc123"
         )
-    assert set(result["tables"]) == {"alimentos", "alimentos_resultado"}
+    assert set(result["tables"]) == {"alimentos", "alimentos_resultado", "saneantes"}
     assert result["tables"]["alimentos"]["source"]["etag"] == '"new"'
-    # the unchanged file answered 304 first, then was fetched again for a complete build
+    # the two unchanged files answered 304 first, then were fetched again for a complete build
     statuses = [r.headers.get("If-None-Match") for r in fake_dados.data_requests()]
-    assert statuses.count(None) == 1 and len(statuses) == 3
+    assert statuses.count(None) == 2 and len(statuses) == 5
 
 
 @needs_duckdb
@@ -450,7 +504,8 @@ runner = CliRunner()
 def test_cli_list_and_build(fake_dados, monkeypatch, tmp_path):
     result = runner.invoke(cli.app, ["-f", "json", "dados", "list"])
     assert result.exit_code == 0, result.output
-    assert [d["name"] for d in json.loads(result.stdout)] == ["alimentos", "alimentos_resultado"]
+    names = [d["name"] for d in json.loads(result.stdout)]
+    assert names == ["alimentos", "alimentos_resultado", "saneantes"]
 
     monkeypatch.setattr(cli, "dados_http", fake_dados.client)
     out = tmp_path / "dist"

@@ -69,7 +69,9 @@ TLS concern that kept this out of scope is gone: the chain verifies with httpx 0
 entry in `anvisa/dados/catalog.py` plus one fixture (see CONTRIBUTING.md):
 
 - **Saneantes** (`TA_CONSULTA_SANEANTES.CSV`, 25 MB). Its dates are `mm/dd/yyyy` (`06/21/2031`):
-  set `timestamp_formats` on the entry; the 20% null guard catches a wrong guess.
+  set `timestamp_formats` on the entry; the 20% null guard catches a wrong guess. **Done
+  2026-10-06**: `saneantes`, 144,384 rows, 3.7 MB. It took one parser change (a `"` followed by
+  a line break inside a product name).
 - **Cosméticos** (`TA_CONSULTA_COSMETICOS.CSV`, 228 MB). `parse.normalize` holds a whole file in
   memory (fine at 34 MB); stream it before adding this one.
 - Medicamentos, produtos para saúde, tabaco, cannabis: same folder, not profiled yet.

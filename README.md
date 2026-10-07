@@ -129,6 +129,7 @@ GitHub Pages, at <https://vasfvitor.github.io/anvisa-api/> once Pages is enabled
 |---|---|---|---|
 | `alimentos` | `TA_CONSULTA_ALIMENTOS.CSV` | 66,681 | apresentação of a registered or notified food product, sorted by `nu_cnpj_empresa`, `nu_processo` |
 | `alimentos_resultado` | `TA_CONSULTA_ALIMENTOS_RESULTADO.CSV` | 66,941 | apresentação detail (embalagem, tabela nutricional, alergênicos), sorted by `co_produto`, `co_seq_apresentacao_produto`; join on `co_seq_apresentacao_produto`, or fetch a whole product with `co_produto = alimentos.co_seq_produto` |
+| `saneantes` | `TA_CONSULTA_SANEANTES.CSV` | 144,384 | registered or notified saneante (`is_registrado`), one row per processo; sorted by `nu_cnpj_empresa`, `nu_processo`. No detail file. |
 
 Column names are ANVISA's, lowercased, so the
 [data dictionary](https://dados.anvisa.gov.br/dados/CONSULTAS/PRODUTOS/Documentacao_e_Dicionario_de_Dados_Regularizados_Alimentos.pdf)
@@ -139,7 +140,9 @@ What the files don't tell you (verified on the 2026-10-05 files):
 | Behavior | Reality |
 |---|---|
 | Encoding | **Windows-1252**, not Latin-1: `–` `’` `“ ”` `™` are bytes 0x96, 0x92, 0x93/0x94, 0x99. |
-| Quoting | `;`-separated, text in `"..."`, but quotes **inside** a value are not escaped (`biscoito tipo "cookies"`; a value ending in `"` is written `...brilhante. ""`), and values contain LF and CRLF. DuckDB's strict reader refuses the file, its lenient one merges records, Python's `csv` splits two. A quote closes a field only before `;` or a line break; read that way, every record has the header's field count. |
+| Quoting | `;`-separated, text in `"..."`, but quotes **inside** a value are not escaped (`biscoito tipo "cookies"`; a value ending in `"` is written `...brilhante. ""`), and values contain LF and CRLF. DuckDB's strict reader refuses the file, its lenient one merges records, Python's `csv` splits two. A quote closes a field only before `;` or a line break, and (saneantes: `AMBIENTE "AS MENINAS"` + CRLF CRLF + `SPRAY` inside one name) a line break can only close the record's last field; read that way, every record of every file has the header's field count. |
+| Dates | `dd/mm/yyyy HH:MM:SS` in the alimentos files, **`mm/dd/yyyy HH:MM:SS`** in saneantes (`06/21/2031`). Per dataset in the catalog; the 20% null guard fails the build if a file switches. Saneantes expiries run to the year 3033. |
+| Booleans | `S`/`N` in alimentos (`ST_PRODUTO_ATIVO`, plus one `X`), `1`/`0` in saneantes (`IS_REGISTRADO`). |
 | `DT_VENCIMENTO_REGISTRO` | Month and year, **`MMYYYY`** (`122029`), three rows `MM/YYYY`. Published as a DATE on the first of the month. Every notificação carries `122029`, a placeholder; registros expire 5, 10, 15 or 20 years after `DT_REGULARIZACAO`. |
 | Text | `MARCAS` and `NO_PRODUTO` carry HTML entities (`L&apos;ANA MED`, `&quot;`, `&#8208;`), decoded on the way. Some values end in `\xa0\r\n`; every value is stripped. `ST_PRODUTO_ATIVO` is `S`/`N` plus one `X` (NULL in the BOOLEAN). |
 | Server | ETag and Last-Modified on every file; `If-None-Match` answers **304**, so an unchanged day costs two empty responses. TLS verifies with certifi. |
@@ -155,24 +158,26 @@ typed column that did not parse (the build fails if a column loses more than 20%
 are immutable: a new build gets a new directory and the previous one disappears with the next
 deploy.
 
-For a frontend on DuckDB-WASM (measured with `@duckdb/duckdb-wasm` 1.33 in Chrome, 2026-10-06):
+For a frontend on DuckDB-WASM (what the first one, `anvisa-dash`, learned on 2026-10-06 with
+`@duckdb/duckdb-wasm` 1.33):
 
 - Fetch `manifest.json` (add `?t=<now>` to bypass the 10-minute Pages cache) and resolve each
   `path` against the manifest URL. A 404 on a data path means a deploy happened mid-session:
   re-read the manifest.
-- Range reads need `db.open({filesystem: {reliableHeadRequests: true, allowFullHTTPReads: false,
-  forceFullHTTPReads: false}})`; with the defaults the worker downloads the whole file on open.
-- Only the **first** sort key prunes. `WHERE nu_cnpj_empresa = ?` reads the footer plus one row
-  group (~650 KB); `WHERE nu_processo = ?` scans the file. `WHERE co_produto = ?` on
-  `alimentos_resultado` prunes to one ~100 KB group. Use literals or VARCHAR parameters: an
-  integer `BETWEEN ? AND ?` did not prune.
-- Ranged responses are not reused by the browser cache, so a name search over Range costs more
-  than the file (5.3 MB seen for a 3.3 MB file). For text search, `fetch()` the whole file once
-  (immutable path, so it caches), `registerFileBuffer`, and query the buffer: every search after
-  that costs nothing. Keep Range for the lookups that prune.
+- **Download whole files; do not rely on HTTP Range on GitHub Pages.** The files are small (3.7,
+  3.3 and 1.7 MB) on purpose. Range reads worked in Chrome but: Pages answers `HEAD` + `Range`
+  with 200, which breaks duckdb-wasm's `reliableHeadRequests`; Firefox's synchronous XHR with
+  `Range` fails with a NetworkError; full responses are gzip-encoded and ranged ones are not; and
+  in Chrome a ranged `fetch` **poisons the cache**, so the next plain `fetch` of the same URL
+  returns a 1-byte body. `fetch()` each file, check `length === bytes` and that it ends in
+  `PAR1` (refetch with `cache: "reload"` otherwise), `registerFileBuffer`, `CREATE VIEW`. After
+  that every query costs no network.
+- The sort orders and 2,048-row groups still matter for anyone reading over HTTP with native
+  DuckDB (`read_parquet('https://...')`): only the **first** sort key prunes, so CNPJ and
+  `co_produto` lookups read one row group, a processo lookup scans.
 - Return dates as `strftime(...)` text: Arrow temporal units vary with the apache-arrow version.
-- Python's `http.server` has neither Range nor CORS, so it does not reproduce the Pages code
-  path locally; serve `dist/` with something that does both.
+- To reproduce the Pages code path locally, serve `dist/` with something that does CORS (and
+  Range, if you test it); Python's `http.server` does neither.
 
 ```sql
 -- duckdb, anywhere: the path comes from manifest.json
@@ -194,8 +199,8 @@ anvisa dados build --out dist2 --skip-unchanged dist/manifest.json   # 304s → 
 
 Covered: the 32 endpoints the spec had before 2026-10-01, as the `fila`, `lista`, `udi`,
 `nome_tecnico`, and `assunto` domains. That includes the eight file downloads and
-`servicosAssociados`, wrapped on 2026-09-08. From the open data, the two alimentos files
-(`anvisa.dados`). Not yet covered: the 27 endpoints ANVISA added on 2026-10-01 (`saude`,
+`servicosAssociados`, wrapped on 2026-09-08. From the open data, the two alimentos files and
+saneantes (`anvisa.dados`). Not yet covered: the 27 endpoints ANVISA added on 2026-10-01 (`saude`,
 `certificado`, `certificadoMedicamento`, `tabaco`), recorded in `spec/` by the `drift` workflow
 and listed in [ROADMAP.md](ROADMAP.md). The SNGPC, SAMMED and SNCR APIs (separate services) are
 out of scope.

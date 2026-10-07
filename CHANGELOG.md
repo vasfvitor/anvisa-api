@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- `saneantes`: `TA_CONSULTA_SANEANTES.CSV` (144,384 rows, 3.7 MB of Parquet) joins the
+  catalog. Dates are month-first there, `IS_REGISTRADO` is `1`/`0`, and the load time comes from
+  `DT_ATUALIZACAO` (`Dataset.load_time`). One product name holds `"AS MENINAS"` followed by
+  CRLF CRLF, which the alimentos-era rule read as the end of the record; the parser now knows the
+  record width (a line break can only close the last field) and, when a quoted field was read
+  across a `"` + line break, re-splits that span the width-blind way and keeps that reading if
+  it parses, so a truncated record is still reported as one. Every record of all three files
+  comes out whole.
+- README: on GitHub Pages, download whole Parquet files instead of relying on HTTP Range
+  (HEAD+Range answers 200, Firefox's XHR fails, a ranged fetch poisons Chrome's cache); found
+  by `anvisa-dash`.
 - `alimentos_resultado` is now sorted by `co_produto, co_seq_apresentacao_produto` (was
   `co_seq_apresentacao_produto` alone) in 2,048-row groups (was 8,192, up to 411 KB each): a
   product's apresentações are contiguous and `WHERE co_produto = ?` reads one ~100 KB group over

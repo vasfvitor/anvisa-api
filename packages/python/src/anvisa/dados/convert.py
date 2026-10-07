@@ -36,8 +36,11 @@ def typed(ds: Dataset, column: str) -> str:
         return ref
     if kind == "INTEGER":
         return f"TRY_CAST({ref} AS INTEGER)"
-    if kind == "BOOLEAN":
-        return f"CASE {ref} WHEN 'S' THEN true WHEN 'N' THEN false END"
+    if kind == "BOOLEAN":  # alimentos writes S/N, saneantes 1/0; anything else (an `X`) is NULL
+        return (
+            f"CASE {ref} WHEN 'S' THEN true WHEN '1' THEN true "
+            "WHEN 'N' THEN false WHEN '0' THEN false END"
+        )
     formats = "[" + ", ".join(_quote(f) for f in ds.formats_for(column)) + "]"
     parsed = f"try_strptime({ref}, {formats})"  # naive: Brasília local time, as ANVISA writes it
     return f"CAST({parsed} AS DATE)" if kind == "DATE" else parsed
@@ -84,8 +87,8 @@ def convert(
                 measures.append(
                     f'count(*) FILTER (WHERE "{c}" IS NOT NULL AND {typed(ds, c)} IS NULL)'
                 )
-            has_load_time = ds.columns.get("DT_CARGA_ETL") == "TIMESTAMP"
-            measures.append(f"max({typed(ds, 'DT_CARGA_ETL')})" if has_load_time else "NULL")
+            has_load_time = ds.columns.get(ds.load_time) == "TIMESTAMP"
+            measures.append(f"max({typed(ds, ds.load_time)})" if has_load_time else "NULL")
             rows, *counts, loaded_at = con.execute(
                 f"SELECT {', '.join(measures)} FROM raw"
             ).fetchone()
