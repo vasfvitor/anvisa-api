@@ -1,0 +1,9 @@
+HTTP/2 200
+Content-Type: application/octet-stream
+Content-Length: 97676706
+Last-Modified: Mon, 05 Oct 2026 15:26:34 GMT
+ETag: "5d26da2-65d1981dc67af"
+Accept-Ranges: bytes
+Cache-Control: public
+
+body: 97,676,706 bytes (sha256 a9090c8e12553b49e998d354bb5d0d97d0e4b8b6fc36d909815a1c16b98b2ce2), Windows-1252, 79,986 records of 23 fields, LF only, no line breaks inside values (not kept); produtos_irregulares_head.csv is the header plus 54 of those records, cut byte for byte: 18 whole dossiês, the first record of dossiê 19721, and two records of dossiê 18543 that differ only by a trailing space in PRODUTO (HARVONI / HARVONI ). Text is quoted, codes are not. Dates are mm/dd/yyyy HH:MM:SS. No Access-Control-Allow-Origin header.

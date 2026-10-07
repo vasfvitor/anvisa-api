@@ -82,6 +82,12 @@ entry in `anvisa/dados/catalog.py` plus one fixture (see CONTRIBUTING.md):
   not Windows-1252, so it needs a per-dataset encoding first; worth adding only if it holds
   processos `TA_CONSULTA_ALIMENTOS.CSV` lacks. `CONSULTA_SITUCAO_FILA.csv` (2.5 MB) is every
   area × fila × categoria × assunto × situação combination, in text, with no codes.
+- **Fiscalização** (`CONSULTAS/EMPRESA_FISCALIZACAO_PRODUTO/`). **Done 2026-10-06**:
+  `produtos_irregulares` (98 MB of CSV, 79,986 rows, 1.1 MB of Parquet, 463 MiB peak memory to
+  convert). Next in the same folder: `TA_CONSULTA_FUNCIONAMENTO_EMPRESA_NACIONAL.CSV` (AFE, 314
+  MB: needs the streaming below, then a profile to decide whether the whole file is small
+  enough as Parquet for a browser) and `TA_CONSULTA_CBPF.CSV` (8 MB, few food companies; it too
+  has a requester CNPJ beside the inspected one).
 - **Cosméticos** (`TA_CONSULTA_COSMETICOS.CSV`, 228 MB). `parse.normalize` holds a whole file in
   memory (fine at 34 MB); stream it before adding this one.
 - Medicamentos, produtos para saúde, tabaco, cannabis: same folder, not profiled yet.

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- `produtos_irregulares`: `TA_CONSULTA_PRODUTOS_IRREGULARES_RESULTADO.CSV` (79,986 rows, every
+  area, 1.1 MB of Parquet), the fiscalização measures behind the portal's "Consulta de produtos
+  irregulares", one row per dossiê × ação × atividade × produto, sorted by area and then the
+  company acted against. That company is `nu_cnpj_empresa_investigada`; `nu_cnpj` is who filed
+  the dossiê, ANVISA itself on a third of them. No parser change: the existing reader gives every
+  record its 23 fields.
 - `peticoes_alimento` and `peticoes_alimento_andamento`: the analysis cycle of alimentos
   petições, one row per stage, from `CICLO_ANALISE_PETICOES_ALIMENTO.CSV` (69,188 rows, 1.2 MB of
   Parquet; petições finalized at least once) and `CICLO_ANALISE_PETICOES_ANDAMENTO_ALIMENTO.CSV`

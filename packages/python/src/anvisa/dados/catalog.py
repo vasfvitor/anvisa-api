@@ -201,12 +201,60 @@ PETICOES_ALIMENTO_ANDAMENTO = Dataset(
     load_time=None,
 )
 
+PRODUTOS_IRREGULARES = Dataset(
+    name="produtos_irregulares",
+    group="produtos_irregulares",
+    file="TA_CONSULTA_PRODUTOS_IRREGULARES_RESULTADO.CSV",
+    directory="CONSULTAS/EMPRESA_FISCALIZACAO_PRODUTO/",
+    title="Produtos irregulares: medidas de fiscalização",
+    # Profiled 2026-10-06 on the 2026-10-05 file: 79,986 records, 4,916 dossiês, every area (8,743
+    # rows and 722 dossiês are Alimento). One row per dossiê x ação x atividade x produto; 38 rows
+    # equal another once values are stripped (`HARVONI` / `HARVONI `). Columns marked "per
+    # dossiê" are the same on all of a dossiê's rows.
+    columns={
+        "CO_SEQ_DOSSIE_INVESTIG_MED": "INTEGER",  # the dossiê; one area each
+        "NU_PROCESSO": "VARCHAR",  # 17 digits, per dossiê: the measure's processo, not a product's
+        # per dossiê: who filed it, **not the company acted against**. ANVISA itself
+        # (03112386000111) on 1,698 dossiês, a marketplace on some, the company itself on others
+        "NU_CNPJ": "VARCHAR",
+        "NO_RAZAO_SOCIAL": "VARCHAR",
+        "CO_TIPO_PRODUTO": "INTEGER",  # 6 = Alimento, 3 = Saneantes, 1 = Medicamento...
+        "DS_TIPO_PRODUTO": "VARCHAR",
+        "CO_RISCO": "INTEGER",  # 19, 20, 21 = Risco I, II, III
+        "DS_RISCO_PRODUTO": "VARCHAR",
+        "TOTAL_MEDIDA_CAUTELAR": "INTEGER",  # 1-5; = the dossiê's distinct DT_PUBLICACAO on 99%
+        "NO_EMPRESA_INVESTIGADA": "VARCHAR",  # 24,943 empty
+        # the company acted against: 14 digits on 35,029 rows, a CPF's 11 on 2,334, text on
+        # most other filled ones (DESCONHECIDO, Desconhecido, Não se aplica, NA...), 31,658 empty
+        "NU_CNPJ_EMPRESA_INVESTIGADA": "VARCHAR",
+        "CO_ASSUNTO": "INTEGER",
+        "DT_PUBLICACAO_MEDIDA": "TIMESTAMP",  # per dossiê: the latest DT_PUBLICACAO
+        "CO_ACAO_FISCALIZACAO": "INTEGER",  # 1-6: Suspensão, Proibição, Recolhimento, ...
+        "CO_ATIVIDADE_FISCALIZACAO": "INTEGER",  # 12,497 empty
+        "DT_PUBLICACAO": "TIMESTAMP",  # when this measure was published
+        # per dossiê, every product joined by ". "; cut at 4,000 characters as written (5,924
+        # rows), so use PRODUTO
+        "PRODUTOS_CONCATENADOS": "VARCHAR",
+        "DS_ACAO_FISCALIZACAO": "VARCHAR",
+        "DS_ATIVIDADE_FISCALIZACAO": "VARCHAR",
+        "ACAO_ATIVIDADE": "VARCHAR",  # the dossiê's ações and atividades as one sentence
+        "PRODUTO": "VARCHAR",  # 220 with unescaped inner quotes, 49 empty
+        "REGISTRO": "VARCHAR",  # empty on every Alimento row; up to 11 digits elsewhere
+        "DT_CARGA_ETL": "TIMESTAMP",
+    },
+    # Area first, so one area's rows are contiguous, then the company acted against
+    sort=("CO_TIPO_PRODUTO", "NU_CNPJ_EMPRESA_INVESTIGADA", "CO_SEQ_DOSSIE_INVESTIG_MED"),
+    timestamp_formats=("%m/%d/%Y %H:%M:%S",),  # month first, like saneantes
+    unescape=frozenset({"PRODUTO", "PRODUTOS_CONCATENADOS", "NO_EMPRESA_INVESTIGADA"}),
+)
+
 CATALOG: tuple[Dataset, ...] = (
     ALIMENTOS,
     ALIMENTOS_RESULTADO,
     SANEANTES,
     PETICOES_ALIMENTO,
     PETICOES_ALIMENTO_ANDAMENTO,
+    PRODUTOS_IRREGULARES,
 )
 
 

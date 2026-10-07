@@ -23,6 +23,7 @@ from anvisa.dados.catalog import (
     ALIMENTOS_RESULTADO,
     PETICOES_ALIMENTO,
     PETICOES_ALIMENTO_ANDAMENTO,
+    PRODUTOS_IRREGULARES,
     SANEANTES,
     TYPES,
 )
@@ -44,6 +45,7 @@ SAMPLES = {
     SANEANTES.name: "saneantes_head.csv",
     PETICOES_ALIMENTO.name: "peticoes_alimento_head.csv",
     PETICOES_ALIMENTO_ANDAMENTO.name: "peticoes_alimento_andamento_head.csv",
+    PRODUTOS_IRREGULARES.name: "produtos_irregulares_head.csv",
 }
 HEADERS = {
     ALIMENTOS.name: "headers_alimentos.txt",
@@ -51,6 +53,7 @@ HEADERS = {
     SANEANTES.name: "headers_saneantes.txt",
     PETICOES_ALIMENTO.name: "headers_peticoes_alimento.txt",
     PETICOES_ALIMENTO_ANDAMENTO.name: "headers_peticoes_alimento_andamento.txt",
+    PRODUTOS_IRREGULARES.name: "headers_produtos_irregulares.txt",
 }
 NOW = datetime(2026, 10, 6, 21, 3, 12, tzinfo=timezone.utc)
 needs_duckdb = pytest.mark.skipif(
@@ -452,6 +455,67 @@ def test_convert_petitions(tmp_path):
         "JOIN {alimentos} a ON a.nu_processo = p.num_processo_peticao"
     )
     assert ("25351053143202611",) in joined  # a petition's company comes from alimentos
+
+
+@needs_duckdb
+def test_convert_produtos_irregulares(tmp_path):
+    """The company acted against is NU_CNPJ_EMPRESA_INVESTIGADA, not NU_CNPJ (who filed the
+    dossiê, often ANVISA); entities and inner quotes in product names; area-first sort."""
+    import duckdb
+
+    from anvisa.dados.convert import convert
+
+    tables = {}
+    for ds in (PRODUTOS_IRREGULARES, ALIMENTOS):
+        csv = tmp_path / ds.file
+        csv.write_bytes(sample(ds).read_bytes())
+        stats = convert(ds, csv, tmp_path / f"{ds.name}.parquet")
+        tables[ds.name] = f"'{tmp_path / ds.name}.parquet'"
+        if ds is PRODUTOS_IRREGULARES:
+            assert stats.rows == 54 and stats.rejected == ()
+            assert stats.loaded_at == "2026-10-05T00:00:02"
+            assert all(v == 0 for v in stats.nulls_added.values())
+    con = duckdb.connect()
+
+    def rows(sql):
+        return con.execute(sql.format(**tables)).fetchall()
+
+    t = "{produtos_irregulares}"
+    areas = [a for (a,) in rows(f"SELECT co_tipo_produto FROM {t}")]
+    assert areas == sorted(areas)  # one area's rows are contiguous
+    # ANVISA (03112386000111) filed this one; the company is in the investigada column
+    filed = rows(
+        "SELECT DISTINCT nu_cnpj, nu_cnpj_empresa_investigada, ds_tipo_produto "
+        f"FROM {t} WHERE co_seq_dossie_investig_med = 45947"
+    )
+    assert filed[0][0] == "03112386000111" and filed[0][1] != filed[0][0]
+    assert filed[0][2] == "Alimento"
+    # what the investigada column holds besides CNPJs, kept as written
+    investigated = {v for (v,) in rows(f"SELECT nu_cnpj_empresa_investigada FROM {t}")}
+    assert {"DESCONHECIDO", "desconhecido", "03855103143", None} <= investigated
+    joined = rows(
+        f"SELECT DISTINCT i.co_seq_dossie_investig_med FROM {t} i "
+        "JOIN {alimentos} a ON a.nu_cnpj_empresa = i.nu_cnpj_empresa_investigada"
+    )
+    assert (53236,) in joined  # a company with regularized products and a measure
+    # per dossiê: the latest publication, and how many measures it took
+    measures = rows(
+        "SELECT total_medida_cautelar, dt_publicacao_medida, count(DISTINCT dt_publicacao), "
+        f"max(dt_publicacao) FROM {t} WHERE co_seq_dossie_investig_med = 33727 GROUP BY ALL"
+    )
+    assert measures == [(2, datetime(2022, 8, 25), 2, datetime(2022, 8, 25))]
+    names = [n for (n,) in rows(f"SELECT DISTINCT produto FROM {t} WHERE produto IS NOT NULL")]
+    assert 'GENGIBRE VÉDICO EM PÓ" - MARCA SOULY' in names  # unescaped quote, kept
+    assert any("BABY & KIDS" in n for n in names)  # &amp; decoded
+    assert not any(re.search(r"&(#\d+|[a-z]+);", n) for n in names)
+    company = rows(
+        f"SELECT no_empresa_investigada FROM {t} WHERE co_seq_dossie_investig_med = 44903"
+    )
+    assert company[0][0] == "EBAZAR.COM.BR. LTDA\u200b (MERCADO LIVRE)"  # &#8203; decoded
+    assert rows(f"SELECT count(registro) FROM {t} WHERE co_tipo_produto = 6") == [(0,)]
+    # `HARVONI` and `HARVONI `: two records upstream, one value once stripped
+    harvoni = rows(f"SELECT count(*), count(DISTINCT produto) FROM {t} WHERE produto = 'HARVONI'")
+    assert harvoni == [(2, 1)]
 
 
 @needs_duckdb
