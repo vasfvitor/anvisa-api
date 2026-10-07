@@ -153,10 +153,11 @@ def build(
             for ds in datasets:
                 parquet = out / "data" / bid / f"{ds.name}.parquet"
                 log(f"convert {ds.file} -> {parquet.relative_to(out)}")
-                stats = convert(ds, work / ds.file, parquet, row_group_size=row_group_size)
+                groups = ds.row_group_size or row_group_size
+                stats = convert(ds, work / ds.file, parquet, row_group_size=groups)
                 source = sources[ds.name]
                 assert source is not None
-                tables[ds.name] = table_entry(ds, source, stats, parquet, out, row_group_size)
+                tables[ds.name] = table_entry(ds, source, stats, parquet, out, groups)
                 log(f"  {stats.rows} rows, {tables[ds.name]['bytes']} bytes")
     finally:
         if own_http:

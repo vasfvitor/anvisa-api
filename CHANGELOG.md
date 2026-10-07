@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- `alimentos_resultado` is now sorted by `co_produto, co_seq_apresentacao_produto` (was
+  `co_seq_apresentacao_produto` alone) in 2,048-row groups (was 8,192, up to 411 KB each): a
+  product's apresentações are contiguous and `WHERE co_produto = ?` reads one ~100 KB group over
+  HTTP Range. `Dataset.row_group_size` overrides the build default per table; the manifest `sort`
+  and `row_group_size` reflect it. Found by the frontend built on these files.
+- README: `nu_processo` is not 17 digits on 44% of rows (13 on old ones, 14 on 400, the length
+  of a CNPJ); only the first sort key prunes, so a processo lookup scans; registration-number
+  relations; 94 active apresentações without detail; DuckDB-WASM settings for Range reads.
 - Spec snapshot of 2026-10-06: ANVISA added 27 operations and 33 schemas to the Consultas
   Externas document on 2026-10-01 (`saude`, `certificado`, `certificadoMedicamento`, `tabaco`),
   live behind the token but not wrapped yet; `models.py` gained their schemas. The portal menu

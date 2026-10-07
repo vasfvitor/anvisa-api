@@ -358,6 +358,12 @@ def test_build_end_to_end(fake_dados, tmp_path):
     assert main["source"]["etag"] == '"20230eb-65d1981268f1f"'
     assert main["source"]["loaded_at"] == "2026-10-05T00:00:00"
     assert main["rejected_records"] == 0 and main["timezone"] == "America/Sao_Paulo"
+    assert main["row_group_size"] == 8192  # the build default
+    detail = manifest["tables"]["alimentos_resultado"]
+    assert detail["sort"] == ["co_produto", "co_seq_apresentacao_produto"]
+    assert detail["row_group_size"] == 2048  # the catalog override, so a product is one group
+    products = duckdb.sql(f"SELECT co_produto FROM '{out / detail['path']}'").fetchall()
+    assert products == sorted(products)  # a product's apresentações are contiguous
     page = (out / "index.html").read_text(encoding="utf-8")
     assert "alimentos_resultado.parquet" in page and 'href="manifest.json"' in page
     joined = duckdb.sql(

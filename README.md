@@ -128,7 +128,7 @@ GitHub Pages, at <https://vasfvitor.github.io/anvisa-api/> once Pages is enabled
 | Table | Source | Rows (2026-10-05) | One row per |
 |---|---|---|---|
 | `alimentos` | `TA_CONSULTA_ALIMENTOS.CSV` | 66,681 | apresentação of a registered or notified food product, sorted by `nu_cnpj_empresa`, `nu_processo` |
-| `alimentos_resultado` | `TA_CONSULTA_ALIMENTOS_RESULTADO.CSV` | 66,941 | apresentação detail (embalagem, tabela nutricional, alergênicos); join on `co_seq_apresentacao_produto` |
+| `alimentos_resultado` | `TA_CONSULTA_ALIMENTOS_RESULTADO.CSV` | 66,941 | apresentação detail (embalagem, tabela nutricional, alergênicos), sorted by `co_produto`, `co_seq_apresentacao_produto`; join on `co_seq_apresentacao_produto`, or fetch a whole product with `co_produto = alimentos.co_seq_produto` |
 
 Column names are ANVISA's, lowercased, so the
 [data dictionary](https://dados.anvisa.gov.br/dados/CONSULTAS/PRODUTOS/Documentacao_e_Dicionario_de_Dados_Regularizados_Alimentos.pdf)
@@ -143,6 +143,10 @@ What the files don't tell you (verified on the 2026-10-05 files):
 | `DT_VENCIMENTO_REGISTRO` | Month and year, **`MMYYYY`** (`122029`), three rows `MM/YYYY`. Published as a DATE on the first of the month. Every notificação carries `122029`, a placeholder; registros expire 5, 10, 15 or 20 years after `DT_REGULARIZACAO`. |
 | Text | `MARCAS` and `NO_PRODUTO` carry HTML entities (`L&apos;ANA MED`, `&quot;`, `&#8208;`), decoded on the way. Some values end in `\xa0\r\n`; every value is stripped. `ST_PRODUTO_ATIVO` is `S`/`N` plus one `X` (NULL in the BOOLEAN). |
 | Server | ETag and Last-Modified on every file; `If-None-Match` answers **304**, so an unchanged day costs two empty responses. TLS verifies with certifi. |
+| `NU_PROCESSO` | Digits only, but **not** a fixed length: 17 on 36,496 rows (all but 90 of the active ones), 13 on 29,647 old ones, **14 on 400** (the length of a CNPJ), a few shorter. Strip punctuation from user input and compare as text. |
+| Registration numbers | `NU_REGISTRO_PRODUTO` always equals `NU_REGISTRO_NOTIFICACAO_PRODUTO` when present. For notificações the latter equals `NU_PROCESSO`; for registros it is the 9-digit registro. `NU_REGISTRO` is per apresentação: registro + 4-digit suffix (13 digits, like an old processo). |
+| Products | Within one `CO_SEQ_PRODUTO`, processo, CNPJ, situação, name and brands never differ: it is a clean grouping unit (50,474 products, up to 64 apresentações each, p99 = 8). `alimentos_resultado.CO_PRODUTO` equals it on every joined row. |
+| Detail coverage | 94 apresentações have no `alimentos_resultado` row, all active, regularized 2025-06 to 2026-10: ANVISA's detail export lags new notificações. |
 
 `manifest.json` is the entry point (`schema_version` 1): for each table, its `path` (relative
 to the manifest, under `data/<build_id>/`), rows, bytes, sha256, column names and types, sort
@@ -151,12 +155,24 @@ typed column that did not parse (the build fails if a column loses more than 20%
 are immutable: a new build gets a new directory and the previous one disappears with the next
 deploy.
 
-For a frontend on DuckDB-WASM: fetch `manifest.json` (add `?t=<now>` to bypass the 10-minute
-Pages cache), resolve `tables.alimentos.path` against the manifest URL, and query it with
-`read_parquet`. Lookups by `nu_cnpj_empresa` or `nu_processo` read the footer and one ~360 KB row
-group over HTTP Range; name and brand searches (`ILIKE`) read the whole file once (3.3 MB, then
-cached). The detail of a row is `alimentos_resultado WHERE co_seq_apresentacao_produto = ?`. A
-404 on a data path means a deploy happened mid-session: re-read the manifest.
+For a frontend on DuckDB-WASM (measured with `@duckdb/duckdb-wasm` 1.33 in Chrome, 2026-10-06):
+
+- Fetch `manifest.json` (add `?t=<now>` to bypass the 10-minute Pages cache) and resolve each
+  `path` against the manifest URL. A 404 on a data path means a deploy happened mid-session:
+  re-read the manifest.
+- Range reads need `db.open({filesystem: {reliableHeadRequests: true, allowFullHTTPReads: false,
+  forceFullHTTPReads: false}})`; with the defaults the worker downloads the whole file on open.
+- Only the **first** sort key prunes. `WHERE nu_cnpj_empresa = ?` reads the footer plus one row
+  group (~650 KB); `WHERE nu_processo = ?` scans the file. `WHERE co_produto = ?` on
+  `alimentos_resultado` prunes to one ~100 KB group. Use literals or VARCHAR parameters: an
+  integer `BETWEEN ? AND ?` did not prune.
+- Ranged responses are not reused by the browser cache, so a name search over Range costs more
+  than the file (5.3 MB seen for a 3.3 MB file). For text search, `fetch()` the whole file once
+  (immutable path, so it caches), `registerFileBuffer`, and query the buffer: every search after
+  that costs nothing. Keep Range for the lookups that prune.
+- Return dates as `strftime(...)` text: Arrow temporal units vary with the apache-arrow version.
+- Python's `http.server` has neither Range nor CORS, so it does not reproduce the Pages code
+  path locally; serve `dist/` with something that does both.
 
 ```sql
 -- duckdb, anywhere: the path comes from manifest.json
