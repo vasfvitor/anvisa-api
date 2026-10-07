@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Downloads land in the work directory as `<dataset>.csv` (`Dataset.local_file`) instead of
+  the source file name, which ANVISA reuses across folders; `Dataset` rejects a `directory`
+  that does not end in `/`; `peticoes_alimento_andamento` spells out its own columns so a
+  header drift in one petition file is fixed in its own entry. From a code review.
 - `produtos_irregulares`: `TA_CONSULTA_PRODUTOS_IRREGULARES_RESULTADO.CSV` (79,986 rows, every
   area, 1.1 MB of Parquet), the fiscalização measures behind the portal's "Consulta de produtos
   irregulares", one row per dossiê × ação × atividade × produto, sorted by area and then the

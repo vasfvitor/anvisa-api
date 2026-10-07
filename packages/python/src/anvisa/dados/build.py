@@ -147,14 +147,14 @@ def build(
                     sources[ds.name] = download(http, ds, work)
 
             for ds in datasets:  # every header first, so a drift fails before any Parquet
-                check_header(ds, read_header(work / ds.file))
+                check_header(ds, read_header(work / ds.local_file))
 
             tables = {}
             for ds in datasets:
                 parquet = out / "data" / bid / f"{ds.name}.parquet"
                 log(f"convert {ds.file} -> {parquet.relative_to(out)}")
                 groups = ds.row_group_size or row_group_size
-                stats = convert(ds, work / ds.file, parquet, row_group_size=groups)
+                stats = convert(ds, work / ds.local_file, parquet, row_group_size=groups)
                 source = sources[ds.name]
                 assert source is not None
                 tables[ds.name] = table_entry(ds, source, stats, parquet, out, groups)

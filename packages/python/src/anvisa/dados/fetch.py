@@ -46,14 +46,14 @@ def download(
     etag: str | None = None,
     last_modified: str | None = None,
 ) -> Source | None:
-    """Fetch `ds` into `workdir/ds.file`, or return None when the server answers 304 to the
-    `etag`/`last_modified` of a previous download. The file only appears once it is complete."""
+    """Fetch `ds` into `workdir/ds.local_file`, or return None when the server answers 304 to
+    the `etag`/`last_modified` of a previous download. The file only appears once complete."""
     headers = {}
     if etag:
         headers["If-None-Match"] = etag
     elif last_modified:
         headers["If-Modified-Since"] = last_modified
-    dest = Path(workdir) / ds.file
+    dest = Path(workdir) / ds.local_file
     part = dest.with_name(dest.name + ".part")
     digest, size = hashlib.sha256(), 0
     try:

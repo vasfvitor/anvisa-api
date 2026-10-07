@@ -129,6 +129,12 @@ def test_catalog_is_consistent():
         assert all(ds.columns[c] == "VARCHAR" for c in ds.unescape)
         assert all(ds.columns[c] in ("DATE", "TIMESTAMP") for c in ds.formats)
         assert ds.url.startswith("https://dados.anvisa.gov.br/") and ds.url.endswith(ds.file)
+        assert ds.directory == "" or ds.directory.endswith("/")
+        assert not ds.directory.startswith("/") and "//" not in ds.url.split("://", 1)[1]
+    # ANVISA reuses file names across folders, so the work directory is keyed by dataset
+    assert len({d.local_file for d in CATALOG}) == len(CATALOG)
+    with pytest.raises(ValueError, match="must be '' or end in '/'"):
+        dataclasses.replace(ALIMENTOS, directory="CONSULTAS/PRODUTOS")
     assert select(["alimentos"]) == (ALIMENTOS, ALIMENTOS_RESULTADO)  # the group
     assert select(["alimentos_resultado"]) == (ALIMENTOS_RESULTADO,)
     assert select(["saneantes", "alimentos_resultado"]) == (ALIMENTOS_RESULTADO, SANEANTES)
@@ -219,7 +225,7 @@ def test_download_streams_via_part(fake_dados, tmp_path):
     assert source.etag == '"20230eb-65d1981268f1f"'
     assert source.last_modified == "Mon, 05 Oct 2026 15:26:22 GMT"
     assert source.bytes == len(body) and source.sha256 == hashlib.sha256(body).hexdigest()
-    assert (tmp_path / ALIMENTOS.file).read_bytes() == body
+    assert (tmp_path / ALIMENTOS.local_file).read_bytes() == body
     assert not list(tmp_path.glob("*.part"))
     request = fake_dados.requests[0]
     assert request.headers["User-Agent"].startswith("anvisa-python/")
@@ -232,7 +238,7 @@ def test_download_304_returns_none(fake_dados, tmp_path):
         assert download(http, ALIMENTOS, tmp_path, etag='"20230eb-65d1981268f1f"') is None
         assert download(http, ALIMENTOS, tmp_path, last_modified="Mon, 05 Oct 2026") is not None
     assert fake_dados.requests[1].headers["If-Modified-Since"] == "Mon, 05 Oct 2026"
-    assert [p.name for p in tmp_path.iterdir()] == [ALIMENTOS.file]
+    assert [p.name for p in tmp_path.iterdir()] == [ALIMENTOS.local_file]
 
 
 def test_download_truncated_is_an_error(tmp_path):

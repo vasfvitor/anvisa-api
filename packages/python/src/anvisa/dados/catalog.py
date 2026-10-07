@@ -37,9 +37,19 @@ class Dataset:
     # the file; None when it has none
     directory: str = "CONSULTAS/PRODUTOS/"  # under BASE_URL; "" for the files at its root
 
+    def __post_init__(self) -> None:
+        if self.directory and not self.directory.endswith("/") or self.directory.startswith("/"):
+            raise ValueError(f"{self.name}: directory must be '' or end in '/': {self.directory!r}")
+
     @property
     def url(self) -> str:
         return BASE_URL + self.directory + self.file
+
+    @property
+    def local_file(self) -> str:
+        """The downloaded file's name in the work directory: by dataset, not by source name,
+        since ANVISA reuses file names across folders."""
+        return f"{self.name}.csv"
 
     def formats_for(self, column: str) -> tuple[str, ...]:
         return self.formats.get(column, self.timestamp_formats)
@@ -189,10 +199,25 @@ PETICOES_ALIMENTO_ANDAMENTO = Dataset(
     file="CICLO_ANALISE_PETICOES_ANDAMENTO_ALIMENTO.CSV",
     directory="",
     title="Alimentos: petições em análise",
-    columns={  # PETICOES_ALIMENTO's minus the two finalization dates; no `#` on this header
-        c: kind
-        for c, kind in PETICOES_ALIMENTO.columns.items()
-        if c not in ("DATA_PRIMEIRA_FINALIZACAO", "DATA_FINALIZACAO_ATUAL")
+    # PETICOES_ALIMENTO's columns minus the two finalization dates, spelled out so that a drift
+    # in one file is fixed in its own entry. No `#` on this header.
+    columns={
+        "NUM_EXPEDIENTE_PETICAO": "VARCHAR",
+        "NUM_PROCESSO_PETICAO": "VARCHAR",
+        "S_N_PETICAO_PRIMARIA": "BOOLEAN",
+        "COD_ASSUNTO_PETICAO": "INTEGER",
+        "DESC_ASSUNTO_PETICAO": "VARCHAR",
+        "DATA_SITUACAO_ATUAL_PETICAO": "TIMESTAMP",
+        "DESC_SITUACAO_ATUAL_PETICAO": "VARCHAR",
+        "DESC_TIPO_DOCUMENTO": "VARCHAR",
+        "DESC_AREA_INTERESSE": "VARCHAR",
+        "DESC_FILA_ANALISE": "VARCHAR",
+        "DESC_SUB_FILA_LISTA_ANALISE": "VARCHAR",
+        "DESC_GRUPO_ETAPA_CICLO_ANALISE": "VARCHAR",
+        "DATA_INI_OCORRENCIA_GRP_ETAPA": "TIMESTAMP",
+        "DATA_FIM_OCORRENCIA_GRP_ETAPA": "TIMESTAMP",
+        "ORDEM_OCORRE_GRUPO_ETAPA_ASC": "INTEGER",
+        "ORDEM_OCORRE_GRUPO_ETAPA_DESC": "INTEGER",
     },
     sort=_PETICOES_SORT,
     # Day first, unlike the finalized file. Each petição also has a `Todos` row (stage order
