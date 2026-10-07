@@ -1,0 +1,9 @@
+HTTP/2 200
+Content-Type: application/octet-stream
+Content-Length: 348762
+Last-Modified: Tue, 06 Oct 2026 11:50:21 GMT
+ETag: "5525a-65d2a9a76b7d0"
+Accept-Ranges: bytes
+Cache-Control: public
+
+body: 348,762 bytes, Windows-1252, 1,205 records of 16 fields, no quotes, LF only (not kept; headers from a HEAD with the same ETag as the GET); peticoes_alimento_andamento_head.csv is the header plus 23 of those records: 5 whole petitions, cut byte for byte. Unlike the full file, the header has no `#` and dates are dd/mm/yyyy HH:MM:SS. Every petition has one `Todos` row with stage order 0/0 and no end date. No Access-Control-Allow-Origin header.

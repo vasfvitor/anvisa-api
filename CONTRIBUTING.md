@@ -55,7 +55,7 @@ comes only from the spec.
 
 ## Adding an open-data dataset
 
-The open-data files (`dados.anvisa.gov.br/dados/CONSULTAS/`) need no credentials and no
+The open-data files (`dados.anvisa.gov.br/dados/`) need no credentials and no
 throttling, but the same rule holds: profile the real file before writing its catalog entry.
 
 1. Download it once with a descriptive `User-Agent`, keeping the response headers.
@@ -64,7 +64,9 @@ throttling, but the same rule holds: profile the real file before writing its ca
    formats per column, which columns carry HTML entities (`&[a-z#0-9]+;`), and which values do
    not parse as the type you intend. Write down what you find in the entry's comments.
 3. Add a `Dataset` to `anvisa/dados/catalog.py` and to `CATALOG`. The `columns` dict is the
-   header in order; the header check, the typed SELECT and the manifest all come from it.
+   header in order; the header check, the typed SELECT and the manifest all come from it. Give
+   each dataset exactly **one** date order: a day-first and a month-first format together would
+   parse `12/08` as whichever is listed first, and the null guard could not notice.
 4. Cut a sample into `fixtures/dados/<name>_head.csv`: the header plus a few dozen records that
    cover the odd cases, copied **by record, byte for byte** (records contain line breaks, so not
    by line, and never re-encoded; `.gitattributes` keeps git from touching them). Save the

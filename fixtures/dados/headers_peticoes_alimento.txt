@@ -1,0 +1,9 @@
+HTTP/2 200
+Content-Type: application/octet-stream
+Content-Length: 18880928
+Last-Modified: Tue, 06 Oct 2026 11:50:16 GMT
+ETag: "12019a0-65d2a9a28c5b8"
+Accept-Ranges: bytes
+Cache-Control: public
+
+body: 18,880,928 bytes (sha256 db914b9112fcc6d4e99ba7a14aec01a37483e6d66247d830fdde595740bb8358), Windows-1252, 69,188 records of 18 fields, no quotes, LF only (not kept); peticoes_alimento_head.csv is the header plus 70 of those records: 17 whole petitions, every stage row of each, cut byte for byte. The header starts with `#`. Dates are mm/dd/yyyy HH:MM:SS. 20,518 petitions, all with DATA_PRIMEIRA_FINALIZACAO; none of them is in CICLO_ANALISE_PETICOES_ANDAMENTO_ALIMENTO.CSV. No Access-Control-Allow-Origin header.

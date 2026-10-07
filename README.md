@@ -121,15 +121,18 @@ make snapshot             # re-download the spec and portal docs; a diff means A
 
 The Consultas Externas API has no food products. ANVISA publishes them as bulk CSV on
 [dados.anvisa.gov.br](https://dados.anvisa.gov.br/dados/CONSULTAS/PRODUTOS/), refreshed on
-weekdays, with no CORS headers, so a browser cannot read them. A daily workflow here
+weekdays, with no CORS headers, so a browser cannot read them; the analysis cycle of every
+alimentos petição sits at the root of the [same server](https://dados.anvisa.gov.br/dados/). A daily workflow here
 (`.github/workflows/dados.yml`) converts them to typed, sorted Parquet and publishes them on
 GitHub Pages, at <https://vasfvitor.github.io/anvisa-api/> once Pages is enabled:
 
-| Table | Source | Rows (2026-10-05) | One row per |
+| Table | Source | Rows (file of) | One row per |
 |---|---|---|---|
-| `alimentos` | `TA_CONSULTA_ALIMENTOS.CSV` | 66,681 | apresentação of a registered or notified food product, sorted by `nu_cnpj_empresa`, `nu_processo` |
-| `alimentos_resultado` | `TA_CONSULTA_ALIMENTOS_RESULTADO.CSV` | 66,941 | apresentação detail (embalagem, tabela nutricional, alergênicos), sorted by `co_produto`, `co_seq_apresentacao_produto`; join on `co_seq_apresentacao_produto`, or fetch a whole product with `co_produto = alimentos.co_seq_produto` |
-| `saneantes` | `TA_CONSULTA_SANEANTES.CSV` | 144,384 | registered or notified saneante (`is_registrado`), one row per processo; sorted by `nu_cnpj_empresa`, `nu_processo`. No detail file. |
+| `alimentos` | `TA_CONSULTA_ALIMENTOS.CSV` | 66,681 (10-05) | apresentação of a registered or notified food product, sorted by `nu_cnpj_empresa`, `nu_processo` |
+| `alimentos_resultado` | `TA_CONSULTA_ALIMENTOS_RESULTADO.CSV` | 66,941 (10-05) | apresentação detail (embalagem, tabela nutricional, alergênicos), sorted by `co_produto`, `co_seq_apresentacao_produto`; join on `co_seq_apresentacao_produto`, or fetch a whole product with `co_produto = alimentos.co_seq_produto` |
+| `saneantes` | `TA_CONSULTA_SANEANTES.CSV` | 144,384 (10-05) | registered or notified saneante (`is_registrado`), one row per processo; sorted by `nu_cnpj_empresa`, `nu_processo`. No detail file. |
+| `peticoes_alimento` | `CICLO_ANALISE_PETICOES_ALIMENTO.CSV` | 69,188 (10-06) | stage (fila, análise, exigência, finalização…) of an alimentos petição finalized at least once: 20,518 petições since 1998, sorted by `num_processo_peticao`, `num_expediente_peticao`, `ordem_ocorre_grupo_etapa_asc` |
+| `peticoes_alimento_andamento` | `CICLO_ANALISE_PETICOES_ANDAMENTO_ALIMENTO.CSV` | 1,205 (10-06) | stage of a petição **never finalized**, what is in análise today (336 petições); same columns minus the two finalization dates, same sort |
 
 Column names are ANVISA's, lowercased, so the
 [data dictionary](https://dados.anvisa.gov.br/dados/CONSULTAS/PRODUTOS/Documentacao_e_Dicionario_de_Dados_Regularizados_Alimentos.pdf)
@@ -141,7 +144,7 @@ What the files don't tell you (verified on the 2026-10-05 files):
 |---|---|
 | Encoding | **Windows-1252**, not Latin-1: `–` `’` `“ ”` `™` are bytes 0x96, 0x92, 0x93/0x94, 0x99. |
 | Quoting | `;`-separated, text in `"..."`, but quotes **inside** a value are not escaped (`biscoito tipo "cookies"`; a value ending in `"` is written `...brilhante. ""`), and values contain LF and CRLF. DuckDB's strict reader refuses the file, its lenient one merges records, Python's `csv` splits two. A quote closes a field only before `;` or a line break, and (saneantes: `AMBIENTE "AS MENINAS"` + CRLF CRLF + `SPRAY` inside one name) a line break can only close the record's last field; read that way, every record of every file has the header's field count. |
-| Dates | `dd/mm/yyyy HH:MM:SS` in the alimentos files, **`mm/dd/yyyy HH:MM:SS`** in saneantes (`06/21/2031`). Per dataset in the catalog; the 20% null guard fails the build if a file switches. Saneantes expiries run to the year 3033. |
+| Dates | `dd/mm/yyyy HH:MM:SS` in the alimentos files and in `peticoes_alimento_andamento`, **`mm/dd/yyyy HH:MM:SS`** in saneantes (`06/21/2031`) and in `peticoes_alimento`. One order per dataset in the catalog, never both: given both, `12/08/2026` would quietly parse as whichever comes first. With one, the wrong order leaves every date with a day above 12 unparsed (65% of them in the open file) and the 20% null guard fails the build. Saneantes expiries run to the year 3033. |
 | Booleans | `S`/`N` in alimentos (`ST_PRODUTO_ATIVO`, plus one `X`), `1`/`0` in saneantes (`IS_REGISTRADO`). |
 | `DT_VENCIMENTO_REGISTRO` | Month and year, **`MMYYYY`** (`122029`), three rows `MM/YYYY`. Published as a DATE on the first of the month. Every notificação carries `122029`, a placeholder; registros expire 5, 10, 15 or 20 years after `DT_REGULARIZACAO`. |
 | Text | `MARCAS` and `NO_PRODUTO` carry HTML entities (`L&apos;ANA MED`, `&quot;`, `&#8208;`), decoded on the way. Some values end in `\xa0\r\n`; every value is stripped. `ST_PRODUTO_ATIVO` is `S`/`N` plus one `X` (NULL in the BOOLEAN). |
@@ -150,6 +153,7 @@ What the files don't tell you (verified on the 2026-10-05 files):
 | Registration numbers | `NU_REGISTRO_PRODUTO` always equals `NU_REGISTRO_NOTIFICACAO_PRODUTO` when present. For notificações the latter equals `NU_PROCESSO`; for registros it is the 9-digit registro. `NU_REGISTRO` is per apresentação: registro + 4-digit suffix (13 digits, like an old processo). |
 | Products | Within one `CO_SEQ_PRODUTO`, processo, CNPJ, situação, name and brands never differ: it is a clean grouping unit (50,474 products, up to 64 apresentações each, p99 = 8). `alimentos_resultado.CO_PRODUTO` equals it on every joined row. |
 | Detail coverage | 94 apresentações have no `alimentos_resultado` row, all active, regularized 2025-06 to 2026-10: ANVISA's detail export lags new notificações. |
+| Petition files | The two are **disjoint** (no expediente in both): finalized at least once, or never. The finalized file's header starts with `#` (`#NUM_EXPEDIENTE_PETICAO`), dropped on read. **Neither names the company**: join `num_processo_peticao` to `alimentos.nu_processo`, which finds 72% of the finalized file's processos, 163 of the 172 open petições of type Petição, and **none** of the 164 open of type Processo (new registration and evaluation requests: the product does not exist yet). Every open petição also has one `Todos` row (`ordem_ocorre_grupo_etapa_asc` = 0, no end date, starting the day its first stage did): leave it out when adding up stage durations. One assunto ends in `&#8203,`, an entity whose `;` the export turned into `,`; kept as written, and `cod_assunto_peticao` maps one to one to the text. |
 | Completeness | ANVISA's own panel (`consultas.anvisa.gov.br/#/alimentos/`) shows nothing these two files lack: product page and apresentação page compared by hand on 2026-10-06. |
 
 `manifest.json` is the entry point (`schema_version` 1): for each table, its `path` (relative
@@ -166,7 +170,7 @@ For a frontend on DuckDB-WASM (what the first one, `anvisa-dash`, learned on 202
   `path` against the manifest URL. A 404 on a data path means a deploy happened mid-session:
   re-read the manifest.
 - **Download whole files; do not rely on HTTP Range on GitHub Pages.** The files are small (3.7,
-  3.3 and 1.7 MB) on purpose. Range reads worked in Chrome but: Pages answers `HEAD` + `Range`
+  3.3, 1.7 and 1.2 MB, and 21 KB) on purpose. Range reads worked in Chrome but: Pages answers `HEAD` + `Range`
   with 200, which breaks duckdb-wasm's `reliableHeadRequests`; Firefox's synchronous XHR with
   `Range` fails with a NetworkError; full responses are gzip-encoded and ranged ones are not; and
   in Chrome a ranged `fetch` **poisons the cache**, so the next plain `fetch` of the same URL
@@ -185,6 +189,14 @@ For a frontend on DuckDB-WASM (what the first one, `anvisa-dash`, learned on 202
 SELECT no_produto, marcas, situacao_registro
 FROM 'https://vasfvitor.github.io/anvisa-api/data/<build_id>/alimentos.parquet'
 WHERE nu_cnpj_empresa = '40208221000174';
+
+-- what one company has in análise today, on products it already has (see "Petition files")
+SELECT num_processo_peticao, desc_assunto_peticao, desc_situacao_atual_peticao,
+       strftime(data_ini_ocorrencia_grp_etapa, '%Y-%m-%d') AS desde
+FROM peticoes_alimento_andamento
+WHERE desc_grupo_etapa_ciclo_analise = 'Todos'
+  AND num_processo_peticao IN (SELECT nu_processo FROM alimentos WHERE nu_cnpj_empresa = ?)
+ORDER BY desde;
 ```
 
 The same build runs locally (no credentials; DuckDB comes with the `dados` extra):

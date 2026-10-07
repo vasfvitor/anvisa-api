@@ -198,7 +198,7 @@ td,th{{border-bottom:1px solid #ccc;padding:.25rem .5rem;text-align:left}}
 code{{word-break:break-all}}</style>
 <h1>ANVISA dados abertos em Parquet</h1>
 <p>Build <code>{e(manifest["build_id"])}</code> ({e(manifest["built_at"])}),
-from <a href="https://dados.anvisa.gov.br/dados/CONSULTAS/PRODUTOS/">dados.anvisa.gov.br</a>.
+from <a href="https://dados.anvisa.gov.br/dados/">dados.anvisa.gov.br</a>.
 Machine-readable index: <a href="manifest.json">manifest.json</a>.
 Timestamps are Brasília local time.</p>
 <table>

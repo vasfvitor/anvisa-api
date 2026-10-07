@@ -18,7 +18,14 @@ from typer.testing import CliRunner
 
 from anvisa import cli
 from anvisa.dados import CATALOG, Unchanged, build, select
-from anvisa.dados.catalog import ALIMENTOS, ALIMENTOS_RESULTADO, SANEANTES, TYPES
+from anvisa.dados.catalog import (
+    ALIMENTOS,
+    ALIMENTOS_RESULTADO,
+    PETICOES_ALIMENTO,
+    PETICOES_ALIMENTO_ANDAMENTO,
+    SANEANTES,
+    TYPES,
+)
 from anvisa.dados.fetch import download, http_client
 from anvisa.dados.parse import (
     check_header,
@@ -35,11 +42,15 @@ SAMPLES = {
     ALIMENTOS.name: "alimentos_head.csv",
     ALIMENTOS_RESULTADO.name: "alimentos_resultado_head.csv",
     SANEANTES.name: "saneantes_head.csv",
+    PETICOES_ALIMENTO.name: "peticoes_alimento_head.csv",
+    PETICOES_ALIMENTO_ANDAMENTO.name: "peticoes_alimento_andamento_head.csv",
 }
 HEADERS = {
     ALIMENTOS.name: "headers_alimentos.txt",
     ALIMENTOS_RESULTADO.name: "headers_alimentos_resultado.txt",
     SANEANTES.name: "headers_saneantes.txt",
+    PETICOES_ALIMENTO.name: "headers_peticoes_alimento.txt",
+    PETICOES_ALIMENTO_ANDAMENTO.name: "headers_peticoes_alimento_andamento.txt",
 }
 NOW = datetime(2026, 10, 6, 21, 3, 12, tzinfo=timezone.utc)
 needs_duckdb = pytest.mark.skipif(
@@ -118,6 +129,10 @@ def test_catalog_is_consistent():
     assert select(["alimentos"]) == (ALIMENTOS, ALIMENTOS_RESULTADO)  # the group
     assert select(["alimentos_resultado"]) == (ALIMENTOS_RESULTADO,)
     assert select(["saneantes", "alimentos_resultado"]) == (ALIMENTOS_RESULTADO, SANEANTES)
+    assert select(["peticoes_alimento"]) == (PETICOES_ALIMENTO, PETICOES_ALIMENTO_ANDAMENTO)
+    assert PETICOES_ALIMENTO.url == (
+        "https://dados.anvisa.gov.br/dados/CICLO_ANALISE_PETICOES_ALIMENTO.CSV"
+    )
     with pytest.raises(DadosError, match="unknown dataset"):
         select(["cosmeticos"])
 
@@ -126,6 +141,8 @@ def test_fixture_header_matches_catalog():
     for ds in CATALOG:
         assert read_header(sample(ds)) == list(ds.columns)
         check_header(ds, read_header(sample(ds)))
+    # the `#` comment marker on the finalized-petitions header is dropped, not a schema change
+    assert sample(PETICOES_ALIMENTO).read_bytes().startswith(b"#NUM_EXPEDIENTE_PETICAO;")
 
 
 def test_header_drift_is_loud():
@@ -361,6 +378,101 @@ def test_convert_saneantes_values(tmp_path):
 
 
 @needs_duckdb
+def test_convert_petitions(tmp_path):
+    """Month-first dates in the finalized file and day-first in the open one, the `#` header,
+    the open file's `Todos` rows, a processo's history contiguous, and the join to alimentos."""
+    import duckdb
+
+    from anvisa.dados.convert import convert
+
+    tables = {}
+    for ds in (PETICOES_ALIMENTO, PETICOES_ALIMENTO_ANDAMENTO, ALIMENTOS):
+        csv = tmp_path / ds.file
+        csv.write_bytes(sample(ds).read_bytes())
+        stats = convert(ds, csv, tmp_path / f"{ds.name}.parquet")
+        tables[ds.name] = f"'{tmp_path / ds.name}.parquet'"
+        if ds is not ALIMENTOS:
+            assert stats.rejected == () and stats.loaded_at is None
+            assert all(v == 0 for v in stats.nulls_added.values())
+    con = duckdb.connect()
+
+    def rows(sql):
+        return con.execute(sql.format(**tables)).fetchall()
+
+    done = "{peticoes_alimento}"
+    first = rows(
+        "SELECT num_processo_peticao, s_n_peticao_primaria, cod_assunto_peticao, "
+        "data_situacao_atual_peticao, data_ini_ocorrencia_grp_etapa, "
+        "ordem_ocorre_grupo_etapa_asc, ordem_ocorre_grupo_etapa_desc "
+        f"FROM {done} WHERE num_expediente_peticao = '0875314158' ORDER BY 6"
+    )
+    assert first[0] == (
+        "25351734343201491",
+        False,
+        457,
+        datetime(2016, 3, 21),
+        datetime(2015, 9, 29),
+        1,
+        3,
+    )
+    assert [r[5:] for r in first] == [(1, 3), (2, 2), (3, 1)]
+    closed = rows(
+        f"SELECT DISTINCT data_primeira_finalizacao FROM {done} "
+        "WHERE num_expediente_peticao = '524004112'"
+    )
+    assert closed == [(datetime(2012, 1, 25, 16, 37, 27),)]  # `01/25/2012 16:37:27`
+    assert rows(f"SELECT count(*) FROM {done} WHERE desc_sub_fila_lista_analise LIKE '% '") == [
+        (0,)
+    ]  # the trailing spaces are stripped
+    assunto = rows(
+        f"SELECT DISTINCT desc_assunto_peticao FROM {done} WHERE cod_assunto_peticao = 4092"
+    )
+    assert assunto[0][0].endswith("primeira infância&#8203,")  # kept as ANVISA wrote it
+    processos = rows(f"SELECT num_processo_peticao FROM {done}")
+    assert processos == sorted(processos)  # a processo's petitions are contiguous
+
+    open_ = "{peticoes_alimento_andamento}"
+    queue = rows(
+        "SELECT data_ini_ocorrencia_grp_etapa, data_fim_ocorrencia_grp_etapa "
+        f"FROM {open_} WHERE num_expediente_peticao = '0823936261' "
+        "AND desc_grupo_etapa_ciclo_analise = 'Fila de Análise'"
+    )
+    # `12/08/2026 18:03:00` is 12 August, day first; month first would read 8 December
+    assert queue == [(datetime(2026, 8, 12, 18, 3), datetime(2026, 9, 23, 14, 7, 8))]
+    todos = rows(
+        "SELECT desc_grupo_etapa_ciclo_analise, count(*), count(data_fim_ocorrencia_grp_etapa), "
+        f"count(DISTINCT num_expediente_peticao) FROM {open_} "
+        "WHERE ordem_ocorre_grupo_etapa_asc = 0 GROUP BY 1"
+    )
+    assert todos == [("Todos", 5, 0, 5)]  # one per petição, never closed
+    assert "data_primeira_finalizacao" not in [c for c, *_ in rows(f"DESCRIBE {open_}")]
+
+    joined = rows(
+        f"SELECT DISTINCT p.num_processo_peticao FROM {done} p "
+        "JOIN {alimentos} a ON a.nu_processo = p.num_processo_peticao"
+    )
+    assert ("25351053143202611",) in joined  # a petition's company comes from alimentos
+
+
+@needs_duckdb
+def test_petition_date_order_is_not_interchangeable(tmp_path):
+    """Each file gets exactly one date order: with the other one, too many values stop parsing
+    and the build fails, instead of 12/08 quietly turning into 8 December."""
+    from anvisa.dados.convert import convert
+
+    pairs = (
+        (PETICOES_ALIMENTO, PETICOES_ALIMENTO_ANDAMENTO),
+        (PETICOES_ALIMENTO_ANDAMENTO, PETICOES_ALIMENTO),
+    )
+    for ds, other in pairs:
+        wrong = dataclasses.replace(ds, timestamp_formats=other.timestamp_formats)
+        csv = tmp_path / ds.file
+        csv.write_bytes(sample(ds).read_bytes())
+        with pytest.raises(DadosError, match="did ANVISA change the format"):
+            convert(wrong, csv, tmp_path / "x.parquet")
+
+
+@needs_duckdb
 def test_parquet_is_sorted_in_small_row_groups(tmp_path):
     """DuckDB rounds ROW_GROUP_SIZE up to a multiple of 2048, so this needs > 4096 rows."""
     import duckdb
@@ -401,7 +513,7 @@ def test_build_end_to_end(fake_dados, tmp_path):
     assert manifest["schema_version"] == 1 and manifest["build_id"] == "20261006T210312Z"
     assert manifest["built_at"] == "2026-10-06T21:03:12Z" and manifest["commit"] == "abc123"
     assert manifest["generator"].startswith("anvisa-python/")
-    assert set(manifest["tables"]) == {"alimentos", "alimentos_resultado", "saneantes"}
+    assert list(manifest["tables"]) == [ds.name for ds in CATALOG]
     main = manifest["tables"]["alimentos"]
     assert main["path"] == "data/20261006T210312Z/alimentos.parquet"
     parquet = out / main["path"]
@@ -426,6 +538,9 @@ def test_build_end_to_end(fake_dados, tmp_path):
         "USING (co_seq_apresentacao_produto)"
     ).fetchone()[0]
     assert joined >= 10
+    petitions = manifest["tables"]["peticoes_alimento"]
+    assert petitions["source"]["loaded_at"] is None  # the petition files carry no load time
+    assert petitions["source"]["url"] == PETICOES_ALIMENTO.url
 
 
 def published(fake_dados, tmp_path, commit="abc123") -> dict:
@@ -460,11 +575,12 @@ def test_build_rebuilds_when_one_file_changed(fake_dados, tmp_path):
         result = build(
             tmp_path / "second", http=http, skip_unchanged=FakeDados.MANIFEST_URL, commit="abc123"
         )
-    assert set(result["tables"]) == {"alimentos", "alimentos_resultado", "saneantes"}
+    assert list(result["tables"]) == [ds.name for ds in CATALOG]
     assert result["tables"]["alimentos"]["source"]["etag"] == '"new"'
-    # the two unchanged files answered 304 first, then were fetched again for a complete build
+    # the unchanged files answered 304 first, then were fetched again for a complete build
     statuses = [r.headers.get("If-None-Match") for r in fake_dados.data_requests()]
-    assert statuses.count(None) == 2 and len(statuses) == 5
+    unchanged = len(CATALOG) - 1
+    assert statuses.count(None) == unchanged and len(statuses) == len(CATALOG) + unchanged
 
 
 @needs_duckdb
@@ -505,7 +621,7 @@ def test_cli_list_and_build(fake_dados, monkeypatch, tmp_path):
     result = runner.invoke(cli.app, ["-f", "json", "dados", "list"])
     assert result.exit_code == 0, result.output
     names = [d["name"] for d in json.loads(result.stdout)]
-    assert names == ["alimentos", "alimentos_resultado", "saneantes"]
+    assert names == [ds.name for ds in CATALOG]
 
     monkeypatch.setattr(cli, "dados_http", fake_dados.client)
     out = tmp_path / "dist"

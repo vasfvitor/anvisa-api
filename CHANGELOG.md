@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- `peticoes_alimento` and `peticoes_alimento_andamento`: the analysis cycle of alimentos
+  petições, one row per stage, from `CICLO_ANALISE_PETICOES_ALIMENTO.CSV` (69,188 rows, 1.2 MB of
+  Parquet; petições finalized at least once) and `CICLO_ANALISE_PETICOES_ANDAMENTO_ALIMENTO.CSV`
+  (1,205 rows; never finalized). The files are disjoint, carry no company (join the processo to
+  `alimentos`), and order their dates differently: month first in the finalized file, day first
+  in the open one. `Dataset.directory` places a file under `dados/` (these two sit at its
+  root), the header check drops a leading `#`, and `Dataset.load_time` may be None.
 - `saneantes`: `TA_CONSULTA_SANEANTES.CSV` (144,384 rows, 3.7 MB of Parquet) joins the
   catalog. Dates are month-first there, `IS_REGISTRADO` is `1`/`0`, and the load time comes from
   `DT_ATUALIZACAO` (`Dataset.load_time`). One product name holds `"AS MENINAS"` followed by

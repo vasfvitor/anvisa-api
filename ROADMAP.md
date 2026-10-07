@@ -72,6 +72,16 @@ entry in `anvisa/dados/catalog.py` plus one fixture (see CONTRIBUTING.md):
   set `timestamp_formats` on the entry; the 20% null guard catches a wrong guess. **Done
   2026-10-06**: `saneantes`, 144,384 rows, 3.7 MB. It took one parser change (a `"` followed by
   a line break inside a product name).
+- **Petições de alimentos** (`dados/CICLO_ANALISE_PETICOES_*ALIMENTO.CSV`). **Done
+  2026-10-06**: `peticoes_alimento` (finalized, 69,188 stage rows) and
+  `peticoes_alimento_andamento` (open, 1,205). Open question: the files name no company, and the
+  164 open new-registration processos are not in `alimentos` yet; check whether the Consultas
+  Externas `fila` endpoints return a CNPJ for them before building anything on it.
+- Two more alimentos files at the root, not added: `DADOS_ABERTOS_ALIMENTO.csv` (9.6 MB, another
+  view of the products with `DT_FINALIZACAO_PROCESSO` and `ST_SITUACAO_REGISTRO`) is **UTF-8**,
+  not Windows-1252, so it needs a per-dataset encoding first; worth adding only if it holds
+  processos `TA_CONSULTA_ALIMENTOS.CSV` lacks. `CONSULTA_SITUCAO_FILA.csv` (2.5 MB) is every
+  area × fila × categoria × assunto × situação combination, in text, with no codes.
 - **Cosméticos** (`TA_CONSULTA_COSMETICOS.CSV`, 228 MB). `parse.normalize` holds a whole file in
   memory (fine at 34 MB); stream it before adding this one.
 - Medicamentos, produtos para saúde, tabaco, cannabis: same folder, not profiled yet.

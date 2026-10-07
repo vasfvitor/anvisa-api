@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 
 from ..errors import DadosError
 
-BASE_URL = "https://dados.anvisa.gov.br/dados/CONSULTAS/PRODUTOS/"
+BASE_URL = "https://dados.anvisa.gov.br/dados/"
 TIMESTAMP_BR = ("%d/%m/%Y %H:%M:%S", "%d/%m/%Y")
 # INTEGER, not BIGINT: the ids stay below 2**31, and DuckDB-WASM hands BIGINT to JS as BigInt
 TYPES = frozenset({"VARCHAR", "INTEGER", "BOOLEAN", "DATE", "TIMESTAMP"})
@@ -25,7 +25,7 @@ class Dataset:
 
     name: str  # Parquet file name and manifest key
     group: str  # what `--dataset` also accepts; a main file and its detail file share one
-    file: str  # under BASE_URL
+    file: str  # under BASE_URL + directory
     title: str
     columns: dict[str, str]  # source header, in order -> one of TYPES
     sort: tuple[str, ...]  # source column names; the Parquet row order
@@ -33,11 +33,13 @@ class Dataset:
     formats: dict[str, tuple[str, ...]] = field(default_factory=dict)  # per-column overrides
     unescape: frozenset[str] = frozenset()  # VARCHAR columns that carry HTML entities
     row_group_size: int | None = None  # rows per Parquet row group; None = the build's default
-    load_time: str = "DT_CARGA_ETL"  # TIMESTAMP column whose max is when ANVISA produced the file
+    load_time: str | None = "DT_CARGA_ETL"  # TIMESTAMP column whose max is when ANVISA produced
+    # the file; None when it has none
+    directory: str = "CONSULTAS/PRODUTOS/"  # under BASE_URL; "" for the files at its root
 
     @property
     def url(self) -> str:
-        return BASE_URL + self.file
+        return BASE_URL + self.directory + self.file
 
     def formats_for(self, column: str) -> tuple[str, ...]:
         return self.formats.get(column, self.timestamp_formats)
@@ -139,7 +141,73 @@ SANEANTES = Dataset(
     load_time="DT_ATUALIZACAO",
 )
 
-CATALOG: tuple[Dataset, ...] = (ALIMENTOS, ALIMENTOS_RESULTADO, SANEANTES)
+# The petition files: one row per stage (fila, análise, exigência, finalização...) of each
+# petição of the alimentos area. Profiled 2026-10-06 on that day's files. The two are disjoint:
+# the first holds the 20,518 petitions finalized at least once (all have
+# DATA_PRIMEIRA_FINALIZACAO; 9 show an open situação again), the second the 336 never
+# finalized, which is why it lacks the two finalization columns. Neither names the company:
+# NUM_PROCESSO_PETICAO joins alimentos.nu_processo when the processo is a product's (72% of the
+# finalized ones' processos; none of the 164 open "Processo" documents, new requests not
+# registered yet). Sorted by processo so a processo's whole history is contiguous.
+_PETICOES_SORT = ("NUM_PROCESSO_PETICAO", "NUM_EXPEDIENTE_PETICAO", "ORDEM_OCORRE_GRUPO_ETAPA_ASC")
+
+PETICOES_ALIMENTO = Dataset(
+    name="peticoes_alimento",
+    group="peticoes_alimento",
+    file="CICLO_ANALISE_PETICOES_ALIMENTO.CSV",
+    directory="",
+    title="Alimentos: ciclo de análise das petições finalizadas",
+    columns={  # the header line reads `#NUM_EXPEDIENTE_PETICAO;...`; parse drops the `#`
+        "NUM_EXPEDIENTE_PETICAO": "VARCHAR",  # 9 or 10 digits (one of 8), leading zeros
+        "NUM_PROCESSO_PETICAO": "VARCHAR",  # digits; 17 on 57,288 rows, 13 on 11,357, 14-16 on 543
+        "S_N_PETICAO_PRIMARIA": "BOOLEAN",  # S: the petição that opened the processo
+        "COD_ASSUNTO_PETICAO": "INTEGER",  # one-to-one with DESC_ASSUNTO_PETICAO (98 of each)
+        # one assunto ends in `&#8203,`: an entity whose `;` the export turned into `,`; kept
+        "DESC_ASSUNTO_PETICAO": "VARCHAR",
+        "DATA_SITUACAO_ATUAL_PETICAO": "TIMESTAMP",
+        "DESC_SITUACAO_ATUAL_PETICAO": "VARCHAR",  # Publicado deferimento 15,905 petitions...
+        "DATA_PRIMEIRA_FINALIZACAO": "TIMESTAMP",
+        "DATA_FINALIZACAO_ATUAL": "TIMESTAMP",
+        "DESC_TIPO_DOCUMENTO": "VARCHAR",  # Petição, Processo, Processo de Alimento...
+        "DESC_AREA_INTERESSE": "VARCHAR",  # always Alimento
+        "DESC_FILA_ANALISE": "VARCHAR",
+        "DESC_SUB_FILA_LISTA_ANALISE": "VARCHAR",  # 915 end in a space; stripped
+        "DESC_GRUPO_ETAPA_CICLO_ANALISE": "VARCHAR",  # the stage
+        "DATA_INI_OCORRENCIA_GRP_ETAPA": "TIMESTAMP",
+        "DATA_FIM_OCORRENCIA_GRP_ETAPA": "TIMESTAMP",
+        "ORDEM_OCORRE_GRUPO_ETAPA_ASC": "INTEGER",  # 1.. per petição; unique with the expediente
+        "ORDEM_OCORRE_GRUPO_ETAPA_DESC": "INTEGER",  # ..1, so 1 is the latest stage
+    },
+    sort=_PETICOES_SORT,
+    timestamp_formats=("%m/%d/%Y %H:%M:%S",),  # month first; never also day first, see README
+    load_time=None,
+)
+
+PETICOES_ALIMENTO_ANDAMENTO = Dataset(
+    name="peticoes_alimento_andamento",
+    group="peticoes_alimento",
+    file="CICLO_ANALISE_PETICOES_ANDAMENTO_ALIMENTO.CSV",
+    directory="",
+    title="Alimentos: petições em análise",
+    columns={  # PETICOES_ALIMENTO's minus the two finalization dates; no `#` on this header
+        c: kind
+        for c, kind in PETICOES_ALIMENTO.columns.items()
+        if c not in ("DATA_PRIMEIRA_FINALIZACAO", "DATA_FINALIZACAO_ATUAL")
+    },
+    sort=_PETICOES_SORT,
+    # Day first, unlike the finalized file. Each petição also has a `Todos` row (stage order
+    # 0/0, no end date) spanning the whole cycle: leave it out when adding up stage durations.
+    timestamp_formats=("%d/%m/%Y %H:%M:%S",),
+    load_time=None,
+)
+
+CATALOG: tuple[Dataset, ...] = (
+    ALIMENTOS,
+    ALIMENTOS_RESULTADO,
+    SANEANTES,
+    PETICOES_ALIMENTO,
+    PETICOES_ALIMENTO_ANDAMENTO,
+)
 
 
 def select(names: Iterable[str], catalog: tuple[Dataset, ...] = CATALOG) -> tuple[Dataset, ...]:

@@ -1,6 +1,7 @@
 """Reading ANVISA's CSV dialect, and rewriting it as plain UTF-8 CSV for DuckDB.
 
-Verified on both alimentos files and on saneantes (2026-10-06, `fixtures/dados/`):
+Verified on both alimentos files, on saneantes and on the two petition files (2026-10-06,
+`fixtures/dados/`):
 
 - The bytes are Windows-1252, not Latin-1: 0x96 (–), 0x92 (’), 0x93/0x94 (“ ”), 0x99 (™)
   appear hundreds of times.
@@ -15,6 +16,9 @@ file follows it, and, given the record width, that a line break can only close t
 *last* field while `;` can only close a non-last one (saneantes has `AMBIENTE "AS
 MENINAS"\\r\\n\\r\\nSPRAY` inside a product name). Read that way, every record of all three
 files has exactly the header's field count.
+
+The finalized-petitions file starts its header with `#` (`#NUM_EXPEDIENTE_PETICAO;...`), a
+comment marker: `read_header` and `normalize` drop it before comparing names.
 """
 
 from __future__ import annotations
@@ -102,6 +106,10 @@ def _records(text: str, width: int | None) -> Iterator[tuple[list[str], int, int
             merged = False
 
 
+def _names(header: list[str]) -> list[str]:
+    return [header[0].removeprefix("#"), *header[1:]] if header else header
+
+
 def read_header(path: Path) -> list[str]:
     """The first record of a downloaded file, without reading the rest."""
     with Path(path).open("rb") as f:
@@ -109,7 +117,7 @@ def read_header(path: Path) -> list[str]:
     header = next(records(decode(first)), None)
     if not header or header == [""]:
         raise DadosError(f"{Path(path).name}: empty file")
-    return header
+    return _names(header)
 
 
 def check_header(ds: Dataset, header: list[str]) -> None:
@@ -147,7 +155,7 @@ def normalize(ds: Dataset, source: Path, target: Path) -> Normalized:
     skipped and reported; whether that is acceptable is the caller's call."""
     width = len(ds.columns)
     it = records(decode(Path(source).read_bytes()), width)
-    check_header(ds, next(it, []))
+    check_header(ds, _names(next(it, [])))
     entity_cols = [i for i, name in enumerate(ds.columns) if name in ds.unescape]
     rows, rejected = 0, []
     with Path(target).open("w", encoding="utf-8", newline="") as out:
