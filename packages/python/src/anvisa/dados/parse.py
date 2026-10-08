@@ -19,6 +19,12 @@ files has exactly the header's field count.
 
 The finalized-petitions file starts its header with `#` (`#NUM_EXPEDIENTE_PETICAO;...`), a
 comment marker: `read_header` and `normalize` drop it before comparing names.
+
+`normalize` streams the file in `CHUNK`-byte pieces (`stream`), so memory is one chunk plus
+one record whatever the file size (cosméticos is 228 MB, AFE 314 MB). A chunk boundary cannot
+change a reading: until the last chunk the patterns have no end-of-text alternative, so a
+field that would need text beyond the buffer simply fails to match, and the record is parsed
+again once the next chunk has arrived.
 """
 
 from __future__ import annotations
@@ -26,18 +32,31 @@ from __future__ import annotations
 import csv
 import html
 import re
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 
 from ..errors import DadosError, SchemaDriftError
 from .catalog import Dataset
 
+CHUNK = 4 << 20  # bytes read at a time
+MAX_RECORD = 4 * CHUNK  # characters a record may span before the parser gives up on it
+_CONTEXT = 40  # characters shown on each side of a parse error
+
 # A field is quoted (closing quote followed by what may end it) or bare (no quote at all).
-_FIELD_ANY = re.compile(r'"(.*?)"(?=;|\r?\n|\Z)|([^;\r\n"]*)', re.DOTALL)  # width unknown
-_FIELD_MID = re.compile(r'"(.*?)"(?=;)|([^;\r\n"]*)', re.DOTALL)  # not the record's last
-_FIELD_LAST = re.compile(r'"(.*?)"(?=\r?\n|\Z)|([^;\r\n"]*)', re.DOTALL)  # the record's last
-_END = re.compile(r";|\r?\n|\Z")
+# Index 0: the text is complete, so its end (`\Z`) may close a field or a record. Index 1: more
+# text may follow, so only `;` or a line break can; a match that would need `\Z` fails instead,
+# which means "not enough text yet", never "malformed".
+_FIELD_ANY = (  # width unknown
+    re.compile(r'"(.*?)"(?=;|\r?\n|\Z)|([^;\r\n"]*)', re.DOTALL),
+    re.compile(r'"(.*?)"(?=;|\r?\n)|([^;\r\n"]*)', re.DOTALL),
+)
+_FIELD_MID = (re.compile(r'"(.*?)"(?=;)|([^;\r\n"]*)', re.DOTALL),) * 2  # not the record's last
+_FIELD_LAST = (  # the record's last
+    re.compile(r'"(.*?)"(?=\r?\n|\Z)|([^;\r\n"]*)', re.DOTALL),
+    re.compile(r'"(.*?)"(?=\r?\n)|([^;\r\n"]*)', re.DOTALL),
+)
+_END = (re.compile(r";|\r?\n|\Z"), re.compile(r";|\r?\n"))
 _QUOTE_BREAK = re.compile(r'"\r?\n')  # inside a quoted value: where the width-blind rule would stop
 _ENTITY = re.compile(r"&(?:#[0-9]+|#[xX][0-9a-fA-F]+|[A-Za-z][A-Za-z0-9]*);")
 
@@ -60,9 +79,39 @@ def records(text: str, width: int | None = None) -> Iterator[list[str]]:
     With `width` (the header's field count), a quote followed by a line break closes only the
     record's last field and a quote followed by `;` only a non-last one, which is what tells an
     inner `"..."\\n` apart from the end of a record. Without it (the header line), either does."""
-    for record, start, stop, merged in _records(text, width):
-        if width is None or (len(record) == width and not merged):
+    for record, _ in _parse(text, width):
+        yield record
+
+
+def stream(chunks: Iterable[str], width: int | None = None) -> Iterator[list[str]]:
+    """`records` over decoded chunks, holding only the record in progress (plus `_CONTEXT`
+    characters before it, for error messages). A record that does not end inside the buffer
+    is parsed again with the next chunk; only after the last chunk is that an error."""
+    buf, offset, lead = "", 0, 0  # offset: file position of buf[0]; lead: where parsing starts
+    for chunk in chunks:
+        buf += chunk
+        done = lead
+        for record, stop in _parse(buf, width, final=False, offset=offset, pos=lead):
             yield record
+            done = stop
+        if len(buf) - done > MAX_RECORD:  # a stray quote is swallowing the file
+            raise DadosError(
+                f"unparseable CSV at character {offset + done}: no record ends within the next "
+                f"{MAX_RECORD} characters"
+            )
+        keep = max(0, done - _CONTEXT)
+        buf, offset, lead = buf[keep:], offset + keep, done - keep
+    for record, _ in _parse(buf, width, final=True, offset=offset, pos=lead):
+        yield record
+
+
+def _parse(
+    text: str, width: int | None, final: bool = True, offset: int = 0, pos: int = 0
+) -> Iterator[tuple[list[str], int]]:
+    """`records` plus where each record ends in `text`; see `_records` for the other arguments."""
+    for record, start, stop, merged in _records(text, width, final, offset, pos):
+        if width is None or (len(record) == width and not merged):
+            yield record, stop
             continue
         # The record either has the wrong width or was read across a `"`+line break. Both are
         # also what a *truncated* record followed by a normal one looks like, and that reading
@@ -72,30 +121,40 @@ def records(text: str, width: int | None = None) -> Iterator[list[str]]:
         try:
             blind = [sub for sub, _, _, _ in _records(text[start:stop], None)]
         except DadosError:
-            yield record
+            yield record, stop
         else:
-            yield from blind
+            for sub in blind:
+                yield sub, stop
 
 
-def _records(text: str, width: int | None) -> Iterator[tuple[list[str], int, int, bool]]:
+def _records(
+    text: str, width: int | None, final: bool = True, offset: int = 0, pos: int = 0
+) -> Iterator[tuple[list[str], int, int, bool]]:
     """`records` plus each record's character span `[start, stop)` (line break included) and
-    whether one of its quoted fields was read across a `"` followed by a line break."""
+    whether one of its quoted fields was read across a `"` followed by a line break.
+
+    Parsing starts at `pos`. With `final` false the text may be cut short, so a field that
+    cannot be closed inside it ends the iteration instead of raising. `offset` is the file
+    position of `text[0]`, so that error messages report the position in the file."""
+    k = 0 if final else 1
     record: list[str] = []
-    pos = start = 0
+    start = pos
     merged = False
     while pos < len(text):
         if width is None:
-            pattern = _FIELD_ANY
+            pattern = _FIELD_ANY[k]
         else:
-            pattern = _FIELD_LAST if len(record) == width - 1 else _FIELD_MID
+            pattern = _FIELD_LAST[k] if len(record) == width - 1 else _FIELD_MID[k]
         field = pattern.match(text, pos)
-        end = _END.match(text, field.end()) if field else None
+        end = _END[k].match(text, field.end()) if field else None
         if field is None or end is None:  # a quote where this dialect allows none
+            if not final:  # or a field the next chunk completes
+                return
             at = field.end() if field else pos
-            snippet = text[max(0, at - 40) : at + 40]
-            raise DadosError(f"unparseable CSV at character {at}: {snippet!r}")
+            snippet = text[max(0, at - _CONTEXT) : at + _CONTEXT]
+            raise DadosError(f"unparseable CSV at character {at + offset}: {snippet!r}")
         quoted = field.group(1)
-        if quoted is not None and pattern is _FIELD_MID and _QUOTE_BREAK.search(quoted):
+        if quoted is not None and pattern is _FIELD_MID[k] and _QUOTE_BREAK.search(quoted):
             merged = True
         record.append(quoted if quoted is not None else field.group(2))
         pos = end.end()
@@ -148,26 +207,28 @@ class Normalized:
     rejected: tuple[int, ...]  # 1-based record numbers whose field count was wrong
 
 
-def normalize(ds: Dataset, source: Path, target: Path) -> Normalized:
+def normalize(ds: Dataset, source: Path, target: Path, *, chunk_size: int = CHUNK) -> Normalized:
     """Rewrite `source` as RFC 4180 UTF-8 CSV: header checked, every value stripped of
     surrounding whitespace (`\\xa0\\r\\n` included), entities decoded in `ds.unescape`, empty
     values left unquoted so DuckDB reads them as NULL. Records with the wrong field count are
     skipped and reported; whether that is acceptable is the caller's call."""
     width = len(ds.columns)
-    it = records(decode(Path(source).read_bytes()), width)
-    check_header(ds, _names(next(it, [])))
     entity_cols = [i for i, name in enumerate(ds.columns) if name in ds.unescape]
     rows, rejected = 0, []
-    with Path(target).open("w", encoding="utf-8", newline="") as out:
-        writer = csv.writer(out, lineterminator="\n")
-        writer.writerow(ds.columns)
-        for number, record in enumerate(it, 1):
-            if len(record) != width:
-                rejected.append(number)
-                continue
-            values = [v.strip() for v in record]
-            for i in entity_cols:
-                values[i] = unescape(values[i])
-            writer.writerow(values)
-            rows += 1
+    with Path(source).open("rb") as f:
+        # Windows-1252 is a single-byte encoding, so chunks can be decoded one by one.
+        it = stream(map(decode, iter(lambda: f.read(chunk_size), b"")), width)
+        check_header(ds, _names(next(it, [])))
+        with Path(target).open("w", encoding="utf-8", newline="") as out:
+            writer = csv.writer(out, lineterminator="\n")
+            writer.writerow(ds.columns)
+            for number, record in enumerate(it, 1):
+                if len(record) != width:
+                    rejected.append(number)
+                    continue
+                values = [v.strip() for v in record]
+                for i in entity_cols:
+                    values[i] = unescape(values[i])
+                writer.writerow(values)
+                rows += 1
     return Normalized(rows, tuple(rejected))

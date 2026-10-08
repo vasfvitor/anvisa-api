@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- `parse.normalize` streams the source in 4 MiB chunks (`parse.stream`) instead of decoding
+  the whole file: a record that does not end inside a chunk is parsed again with the next one,
+  and the end-of-text rule applies only to the last chunk, so a chunk boundary cannot change a
+  reading. The Parquet output of all six datasets is byte-identical (sha256, same sources).
+  Converting `produtos_irregulares` (98 MB) peaks at 414 MiB instead of 464, the parser itself
+  at 75 MiB; what remains is DuckDB's. Groundwork for cosméticos (228 MB) and AFE (314 MB).
 - Downloads land in the work directory as `<dataset>.csv` (`Dataset.local_file`) instead of
   the source file name, which ANVISA reuses across folders; `Dataset` rejects a `directory`
   that does not end in `/`; `peticoes_alimento_andamento` spells out its own columns so a

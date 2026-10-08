@@ -17,7 +17,7 @@ from conftest import headers_only
 from typer.testing import CliRunner
 
 from anvisa import cli
-from anvisa.dados import CATALOG, Unchanged, build, select
+from anvisa.dados import CATALOG, Unchanged, build, parse, select
 from anvisa.dados.catalog import (
     ALIMENTOS,
     ALIMENTOS_RESULTADO,
@@ -34,6 +34,7 @@ from anvisa.dados.parse import (
     normalize,
     read_header,
     records,
+    stream,
     unescape,
 )
 from anvisa.errors import DadosError, SchemaDriftError
@@ -213,6 +214,93 @@ def test_normalize_skips_and_reports_short_records(tmp_path):
     src = write_dialect(tmp_path / "in.csv", rows)
     result = normalize(ALIMENTOS, src, tmp_path / "out.csv")
     assert result.rejected == (3,) and result.rows == len(rows) - 2
+    assert normalize(ALIMENTOS, src, tmp_path / "out5.csv", chunk_size=5) == result
+
+
+def chunked(text, n: int):
+    return (text[i : i + n] for i in range(0, len(text), n))
+
+
+def test_stream_matches_records_at_every_chunk_size():
+    """Chunk boundaries cannot change a reading: the end-of-text rule only applies to the last
+    chunk, and a field cut short by the buffer is parsed again with the next one."""
+    for ds in CATALOG:
+        raw = sample(ds).read_bytes()
+        width = len(ds.columns)
+        text = decode(raw)
+        for n in (1, 2, 3, 7, 64, 4096, len(text) + 1):
+            assert list(stream(chunked(text, n), width)) == sample_records(ds), (ds.name, n)
+        # the way `normalize` feeds it: bytes cut anywhere, decoded piece by piece
+        assert list(stream(map(decode, chunked(raw, 7)), width)) == sample_records(ds)
+        # no trailing line break: `\Z` closes the last record
+        bare = text.rstrip("\r\n")
+        assert list(stream(chunked(bare, 5), width)) == list(records(bare, width))
+
+
+def test_stream_boundaries_do_not_change_a_reading():
+    """Every possible cut of the texts that exercise the dialect's corner cases."""
+    normal = '"X";"1";"2"\n'
+    texts = [
+        '"a";"b";"c"\r\n"d";"e";"f"\r\n',  # cut between `"` and `\r`, between `\r` and `\n`
+        '"A "B"\n\nC";"1";"2"\n' + normal,  # inside the inner `"..."\n` (the merged path)
+        '"A";"1"\n' + normal,  # a truncated record, re-split the width-blind way
+        '"A";"1"\n7;"1";"2"\n',  # the same, but the next record begins with a bare field
+        'x;y;z\r\n"q";"r\r\n";"s"\r\n',  # bare fields; CRLF inside a quoted non-last field
+        "x;y;z",  # bare, no line break at all
+        '"a";"b";',  # a trailing partial record (dropped, as `records` drops it)
+    ]
+    for text in texts:
+        expected = list(records(text, 3))
+        for n in range(1, len(text) + 2):
+            assert list(stream(chunked(text, n), 3)) == expected, (text, n)
+
+
+def test_stream_errors_match_whole_text(tmp_path):
+    """A malformed file fails at the same character with the same context, however it is cut."""
+    normal = '"X";"1";"2"\n'
+    texts = [
+        normal * 5 + 'ab"c;"1";"2"\n',  # a quote in a bare field, beyond 40 characters in
+        "x;y;z\rq;r;s\n",  # a lone `\r`
+        '"a";"b"\n',  # a short last record is fine...
+        '"a";"b";"c"\r',  # ...but a `"` + `\r` + end of file is not
+        '"a";"b";"c\n',  # an unclosed quote
+    ]
+    for text in texts:
+        try:
+            expected = list(records(text, 3))
+        except DadosError as exc:
+            expected = str(exc)
+        for n in (1, 3, 7, 1000):
+            try:
+                got = list(stream(chunked(text, n), 3))
+            except DadosError as exc:
+                got = str(exc)
+            assert got == expected, (text, n)
+    rows = sample_records(ALIMENTOS)
+    src = write_dialect(tmp_path / "in.csv", rows)
+    # a quote inside a quoted value is fine; a bare field with one is not
+    quoted = b'"' + rows[5][0].encode("cp1252") + b'"'
+    broken = src.read_bytes().replace(quoted, b'ab"c', 1)
+    src.write_bytes(broken)
+    with pytest.raises(DadosError, match="unparseable CSV at character") as whole:
+        normalize(ALIMENTOS, src, tmp_path / "out.csv")
+    with pytest.raises(DadosError) as streamed:
+        normalize(ALIMENTOS, src, tmp_path / "out7.csv", chunk_size=7)
+    assert str(streamed.value) == str(whole.value)
+
+
+def test_stream_caps_a_record_that_never_ends(monkeypatch):
+    monkeypatch.setattr(parse, "MAX_RECORD", 100)
+    it = stream(chunked('"never closes;' + "x" * 500, 50), 3)
+    with pytest.raises(DadosError, match="no record ends within the next 100 characters"):
+        list(it)
+
+
+def test_normalize_output_is_chunk_size_independent(tmp_path):
+    whole = normalize(ALIMENTOS, sample(ALIMENTOS), tmp_path / "whole.csv")
+    small = normalize(ALIMENTOS, sample(ALIMENTOS), tmp_path / "small.csv", chunk_size=7)
+    assert whole == small
+    assert (tmp_path / "whole.csv").read_bytes() == (tmp_path / "small.csv").read_bytes()
 
 
 # --- download -----------------------------------------------------------------
