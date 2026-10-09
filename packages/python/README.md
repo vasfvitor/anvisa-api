@@ -25,7 +25,7 @@ anvisa assunto lista --busca bioequival
 ```python
 from anvisa import Client
 
-with Client.from_env() as anvisa:
+with Client() as anvisa:  # credentials from the environment or ~/.config/anvisa/credentials.env
     queue = anvisa.fila.consulta(167)
     page = anvisa.udi.search(nomeComercial="cateter", size=50)
 ```

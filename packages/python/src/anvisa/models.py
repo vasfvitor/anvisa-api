@@ -467,9 +467,9 @@ class PaginationBuilder(BaseModel):
     column: str | None = None
     order: Order | None = None
     filter: Annotated[
-        dict[str, dict[str, Any]] | None,
+        dict[str, Any] | None,
         Field(
-            description="Map of filter key to value. Required keys depend on the endpoint; see each operation's `x-required-filters`."
+            description="Map of filter key to value (a string, a number, or a boolean; never a nested object). Required keys depend on the endpoint; see each operation's `x-required-filters`."
         ),
     ] = None
 

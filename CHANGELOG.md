@@ -6,6 +6,13 @@
   named `exports` when the directory did not exist yet (`Path` drops the trailing slash before
   `is_dir()` is asked). `download.target_path` now treats a trailing separator as a directory,
   as the docstring and README always said. Found in a code review.
+- The generated models are used where the client used to hand-build the same shapes:
+  `page_body` is `models.PaginationBuilder` (so `sorting` values must be `ASC`/`DESC` before the
+  request goes out) and `raise_for_response` reads `models.ErroApi`. For that the overlay
+  corrects `PaginationBuilder.filter`: ANVISA's document types every value as an object, the
+  recorded requests send strings and numbers. The version has one source, `anvisa.__version__`
+  (hatch reads it; `pyproject.toml` no longer repeats it). `Client.from_env()` is gone:
+  `Client()` already reads the environment when given no credentials.
 - `anvisa dados build -d <table> --skip-unchanged <manifest>` carries the other published
   tables over into the new build (fetched from the live site, checked against the published
   size and SHA-256, listed under the new `data/<build_id>/` path), so a partial build no longer

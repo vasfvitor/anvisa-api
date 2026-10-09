@@ -90,7 +90,7 @@ anvisa udi snapshot 173 -o ./exports       # the week's zip, streamed to disk
 ```python
 from anvisa import Client
 
-with Client.from_env() as anvisa:
+with Client() as anvisa:  # credentials from the environment or ~/.config/anvisa/credentials.env
     for row in anvisa.fila.consulta(167):
         print(row.nuOrdem, row.numeroProcessoFormatado, row.dsAssunto)
 

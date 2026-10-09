@@ -125,11 +125,16 @@ actions:
   - target: $.components.schemas.PaginationBuilder.properties.sorting
     update:
       description: Map of column name to ASC/DESC. Sending an array is rejected with a Jackson deserialization error.
+  # ANVISA's document types every filter value as `object`; the recorded requests (fila_consulta,
+  # udi_filtro_*, nomeTecnico_*) send integers and strings: {"subfila": 167},
+  # {"nomeComercial": "cateter"}. Dropping the type leaves "any value".
+  - target: $.components.schemas.PaginationBuilder.properties.filter.additionalProperties.type
+    remove: true
   - target: $.components.schemas.PaginationBuilder.properties.filter
     update:
       description: >-
-        Map of filter key to value. Required keys depend on the endpoint; see each
-        operation's `x-required-filters`.
+        Map of filter key to value (a string, a number, or a boolean; never a nested object).
+        Required keys depend on the endpoint; see each operation's `x-required-filters`.
 
   # 12./13. FilaCalculadaDTO fields typed `object` are an integer and two epoch-ms dates.
   - target: $.components.schemas.FilaCalculadaDTO.properties.nuOrdem

@@ -87,7 +87,7 @@ def main(
 
 def make_client() -> Client:
     """Separate so tests can swap in a client with a mocked transport."""
-    return Client.from_env()
+    return Client()
 
 
 def dados_http() -> httpx.Client:

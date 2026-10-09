@@ -11057,10 +11057,8 @@
           },
           "filter": {
             "type": "object",
-            "additionalProperties": {
-              "type": "object"
-            },
-            "description": "Map of filter key to value. Required keys depend on the endpoint; see each operation's `x-required-filters`."
+            "additionalProperties": {},
+            "description": "Map of filter key to value (a string, a number, or a boolean; never a nested object). Required keys depend on the endpoint; see each operation's `x-required-filters`."
           }
         }
       },

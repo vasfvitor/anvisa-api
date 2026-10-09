@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "anvisa"
-version = "0.4.0"
+dynamic = ["version"]  # one source: anvisa.__version__ (tool.hatch.version below)
 description = "Client and CLI for ANVISA's official Consultas Externas API (fila de análise, UDI, assuntos)"
 readme = "README.md"
 license = "MIT"
@@ -44,6 +44,9 @@ dev = [
   "pyyaml>=6",
   "ruff>=0.6",
 ]
+
+[tool.hatch.version]
+path = "src/anvisa/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/anvisa"]

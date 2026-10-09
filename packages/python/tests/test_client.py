@@ -141,6 +141,15 @@ def test_page_below_one_fails_locally():
         page_body(0, 10, None, {"a": 1})
 
 
+def test_page_body_is_what_was_recorded():
+    """Built from the generated `PaginationBuilder`; the wire shape is fixture udi_filtro's."""
+    body = page_body(1, 2, None, {"nomeComercial": "cateter"})
+    assert body == {"page": 1, "size": 2, "sorting": {}, "filter": {"nomeComercial": "cateter"}}
+    assert page_body(1, 10, {"nome": "DESC"}, {"subfila": 167})["sorting"] == {"nome": "DESC"}
+    with pytest.raises(ValueError):  # pydantic: the spec says ASC/DESC
+        page_body(1, 10, {"nome": "down"}, {})
+
+
 def test_udi_get_and_gmdn(client):
     detail = client.udi.get(377)
     assert detail.dispositivo.nomeComercial.startswith("CATETER ELETRODO")

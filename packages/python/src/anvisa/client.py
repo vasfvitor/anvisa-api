@@ -21,9 +21,10 @@ ANY = "*/*"  # the Accept the download endpoints need
 
 
 class Client:
-    """Sync client. Use as a context manager or call `close()`.
+    """Sync client. Use as a context manager or call `close()`. Without `credentials` they
+    come from the environment or `~/.config/anvisa/credentials.env` (`Credentials.from_env`).
 
-    >>> with Client.from_env() as anvisa:
+    >>> with Client() as anvisa:
     ...     anvisa.fila.areas()
     """
 
@@ -51,10 +52,6 @@ class Client:
         self.udi = Udi(self)
         self.nome_tecnico = NomeTecnico(self)
         self.assunto = Assunto(self)
-
-    @classmethod
-    def from_env(cls, **kwargs: Any) -> Client:
-        return cls(Credentials.from_env(), **kwargs)
 
     def close(self) -> None:
         self._http.close()
@@ -126,10 +123,12 @@ class Client:
 def page_body(
     page: int, size: int, sort: dict[str, str] | None, filters: dict[str, Any]
 ) -> dict[str, Any]:
-    """Build ANVISA's `PaginationBuilder` body. Pages are 1-based on the wire."""
+    """ANVISA's `PaginationBuilder` body (the generated model, so the spec's constraints hold
+    before the request goes out). Pages are 1-based on the wire."""
     if page < 1:
         raise InvalidPageError(f"page must be >= 1 (got {page}); ANVISA pages are 1-based")
-    return {"page": page, "size": size, "sorting": dict(sort or {}), "filter": dict(filters)}
+    body = models.PaginationBuilder(page=page, size=size, sorting=sort or {}, filter=filters)
+    return body.model_dump(mode="json", exclude_none=True)
 
 
 T = TypeVar("T")

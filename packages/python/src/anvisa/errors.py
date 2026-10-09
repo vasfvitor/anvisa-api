@@ -11,6 +11,9 @@ import re
 from datetime import datetime
 
 import httpx
+from pydantic import ValidationError
+
+from . import models
 
 
 class AnvisaError(Exception):
@@ -147,15 +150,17 @@ def raise_for_response(response: httpx.Response) -> None:
         body = response.json()
     except ValueError:
         raise ApiError(response.text[:200].strip() or "empty body", status_code=code) from None
-    if not isinstance(body, dict):
-        raise ApiError(str(body)[:200], status_code=code)
+    try:
+        envelope = models.ErroApi.model_validate(body)
+    except ValidationError:
+        raise ApiError(str(body)[:200], status_code=code) from None
 
-    mensagem = str(body.get("mensagem") or "")
-    detail = str(body.get("mensagem_detalhada") or "")
+    mensagem = envelope.mensagem or ""
+    detail = envelope.mensagem_detalhada or ""
     common = {
         "status_code": code,
         "mensagem_detalhada": detail,
-        "data_hora": parse_data_hora(body.get("data_hora")),
+        "data_hora": parse_data_hora(envelope.data_hora),
     }
 
     if mensagem == "mensagens.MSG-062":
