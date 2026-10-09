@@ -22,6 +22,12 @@ ANVISA's nouns stay Portuguese, verbs are English and mean the same everywhere.
   named `exports` when the directory did not exist yet (`Path` drops the trailing slash before
   `is_dir()` is asked). `download.target_path` now treats a trailing separator as a directory,
   as the docstring and README always said. Found in a code review.
+- `spec/snapshot.py` removes portal pages that left the menu, so `spec/portal/` is always the
+  current site and the drift check sees a page disappear. Five pages that left it between
+  2026-09-06 and 2026-10-01 (consulta-alimentos, dossie-doc, empresa-internacional-doc,
+  funcionamento-empresa-internacional, funcionamento-empresa-nacional) are removed now. The
+  docstring catches up: the OpenAPI document carries certificados, produtos de saúde and
+  tabaco since 2026-10-01, and a snapshot is ~20 requests, not 12.
 - `tests/test_spec.py` holds the client against the resolved spec: every path the client calls
   is in it, the 27 it does not call are exactly the tabaco/saude/certificado domains ANVISA
   added on 2026-10-01 (wrapping one, or ANVISA adding one, fails the test), `x-accept: */*` is

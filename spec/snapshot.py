@@ -1,9 +1,9 @@
 """Snapshot ANVISA's OpenAPI document and portal documentation for the drift check.
 
-The OpenAPI document at consultas-externas-api/v3/api-docs covers only part of the API.
-The rest (certificados, empresa nacional/internacional, dossiê, alimentos, produtos de
-saúde) is documented solely in the portal's own pages, which its backend serves as JSON,
-unauthenticated:
+The OpenAPI document at consultas-externas-api/v3/api-docs is the API's own description
+(since 2026-10-01 it also carries certificados, produtos de saúde and tabaco). The portal adds
+what the document does not have (tutoriais, SAMMED, SNCR, SNGPC and the per-domain doc pages)
+in pages its backend serves as JSON, unauthenticated:
 
     GET https://api-gateway.prd.apps.anvisa.gov.br/portal-apis/api/v1/public/portal/menus
     GET https://api-gateway.prd.apps.anvisa.gov.br/portal-apis/api/v1/public/portal/paginas?rota=<route>
@@ -12,9 +12,10 @@ unauthenticated:
 This script refreshes spec/consultas-externas.openapi.json (ANVISA's document, reformatted
 as pretty-printed JSON, otherwise untouched) and writes the menu tree, the portal
 backend's own spec and every page of type PAGINA under spec/portal/ in the same format, so
-`git diff` shows exactly what ANVISA changed. No credentials needed; ~12 requests. Note that
-the gateway's rate limit (burst 25, refill 1/s) applies to these unauthenticated requests
-too, from the same bucket as the authenticated API.
+`git diff` shows exactly what ANVISA changed; a page that left the menu is removed, so the
+directory is always the current site. No credentials needed; ~20 requests (4 documents and
+16 pages on 2026-10-08). Note that the gateway's rate limit (burst 25, refill 1/s) applies to
+these unauthenticated requests too, from the same bucket as the authenticated API.
 
 The OpenAPI documents are normalized before being written: each operation's `responses` map and
 `components.schemas` are sorted by key, and the `nonce` query parameter is stripped from the
@@ -87,6 +88,21 @@ def pages(tree) -> list[dict]:
     return found
 
 
+def menu_tree(menus) -> list:
+    return menus if isinstance(menus, list) else menus.get("menus") or menus.get("content") or []
+
+
+def page_file(rota: str) -> Path:
+    return OUT / f"{rota.replace('/', '__')}.json"
+
+
+def stale(menus) -> list[Path]:
+    """Files under spec/portal/ that this snapshot would not write: pages that left the menu."""
+    current = {OUT / "menus.json", OUT / "portal-apis.openapi.json", OUT / "sngpc.openapi.json"}
+    current |= {page_file(node["rota"]) for node in pages(menu_tree(menus))}
+    return sorted(path for path in OUT.glob("*.json") if path not in current)
+
+
 def main() -> int:
     OUT.mkdir(exist_ok=True)
     menus = get_json(f"{PORTAL}/api/v1/public/portal/menus")
@@ -97,8 +113,7 @@ def main() -> int:
         SPEC_DIR / "consultas-externas.openapi.json",
         normalize_openapi(get_json(f"{GATEWAY}/consultas-externas-api/v3/api-docs")),
     )
-    tree = menus if isinstance(menus, list) else menus.get("menus") or menus.get("content") or []
-    for node in pages(tree):
+    for node in pages(menu_tree(menus)):
         rota = node["rota"]
         page = get_json(f"{PORTAL}/api/v1/public/portal/paginas?rota={urllib.parse.quote(rota, safe='')}")
         # `conteudo` is JSON stored as a string on ENDPOINTS pages; decode it so diffs are readable.
@@ -107,7 +122,10 @@ def main() -> int:
                 page["conteudo"] = json.loads(page["conteudo"])
             except ValueError:
                 pass
-        dump(OUT / f"{rota.replace('/', '__')}.json", page)
+        dump(page_file(rota), page)
+    for path in stale(menus):  # a page that left the menu would otherwise stay frozen here
+        path.unlink()
+        print(f"removed {path.relative_to(SPEC_DIR.parent)}")
     return 0
 
 
