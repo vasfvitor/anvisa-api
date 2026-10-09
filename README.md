@@ -141,7 +141,7 @@ day the table was added; the live `manifest.json` has today's:
 | `peticoes_alimento` | `CICLO_ANALISE_PETICOES_ALIMENTO.CSV` | 69,188 (10-06) | stage (fila, análise, exigência, finalização…) of an alimentos petição finalized at least once: 20,518 petições since 1998, sorted by `num_processo_peticao`, `num_expediente_peticao`, `ordem_ocorre_grupo_etapa_asc` |
 | `peticoes_alimento_andamento` | `CICLO_ANALISE_PETICOES_ANDAMENTO_ALIMENTO.CSV` | 1,205 (10-06) | stage of a petição **never finalized**, what is in análise today (336 petições); same columns minus the two finalization dates, same sort |
 | `produtos_irregulares` | `TA_CONSULTA_PRODUTOS_IRREGULARES_RESULTADO.CSV` | 79,986 (10-05) | product × ação (suspensão, proibição, recolhimento, apreensão, interdição, inutilização) × atividade of a fiscalização dossiê, every area (Alimento: 8,743 rows, 722 dossiês); sorted by `co_tipo_produto` (6 = Alimento), `nu_cnpj_empresa_investigada`, `co_seq_dossie_investig_med` |
-| `cosmeticos` | `TA_CONSULTA_COSMETICOS.CSV` | 1,204,980 (10-07) | notified, exempt (`ISENTO DE REGISTRO`) or registered cosmetic, one row per processo except 11,144 processos listed twice (`st_registrado` false, then true, same `nu_registro`); sorted by `nu_cnpj_empresa`, `nu_processo`, `st_registrado`. **24 MB** of Parquet, far above the others. No detail file. |
+| `cosmeticos` | `TA_CONSULTA_COSMETICOS.CSV` | 1,204,980 (10-07) | notified, exempt (`ISENTO DE REGISTRO`) or registered cosmetic, one row per processo except 11,144 processos listed twice (`st_registrado` false, then true, same `nu_registro`); sorted by `nu_cnpj_empresa`, `nu_processo`, `st_registrado`. **24 MB** of Parquet, far above the others, so it is also published as **search files** (`busca` below). No detail file. |
 
 Column names are ANVISA's, lowercased, so the
 [data dictionary](https://dados.anvisa.gov.br/dados/CONSULTAS/PRODUTOS/Documentacao_e_Dicionario_de_Dados_Regularizados_Alimentos.pdf)
@@ -174,6 +174,27 @@ typed column that did not parse (the build fails if a column loses more than 20%
 are immutable: a new build gets a new directory and the previous one disappears with the next
 deploy.
 
+A table too big to download whole (`cosmeticos`) also carries a `busca` key: the same rows
+published once more under `data/<build_id>/<name>/`, re-partitioned into about 3,200 small
+Parquet files (most 45 to 75 KB, the largest 2.5 MB) by word of the product name
+(`palavras/`), by CNPJ (`empresas/`) and by processo or registro number (`numeros/`), plus
+`empresas.parquet` (CNPJ → razão social) and `indice.json`, which says which file holds which
+range. A search downloads the index once and then one or two files. The key gives the
+index's path, size and sha256, the file count and the folder's total bytes:
+
+```json
+"busca": {"versao": 1, "indice": "data/<build_id>/cosmeticos/indice.json",
+          "bytes": 118197, "sha256": "…", "arquivos": 3202, "bytes_total": 240128664}
+```
+
+Matching is by **word start**, so the site must split names exactly as the build did:
+apostrophes removed, accents stripped, lowercase, split on anything but `[a-z0-9]`, tokens of
+two or more characters that are not stopwords, hyphenated compounds also joined
+(`ANTI-QUEDA` gives `anti`, `queda`, `antiqueda`). `fixtures/dados/tokens.json` holds 40 cases
+that both this package (`anvisa.dados.busca.words`) and the site test against. The layout,
+the lookup and the measurements are in `anvisa/dados/busca.py`'s docstring and in the
+anvisa-dash repository.
+
 For a frontend on DuckDB-WASM (what the first one, `anvisa-dash`, learned on 2026-10-06 with
 `@duckdb/duckdb-wasm` 1.33):
 
@@ -181,11 +202,15 @@ For a frontend on DuckDB-WASM (what the first one, `anvisa-dash`, learned on 202
   `path` against the manifest URL. A 404 on a data path means a deploy happened mid-session:
   re-read the manifest.
 - **Download whole files; do not rely on HTTP Range on GitHub Pages.** The files are kept at a
-  few MB each on purpose (`bytes` in the manifest); `cosmeticos`, at 24 MB, is the exception. Range reads worked in Chrome but: Pages answers `HEAD` + `Range`
+  few MB each on purpose (`bytes` in the manifest); `cosmeticos`, at 24 MB, has the `busca`
+  files instead. Range reads worked in Chrome but: Pages answers `HEAD` + `Range`
   with 200, which breaks duckdb-wasm's `reliableHeadRequests`; Firefox's synchronous XHR with
   `Range` fails with a NetworkError; full responses are gzip-encoded and ranged ones are not; and
   in Chrome a ranged `fetch` **poisons the cache**, so the next plain `fetch` of the same URL
-  returns a 1-byte body. `fetch()` each file, check `length === bytes` and that it ends in
+  returns a 1-byte body. The cause (found 2026-10-09): Pages gzips `application/octet-stream`
+  when the client accepts gzip and applies the range to the *gzipped* bytes, and Firefox before
+  148 does not send `Accept-Encoding: identity` on Range requests (bug 1983387), so it gets
+  compressed bytes it cannot decode. `fetch()` each file, check `length === bytes` and that it ends in
   `PAR1` (refetch with `cache: "reload"` otherwise), `registerFileBuffer`, `CREATE VIEW`. After
   that every query costs no network.
 - The sort orders and 2,048-row groups still matter for anyone reading over HTTP with native

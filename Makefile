@@ -18,4 +18,4 @@ live:            ## 6 real requests (4 need credentials, 1 token, 1 HEAD on dado
 	$(PY) pytest -m live
 
 lint:
-	$(PY) ruff check . && $(PY) ruff format --check .
+	$(PY) ruff check . && uv run ruff format --check .   # one cd: the shell stays in packages/python

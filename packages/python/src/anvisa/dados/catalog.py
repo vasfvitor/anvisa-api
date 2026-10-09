@@ -21,7 +21,8 @@ TYPES = frozenset({"VARCHAR", "INTEGER", "BOOLEAN", "DATE", "TIMESTAMP"})
 
 @dataclass(frozen=True)
 class Dataset:
-    """One source CSV, published as one Parquet file named `name`."""
+    """One source CSV, published as one Parquet file named `name` (plus, with `busca`, a
+    folder of small search files beside it; see busca.py)."""
 
     name: str  # Parquet file name and manifest key
     group: str  # what `--dataset` also accepts; a main file and its detail file share one
@@ -36,6 +37,9 @@ class Dataset:
     load_time: str | None = "DT_CARGA_ETL"  # TIMESTAMP column whose max is when ANVISA produced
     # the file; None when it has none
     directory: str = "CONSULTAS/PRODUTOS/"  # under BASE_URL; "" for the files at its root
+    # also publish `data/<build_id>/<name>/`: the rows re-partitioned by word, CNPJ and number
+    # into files small enough for a browser that downloads whole files (busca.py)
+    busca: bool = False
 
     def __post_init__(self) -> None:
         if self.directory and not self.directory.endswith("/") or self.directory.startswith("/"):
@@ -317,6 +321,9 @@ COSMETICOS = Dataset(
     timestamp_formats=("%d/%m/%Y %H:%M:%S",),
     unescape=frozenset({"NO_PRODUTO"}),
     load_time="DT_ATUALIZACAO",
+    # 24 MB of Parquet is too much for a browser that downloads whole files: the search files
+    # (about 3,200 of them, 45-75 KB each) answer a query with one or two downloads
+    busca=True,
 )
 
 CATALOG: tuple[Dataset, ...] = (

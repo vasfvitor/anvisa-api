@@ -80,6 +80,9 @@ throttling, but the same rule holds: profile the real file before writing its ca
    by line, and never re-encoded; `.gitattributes` keeps git from touching them). Save the
    headers as `headers_<name>.txt` and add both to `fixtures/dados/manifest.json`.
 5. `test_fixture_header_matches_catalog` is the gate; add value tests for whatever was odd.
+6. If the Parquet comes out far above 15 MB (anvisa-dash downloads whole files), set
+   `busca=True` on the entry: `dados/busca.py` then publishes the rows again as small search
+   files. Today it expects cosméticos' column names; generalize it before reusing it.
 
 ## Running things
 

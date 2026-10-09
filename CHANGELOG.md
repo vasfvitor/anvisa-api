@@ -2,12 +2,28 @@
 
 ## Unreleased
 
+- **Search files** (`anvisa.dados.busca`, format version 1): a dataset with `busca=True` in
+  the catalog (cosméticos) is published once more under `data/<build_id>/<name>/`, its rows
+  re-partitioned into about 3,200 small Parquet files by word of the product name, by CNPJ and
+  by processo or registro number, with `empresas.parquet` and an `indice.json` that maps
+  ranges to files. The table's manifest entry gains a `busca` key (index path, size, sha256,
+  file count, total bytes); `schema_version` stays 1. A browser that downloads whole files
+  answers a search with one or two downloads instead of the 24 MB Parquet. The tokenizer
+  (`busca.words`) is the contract with anvisa-dash: `fixtures/dados/tokens.json` holds 40 cases
+  both sides test against. Partial builds carry the folder over like the Parquet, checking the
+  index's hash and every file's size; `index.html` shows the file count. Format and lookup
+  designed and measured by the anvisa-dash session (2026-10-09); this port reproduces its
+  reference output byte for byte (3,202 files, 240,128,664 bytes, index sha256 identical) in
+  37 s after the conversion, peaking at 2.7 GiB under DuckDB's 3 GB cap; three runs gave the
+  same sha256 for every file, and every one of the 26 acceptance queries matched a full scan.
+- `convert.connect` is the one place DuckDB is opened for a build (one thread, memory limit,
+  spill directory); `busca` shares it.
 - `cosmeticos`: `TA_CONSULTA_COSMETICOS.CSV` (228 MB, 1,204,980 rows of 10 fields), every
   notified, exempt or registered cosmetic, sorted by CNPJ, processo and `st_registrado`. Dates
   are day first (unlike saneantes, whose columns it otherwise resembles); 11,144 processos are
   listed twice, once unregistered and once registered, so `st_registrado` completes the sort
   key. `&AMP;` in capitals is decoded like any entity. No parser change. **24.2 MB of
-  Parquet**, the first table well above a few MB; see ROADMAP for a split.
+  Parquet**, the first table well above a few MB (hence the search files above).
 - `convert.py` caps DuckDB at `MEMORY_LIMIT` (3 GB, below a 7 GB GitHub runner) and lets it
   spill to `.duckdb_tmp` beside the CSV, removed afterwards. Converting cosméticos peaks at
   ~700 MiB and does not spill; the Parquet of the other six datasets is byte-identical

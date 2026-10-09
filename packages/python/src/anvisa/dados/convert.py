@@ -1,4 +1,5 @@
-"""Typed, sorted Parquet from a downloaded CSV. The only module that imports duckdb."""
+"""Typed, sorted Parquet from a downloaded CSV. DuckDB is imported here (and only here and in
+busca.py, which shares `connect`), so that listing the catalog never needs it."""
 
 from __future__ import annotations
 
@@ -33,6 +34,20 @@ def _quote(value: str) -> str:
     return "'" + value.replace("'", "''") + "'"
 
 
+def connect(spill: Path):
+    """A DuckDB connection set up for a reproducible build: one thread (row order and row-group
+    layout are then deterministic), memory capped at MEMORY_LIMIT, spilling to `spill`."""
+    try:
+        import duckdb
+    except ImportError:
+        raise DadosError("building Parquet needs DuckDB: pip install 'anvisa[dados]'") from None
+    con = duckdb.connect()
+    con.execute("SET threads = 1")
+    con.execute(f"SET memory_limit = {_quote(MEMORY_LIMIT)}")
+    con.execute(f"SET temp_directory = {_quote(str(spill))}")
+    return con
+
+
 def typed(ds: Dataset, column: str) -> str:
     """SQL turning the VARCHAR `column` of the normalized CSV into its catalog type."""
     ref = f'"{column}"'
@@ -60,13 +75,9 @@ def select_sql(ds: Dataset) -> str:
 def convert(
     ds: Dataset, csv_path: Path, parquet: Path, *, row_group_size: int = ROW_GROUP_SIZE
 ) -> Stats:
-    try:
-        import duckdb
-    except ImportError:
-        raise DadosError("building Parquet needs DuckDB: pip install 'anvisa[dados]'") from None
-
     clean = Path(csv_path).with_name(Path(csv_path).name + ".utf8.csv")
     spill = Path(csv_path).with_name(".duckdb_tmp")
+    con = connect(spill)  # before the parse, so a missing DuckDB fails fast
     try:
         normalized = normalize(ds, Path(csv_path), clean)
         total = normalized.rows + len(normalized.rejected)
@@ -75,10 +86,7 @@ def convert(
                 f"{ds.file}: {len(normalized.rejected)} of {total} records have the wrong "
                 f"number of fields (first: record {normalized.rejected[0]})"
             )
-        with duckdb.connect() as con:
-            con.execute("SET threads = 1")  # keeps row order and row-group layout deterministic
-            con.execute(f"SET memory_limit = {_quote(MEMORY_LIMIT)}")
-            con.execute(f"SET temp_directory = {_quote(str(spill))}")
+        with con:
             schema = "{" + ", ".join(f"{_quote(c)}: 'VARCHAR'" for c in ds.columns) + "}"
             con.execute(
                 f"CREATE TABLE raw AS SELECT * FROM read_csv({_quote(str(clean))}, delim = ',', "
@@ -115,6 +123,7 @@ def convert(
                 f"(FORMAT parquet, COMPRESSION zstd, ROW_GROUP_SIZE {int(row_group_size)})"
             )
     finally:
+        con.close()  # a no-op after `with con`; needed when the parse failed first
         clean.unlink(missing_ok=True)
         shutil.rmtree(spill, ignore_errors=True)
     return Stats(

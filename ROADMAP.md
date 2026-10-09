@@ -7,8 +7,8 @@ guess.
 ## Status (2026-10-08)
 
 All 32 endpoints the OpenAPI document had until 2026-10-01 are wrapped, and `tests/test_spec.py`
-holds that count against the resolved spec. Six open-data tables are live on GitHub Pages, a
-seventh (cosméticos) is added, and the parser streams, so AFE is unblocked on that side. What
+holds that count against the resolved spec. Seven open-data tables are live on GitHub Pages,
+cosméticos also as search files (2026-10-09), and the parser streams, so AFE is unblocked. What
 is left is verification of claims that come only from ANVISA's examples, robustness
 (retry/backoff), and the 27 endpoints ANVISA added on 2026-10-01.
 
@@ -95,12 +95,12 @@ entry in `anvisa/dados/catalog.py` plus one fixture (see CONTRIBUTING.md):
   1,204,980 rows, 24.2 MB of Parquet; the parser reads it in 31 s at 68 MiB, the whole
   conversion takes 30-40 s and peaks at ~700 MiB with no spill under the new 3 GB
   `memory_limit` (`temp_directory` is `.duckdb_tmp` beside the CSV). Output hash stable across
-  runs. Open: **24 MB is too much for a browser that downloads whole files.** The bytes are in
-  `no_produto` (12.9 MB) and `nu_processo` (7.1 MB), so dropping columns does not help; a split
-  by `ds_tipo_peticao` does (measured: Notificado 10.5 MB, ISENTO DE REGISTRO 11.9 MB, the
-  registered rows plus REGISTRO and DESCARTAVEL 2.0 MB); one by `st_registrado` does not (1.8
-  MB registered, 22.3 MB the rest). A split needs a catalog feature: several Parquet files from
-  one download, each with a filter.
+  runs. 24 MB was too much for a browser that downloads whole files, and no whole-file variant
+  helped (the bytes are in `no_produto` and `nu_processo`; a split by `ds_tipo_peticao` still
+  gave 10.5 + 11.9 + 2.0 MB). **Closed 2026-10-09** with the search files
+  (`anvisa.dados.busca`, `busca=True` on the entry): the rows re-partitioned by word, CNPJ and
+  number into ~3,200 files of 45 to 75 KB, so a search costs one or two downloads. The site is
+  about 275 MB of Pages' 1 GB; "keep the previous build live" below would double the data part.
 - Medicamentos, produtos para saúde, tabaco, cannabis: same folder, not profiled yet.
 - **Keep the previous build live** for a day after a deploy (copy its `data/<id>/` into the new
   artifact), so a browser session open across a deploy never sees a 404. Today it re-reads the

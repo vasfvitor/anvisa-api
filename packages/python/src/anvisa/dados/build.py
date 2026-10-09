@@ -5,6 +5,7 @@ Layout of `out` (what GitHub Pages serves):
     manifest.json                     what the frontend reads first (schema below)
     index.html                        a human-readable listing
     data/<build_id>/<name>.parquet    immutable: a new build gets a new directory
+    data/<build_id>/<name>/           the search files of a dataset with `busca` (busca.py)
 
 Versioned paths make a published file immutable: a browser that fetched the manifest keeps
 reading files that all belong to one build, and caches (Pages, the browser) can never serve a
@@ -17,6 +18,7 @@ from __future__ import annotations
 import hashlib
 import html
 import json
+import posixpath
 import shutil
 import tempfile
 from collections.abc import Callable
@@ -30,6 +32,7 @@ import httpx
 
 from .. import __version__
 from ..errors import DadosError
+from . import busca
 from .catalog import CATALOG, Dataset
 from .convert import ROW_GROUP_SIZE, Stats, convert
 from .fetch import Source, download, fetch_file, http_client
@@ -76,6 +79,18 @@ def _is_url(location: str) -> bool:
     return location.startswith(("http://", "https://"))
 
 
+def _copy_published(http: httpx.Client, location: str, path: str, dest: Path) -> tuple[int, str]:
+    """`path` (relative to the manifest at `location`) into `dest`: its size and SHA-256."""
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if _is_url(location):
+        return fetch_file(http, urljoin(location, path), dest)
+    source = Path(location).parent / path
+    if not source.is_file():
+        raise DadosError(f"published file is missing: {source}")
+    shutil.copyfile(source, dest)
+    return dest.stat().st_size, _sha256(dest)
+
+
 def carry_over(
     http: httpx.Client,
     published: dict[str, Any],
@@ -88,28 +103,56 @@ def carry_over(
     """Published tables not rebuilt this time: copied from the live site (or the local build
     `location` points into) under this build's directory, checked against the published size
     and SHA-256, and listed again under the new path. A deploy replaces the whole site, so a
-    table left out of the manifest would simply disappear."""
+    table left out of the manifest would simply disappear. A table's search files come along
+    the same way: `indice.json` checked against its hash, then every file it lists against its
+    size."""
     tables = {}
     for name in names:
         entry = published["tables"][name]
         if not all(key in entry for key in ("path", "sha256", "bytes")):
             raise DadosError(f"published table {name} lacks path/sha256/bytes; rebuild it")
         dest = out / "data" / bid / f"{name}.parquet"
-        dest.parent.mkdir(parents=True, exist_ok=True)
         log(f"carry over {entry['path']} -> {dest.relative_to(out).as_posix()}")
-        if _is_url(location):
-            size, digest = fetch_file(http, urljoin(location, entry["path"]), dest)
-        else:
-            source = Path(location).parent / entry["path"]
-            if not source.is_file():
-                raise DadosError(f"published table {name} is missing: {source}")
-            shutil.copyfile(source, dest)
-            size, digest = dest.stat().st_size, _sha256(dest)
+        size, digest = _copy_published(http, location, entry["path"], dest)
         if (size, digest) != (entry["bytes"], entry["sha256"]):
             dest.unlink()
             raise DadosError(f"published table {name} does not match its manifest entry")
         tables[name] = {**entry, "path": dest.relative_to(out).as_posix()}
+        if "busca" in entry:
+            folder = out / "data" / bid / name
+            carried = carry_over_busca(http, entry["busca"], location, folder, log)
+            tables[name]["busca"] = busca_entry(carried, folder, out)
     return tables
+
+
+def carry_over_busca(
+    http: httpx.Client,
+    entry: dict[str, Any],
+    location: str,
+    folder: Path,
+    log: Callable[[str], None],
+) -> dict[str, Any]:
+    """The published search files into `folder`; `entry` is the table's `busca` object."""
+    name = folder.name
+    index_path = entry["indice"]
+    dest = folder / "indice.json"
+    size, digest = _copy_published(http, location, index_path, dest)
+    if (size, digest) != (entry["bytes"], entry["sha256"]):
+        dest.unlink()
+        raise DadosError(f"published search index of {name} does not match its manifest entry")
+    files = busca.listed(json.loads(dest.read_text(encoding="utf-8")))
+    log(f"carry over {len(files)} search files of {name}")
+    for relative, expected in files:
+        path = posixpath.join(posixpath.dirname(index_path), relative)
+        size, _ = _copy_published(http, location, path, folder / relative)
+        if size != expected:
+            raise DadosError(f"published search file {name}/{relative} is not {expected} bytes")
+    return entry
+
+
+def busca_entry(info: dict[str, Any], folder: Path, out: Path) -> dict[str, Any]:
+    """The manifest's `busca` object: `info` with `indice` relative to the manifest."""
+    return {**info, "indice": (folder / "indice.json").relative_to(out).as_posix()}
 
 
 def _sha256(path: Path) -> str:
@@ -210,6 +253,12 @@ def build(
                 assert source is not None
                 tables[ds.name] = table_entry(ds, source, stats, parquet, out, groups)
                 log(f"  {stats.rows} rows, {tables[ds.name]['bytes']} bytes")
+                if ds.busca:
+                    folder = out / "data" / bid / ds.name
+                    log(f"search files {parquet.name} -> {folder.relative_to(out)}/")
+                    info = busca.write(ds, parquet, folder)
+                    tables[ds.name]["busca"] = busca_entry(info, folder, out)
+                    log(f"  {info['arquivos']} files, {info['bytes_total']} bytes")
 
             catalog = {ds.name for ds in CATALOG}
             carried = [name for name in known if name not in tables and name in catalog]
@@ -238,12 +287,21 @@ def build(
     return manifest
 
 
+def _search_cell(table: dict[str, Any]) -> str:
+    if "busca" not in table:
+        return ""
+    b = table["busca"]
+    link = f'<a href="{html.escape(b["indice"])}">{b["arquivos"]:,} files</a>'
+    return f"{link}, {b['bytes_total']:,} bytes"
+
+
 def index_html(manifest: dict[str, Any]) -> str:
     e = html.escape
     rows = "\n".join(
         f'<tr><td><a href="{e(t["path"])}">{e(name)}</a></td><td>{e(t["title"])}</td>'
         f"<td>{t['rows']:,}</td><td>{t['bytes']:,}</td><td>{e(t['source']['loaded_at'] or '')}"
-        f'</td><td><a href="{e(t["source"]["url"])}">{e(t["source"]["name"])}</a></td></tr>'
+        f'</td><td><a href="{e(t["source"]["url"])}">{e(t["source"]["name"])}</a></td>'
+        f"<td>{_search_cell(t)}</td></tr>"
         for name, t in manifest["tables"].items()
     )
     first = next(iter(manifest["tables"].values()), {"path": "data/…/alimentos.parquet"})
@@ -262,7 +320,8 @@ from <a href="https://dados.anvisa.gov.br/dados/">dados.anvisa.gov.br</a>.
 Machine-readable index: <a href="manifest.json">manifest.json</a>.
 Timestamps are Brasília local time.</p>
 <table>
-<tr><th>table</th><th>title</th><th>rows</th><th>bytes</th><th>ANVISA load</th><th>source</th></tr>
+<tr><th>table</th><th>title</th><th>rows</th><th>bytes</th><th>ANVISA load</th><th>source</th>
+<th>search files</th></tr>
 {rows}
 </table>
 <p>Query with DuckDB (the path is relative to this page):</p>

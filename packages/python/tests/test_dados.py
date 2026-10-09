@@ -17,7 +17,7 @@ from conftest import headers_only
 from typer.testing import CliRunner
 
 from anvisa import cli
-from anvisa.dados import CATALOG, Unchanged, build, parse, select
+from anvisa.dados import CATALOG, Unchanged, build, busca, parse, select
 from anvisa.dados.catalog import (
     ALIMENTOS,
     ALIMENTOS_RESULTADO,
@@ -737,6 +737,100 @@ def test_parquet_is_sorted_in_small_row_groups(tmp_path):
     assert all(groups[i][2] <= groups[i + 1][1] for i in range(len(groups) - 1))
 
 
+# --- busca: the search files --------------------------------------------------
+
+
+def test_words_matches_the_cases_shared_with_the_site():
+    """fixtures/dados/tokens.json is the contract with anvisa-dash: the two tokenizers must
+    split every case the same way, or searches miss products without any error."""
+    cases = json.loads((DADOS / "tokens.json").read_text(encoding="utf-8"))
+    assert cases["versao"] == busca.VERSION and len(cases["casos"]) == 40
+    assert busca.words(None) == []
+    for case in cases["casos"]:
+        assert busca.words(case["entrada"]) == case["palavras"], case["entrada"]
+
+
+def test_pack_fills_files_to_the_target_and_isolates_big_keys():
+    counts = [("a", 1000), ("b", 2000), ("c", 1), ("d", 5000), ("e", 10)]
+    groups = busca.pack(counts, 3000)
+    assert [(g.first, g.rows, g.keys) for g in groups] == [
+        ("a", 3000, ["a", "b"]),
+        ("c", 1, ["c"]),
+        ("d", 5000, ["d"]),  # above the target: a file of its own
+        ("e", 10, ["e"]),
+    ]
+
+
+@needs_duckdb
+def test_busca_layout_on_the_cosmeticos_fixture(tmp_path):
+    """Every file the index lists exists with that size and nothing else is there; the words
+    are in byte order; every source row is found by each of its words, by its CNPJ, by its
+    processo and by its numeric registro; and the whole thing is deterministic."""
+    import duckdb
+
+    _, parquet = converted(COSMETICOS, tmp_path)
+    info = busca.write(COSMETICOS, parquet, tmp_path / "one", target=20)
+    folder = tmp_path / "one"
+    index = json.loads((folder / "indice.json").read_text(encoding="utf-8"))
+    assert info == {
+        "versao": 1,
+        "indice": "indice.json",
+        "bytes": (folder / "indice.json").stat().st_size,
+        "sha256": hashlib.sha256((folder / "indice.json").read_bytes()).hexdigest(),
+        "arquivos": sum(1 for p in folder.rglob("*") if p.is_file()),
+        "bytes_total": sum(p.stat().st_size for p in folder.rglob("*") if p.is_file()),
+    }
+    listed = dict(busca.listed(index))
+    assert {p.relative_to(folder).as_posix() for p in folder.rglob("*.parquet")} == set(listed)
+    assert all((folder / name).stat().st_size == size for name, size in listed.items())
+    firsts = [e[0] for e in index["palavras"]]
+    assert firsts == sorted(firsts) and len(index["palavras"]) > 1  # target=20 forces a split
+    assert all(len(e[0]) == 14 for e in index["empresas"])
+    assert set(index["numeros"]) == {k for k in index["numeros"] if len(k) == 3 and k.isdigit()}
+
+    con = duckdb.connect()
+    rows = con.execute(
+        "SELECT nu_processo, st_registrado, no_produto, nu_cnpj_empresa, nu_registro "
+        f"FROM '{parquet}'"
+    ).fetchall()
+    assert len(rows) == 34
+
+    def read(name, where, value):
+        return {
+            tuple(r)
+            for r in con.execute(
+                f"SELECT nu_processo, st_registrado FROM '{folder / name}' WHERE {where} = ?",
+                [value],
+            ).fetchall()
+        }
+
+    def covering(entries, key):
+        return [e for e in entries if e[0] <= key][-1][2]
+
+    for processo, registered, name, cnpj, registro in rows:
+        key = (processo, registered)
+        for word in busca.words(name):
+            assert key in read(covering(index["palavras"], word), "palavra", word), (name, word)
+        assert key in read(covering(index["empresas"], cnpj), "nu_cnpj_empresa", cnpj)
+        assert key in read(f"numeros/{processo[-3:]}.parquet", "num", processo)
+        if registro and registro.isdigit():
+            assert key in read(f"numeros/{registro[-3:]}.parquet", "num", registro)
+    # a word file's rows are (word, source row) pairs with the row columns, in word order
+    described = con.execute(f"DESCRIBE SELECT * FROM '{folder}/palavras/0000.parquet'").fetchall()
+    assert [c for c, *_ in described] == ["palavra", *busca.ROW_COLUMNS]
+    companies = con.execute(f"SELECT * FROM '{folder}/empresas.parquet'").fetchall()
+    assert len(companies) == len({cnpj for *_, cnpj, _ in rows})
+    assert "\x17\x10\x16\x18VITORIA FACE COMERCIO DE COSMETICOS LTDA" in {n for _, n in companies}
+
+    busca.write(COSMETICOS, parquet, tmp_path / "two", target=20)
+    assert folder_files(folder / "indice.json") == folder_files(tmp_path / "two" / "indice.json")
+
+
+def test_busca_needs_the_row_columns(tmp_path):
+    with pytest.raises(DadosError, match="busca needs the columns"):
+        busca.write(SANEANTES, tmp_path / "x.parquet", tmp_path / "out")
+
+
 # --- build --------------------------------------------------------------------
 
 
@@ -779,6 +873,15 @@ def test_build_end_to_end(fake_dados, tmp_path):
     petitions = manifest["tables"]["peticoes_alimento"]
     assert petitions["source"]["loaded_at"] is None  # the petition files carry no load time
     assert petitions["source"]["url"] == PETICOES_ALIMENTO.url
+    # the one dataset with `busca` carries its search files; the others have no such key
+    assert [n for n, t in manifest["tables"].items() if "busca" in t] == ["cosmeticos"]
+    search = manifest["tables"]["cosmeticos"]["busca"]
+    assert search["indice"] == "data/20261006T210312Z/cosmeticos/indice.json"
+    index = out / search["indice"]
+    assert index.stat().st_size == search["bytes"]
+    assert hashlib.sha256(index.read_bytes()).hexdigest() == search["sha256"]
+    assert search["versao"] == 1 and search["arquivos"] == len(folder_files(index))
+    assert f"{search['arquivos']:,} files" in page and search["indice"] in page
 
 
 def published(fake_dados, tmp_path, commit="abc123") -> dict:
@@ -885,10 +988,25 @@ def test_partial_build_carries_published_tables(fake_dados, tmp_path, where):
         new = result["tables"][name]
         assert new["path"] == f"data/{result['build_id']}/{name}.parquet"
         assert (out / new["path"]).read_bytes() == (tmp_path / "first" / old["path"]).read_bytes()
-        assert {k: v for k, v in new.items() if k != "path"} == {
-            k: v for k, v in old.items() if k != "path"
+        moved = {"path", "busca"}
+        assert {k: v for k, v in new.items() if k not in moved} == {
+            k: v for k, v in old.items() if k not in moved
         }
     assert not list(out.rglob("*.part"))
+    # the search files came along too, file for file, and only their index path changed
+    old, new = first["tables"]["cosmeticos"]["busca"], result["tables"]["cosmeticos"]["busca"]
+    assert new["indice"] == f"data/{result['build_id']}/cosmeticos/indice.json"
+    assert {k: v for k, v in new.items() if k != "indice"} == {
+        k: v for k, v in old.items() if k != "indice"
+    }
+    assert folder_files(out / new["indice"]) == folder_files(tmp_path / "first" / old["indice"])
+
+
+def folder_files(index: Path) -> dict[str, bytes]:
+    """Every file in the search folder `index` sits in, by relative path."""
+    folder = index.parent
+    files = sorted(p for p in folder.rglob("*") if p.is_file())
+    return {p.relative_to(folder).as_posix(): p.read_bytes() for p in files}
 
 
 @needs_duckdb
@@ -904,6 +1022,21 @@ def test_carry_over_rejects_a_changed_parquet(fake_dados, tmp_path):
             commit="other",  # not the published one, so the all-304 path does not short-circuit
         )
     assert not list((tmp_path / "second").rglob("saneantes.parquet*"))
+
+
+@needs_duckdb
+def test_carry_over_rejects_a_changed_search_index(fake_dados, tmp_path):
+    published(fake_dados, tmp_path)
+    fake_dados.manifest["tables"]["cosmeticos"]["busca"]["sha256"] = "0" * 64
+    with fake_dados.client() as http, pytest.raises(DadosError, match="search index of cosmeticos"):
+        build(
+            tmp_path / "second",
+            http=http,
+            datasets=(ALIMENTOS,),
+            skip_unchanged=FakeDados.MANIFEST_URL,
+            commit="other",
+        )
+    assert not [p for p in (tmp_path / "second").rglob("cosmeticos/*") if p.is_file()]
 
 
 @needs_duckdb
