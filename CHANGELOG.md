@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- `Download.save("exports/")` and `udi.download_snapshot(..., "exports/")` created a *file*
+  named `exports` when the directory did not exist yet (`Path` drops the trailing slash before
+  `is_dir()` is asked). `download.target_path` now treats a trailing separator as a directory,
+  as the docstring and README always said. Found in a code review.
+- One request path in `Client` (`_send`: throttle, send, learn the bucket, raise) instead of
+  three copies, and one stream-to-disk helper (`download.write_stream`: `.part` file, SHA-256 on
+  the way, rename when complete) shared by `udi.download_snapshot` and the open-data downloads;
+  the snapshot used to leave a partial file behind on failure. `Client.stream_to` is gone
+  (use `get_stream`), `Client.post` takes any JSON body.
 - `parse.normalize` streams the source in 4 MiB chunks (`parse.stream`) instead of decoding
   the whole file: a record that does not end inside a chunk is parsed again with the next one,
   and the end-of-text rule applies only to the last chunk, so a chunk boundary cannot change a

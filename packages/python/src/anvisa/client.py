@@ -11,12 +11,13 @@ import httpx
 
 from . import __version__, models
 from .auth import Credentials, TokenAuth
-from .download import Download, filename_from
+from .download import Download, filename_from, target_path, write_stream
 from .errors import InvalidPageError, MissingFilterError, NotFoundError, raise_for_response
 from .throttle import Throttle
 
 BASE_URL = "https://api-gateway.prd.apps.anvisa.gov.br/consultas-externas-api"
 USER_AGENT = f"anvisa-python/{__version__} (+https://github.com/vasfvitor/anvisa-api)"
+ANY = "*/*"  # the Accept the download endpoints need
 
 
 class Client:
@@ -65,69 +66,61 @@ class Client:
         self.close()
 
     def get(self, path: str) -> Any:
-        return self._send(self._http.build_request("GET", path))
+        return self._send(self._http.build_request("GET", path)).json()
 
-    def post(self, path: str, body: dict[str, Any]) -> Any:
-        return self._send(self._http.build_request("POST", path, json=body))
-
-    def _send(self, request: httpx.Request) -> Any:
-        self.throttle.before()
-        response = self._http.send(request)
-        self.throttle.after(response.headers)
-        raise_for_response(response)
-        return response.json()
+    def post(self, path: str, body: Any) -> Any:
+        """`body` is whatever the endpoint wants: usually a dict, a bare int for
+        downloadAssuntoFormulario."""
+        return self._send(self._http.build_request("POST", path, json=body)).json()
 
     def get_bytes(self, path: str) -> Download:
-        return self._send_bytes(self._http.build_request("GET", path))
+        return self._download(self._http.build_request("GET", path))
 
     def post_bytes(self, path: str, body: Any) -> Download:
-        """`body` is whatever the endpoint wants; downloadAssuntoFormulario wants a bare int."""
-        return self._send_bytes(self._http.build_request("POST", path, json=body))
+        return self._download(self._http.build_request("POST", path, json=body))
 
     def get_stream(self, path: str, target: str | Path, default_name: str) -> Path:
-        return self.stream_to(self._http.build_request("GET", path), target, default_name)
+        """GET `path` straight to disk and return the file written: for responses too big to
+        buffer (the UDI snapshot zip arrives chunked, with no `Content-Length`). A directory
+        `target` is filled in from `Content-Disposition`, or `default_name`."""
+        response = self._send(self._http.build_request("GET", path), accept=ANY, stream=True)
+        try:
+            name = filename_from(response.headers.get("content-disposition"))
+            dest = target_path(target, name, default_name)
+            write_stream(response.iter_bytes(), dest)
+        finally:
+            response.close()
+        return dest
 
-    def _send_bytes(self, request: httpx.Request) -> Download:
-        """Like `_send`, but keeps the body as bytes and asks for `Accept: */*`.
-
-        Every download endpoint but `GET /udi/{id}/download` answers HTTP 500 "Could not find
-        acceptable representation" to the `Accept: application/json` this client sends by
-        default (fixture `err_not_acceptable`)."""
-        request.headers["Accept"] = "*/*"
+    def _send(
+        self, request: httpx.Request, *, accept: str | None = None, stream: bool = False
+    ) -> httpx.Response:
+        """The one path every request takes: throttle, send, learn the bucket state from the
+        response headers, turn an error status into the matching exception."""
+        if accept:
+            request.headers["Accept"] = accept
         self.throttle.before()
-        response = self._http.send(request)
-        self.throttle.after(response.headers)
-        raise_for_response(response)
+        response = self._http.send(request, stream=stream)
+        try:
+            self.throttle.after(response.headers)
+            if stream and not response.is_success:
+                response.read()  # the error envelope, for the message
+            raise_for_response(response)
+        except BaseException:
+            response.close()
+            raise
+        return response
+
+    def _download(self, request: httpx.Request) -> Download:
+        """Every download endpoint but `GET /udi/{id}/download` answers HTTP 500 "Could not
+        find acceptable representation" to the `Accept: application/json` this client sends
+        by default (fixture `err_not_acceptable`), hence `Accept: */*`."""
+        response = self._send(request, accept=ANY)
         return Download(
             response.content,
             filename_from(response.headers.get("content-disposition")),
             response.headers.get("content-type"),
         )
-
-    def stream_to(self, request: httpx.Request, path: str | Path, default_name: str) -> Path:
-        """Send `request` and write the body straight to disk, returning the file written.
-
-        For responses too big to buffer: the UDI snapshot zip arrives chunked, with no
-        `Content-Length`. A directory `path` is filled in from `Content-Disposition`."""
-        request.headers["Accept"] = "*/*"
-        self.throttle.before()
-        response = self._http.send(request, stream=True)
-        try:
-            self.throttle.after(response.headers)
-            if not response.is_success:
-                response.read()
-                raise_for_response(response)
-            target = Path(path)
-            if target.is_dir():
-                name = filename_from(response.headers.get("content-disposition"))
-                target = target / (name or default_name)
-            target.parent.mkdir(parents=True, exist_ok=True)
-            with target.open("wb") as out:
-                for chunk in response.iter_bytes():
-                    out.write(chunk)
-        finally:
-            response.close()
-        return target
 
 
 def page_body(

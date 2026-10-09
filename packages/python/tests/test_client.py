@@ -273,9 +273,13 @@ def test_download_snapshot_streams_to_disk(tmp_path):
         throttle=Throttle(sleep=lambda s: None),
     ) as c:
         path = c.udi.download_snapshot(173, tmp_path)
+        # a directory that does not exist yet, written with a trailing slash, is still one
+        nested = c.udi.download_snapshot(173, f"{tmp_path}/exports/")
     assert path.name == "BR_UDIDI_semanal_atualizacao_20260831_20260906.zip"
     assert path.read_bytes() == zip_bytes
     assert path.parent == tmp_path
+    assert nested == tmp_path / "exports" / path.name and nested.read_bytes() == zip_bytes
+    assert not list(tmp_path.rglob("*.part"))  # written through a .part file, then renamed
 
 
 def test_download_save_and_filename_parsing(tmp_path):
@@ -287,6 +291,9 @@ def test_download_save_and_filename_parsing(tmp_path):
     assert named.save(tmp_path).name == "server.xlsx"
     assert named.save(tmp_path / "mine.xlsx").read_bytes() == b"x"
     assert Download(b"x").save(tmp_path, "fallback.bin").name == "fallback.bin"
+    # README's `save("exports/")`: a new directory, not a file called `exports`
+    assert named.save(f"{tmp_path}/exports/") == tmp_path / "exports" / "server.xlsx"
+    assert named.save(tmp_path / "deeper" / "new").name == "new"  # no slash: a file name
 
 
 def test_iterate_pages_stops_on_empty_content():
