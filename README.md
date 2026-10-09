@@ -128,9 +128,9 @@ The Consultas Externas API has no food products. ANVISA publishes them as bulk C
 weekdays, with no CORS headers, so a browser cannot read them; the analysis cycle of every
 alimentos petição sits at the root of the [same server](https://dados.anvisa.gov.br/dados/), and
 the measures behind the portal's "Consulta de produtos irregulares", for every area, in
-`CONSULTAS/EMPRESA_FISCALIZACAO_PRODUTO/`. A daily workflow here
-(`.github/workflows/dados.yml`) converts them to typed, sorted Parquet and publishes them on
-GitHub Pages, at <https://vasfvitor.github.io/anvisa-api/>. Row counts below are from the
+`CONSULTAS/EMPRESA_FISCALIZACAO_PRODUTO/`; cosméticos and saneantes sit beside alimentos. A
+daily workflow here (`.github/workflows/dados.yml`) converts them to typed, sorted Parquet and
+publishes them on GitHub Pages, at <https://vasfvitor.github.io/anvisa-api/>. Row counts below are from the
 day the table was added; the live `manifest.json` has today's:
 
 | Table | Source | Rows (file of) | One row per |
@@ -141,6 +141,7 @@ day the table was added; the live `manifest.json` has today's:
 | `peticoes_alimento` | `CICLO_ANALISE_PETICOES_ALIMENTO.CSV` | 69,188 (10-06) | stage (fila, análise, exigência, finalização…) of an alimentos petição finalized at least once: 20,518 petições since 1998, sorted by `num_processo_peticao`, `num_expediente_peticao`, `ordem_ocorre_grupo_etapa_asc` |
 | `peticoes_alimento_andamento` | `CICLO_ANALISE_PETICOES_ANDAMENTO_ALIMENTO.CSV` | 1,205 (10-06) | stage of a petição **never finalized**, what is in análise today (336 petições); same columns minus the two finalization dates, same sort |
 | `produtos_irregulares` | `TA_CONSULTA_PRODUTOS_IRREGULARES_RESULTADO.CSV` | 79,986 (10-05) | product × ação (suspensão, proibição, recolhimento, apreensão, interdição, inutilização) × atividade of a fiscalização dossiê, every area (Alimento: 8,743 rows, 722 dossiês); sorted by `co_tipo_produto` (6 = Alimento), `nu_cnpj_empresa_investigada`, `co_seq_dossie_investig_med` |
+| `cosmeticos` | `TA_CONSULTA_COSMETICOS.CSV` | 1,204,980 (10-07) | notified, exempt (`ISENTO DE REGISTRO`) or registered cosmetic, one row per processo except 11,144 processos listed twice (`st_registrado` false, then true, same `nu_registro`); sorted by `nu_cnpj_empresa`, `nu_processo`, `st_registrado`. **24 MB** of Parquet, far above the others. No detail file. |
 
 Column names are ANVISA's, lowercased, so the
 [data dictionary](https://dados.anvisa.gov.br/dados/CONSULTAS/PRODUTOS/Documentacao_e_Dicionario_de_Dados_Regularizados_Alimentos.pdf)
@@ -152,10 +153,10 @@ What the files don't tell you (verified on the 2026-10-05 files):
 |---|---|
 | Encoding | **Windows-1252**, not Latin-1: `–` `’` `“ ”` `™` are bytes 0x96, 0x92, 0x93/0x94, 0x99. |
 | Quoting | `;`-separated, text in `"..."`, but quotes **inside** a value are not escaped (`biscoito tipo "cookies"`; a value ending in `"` is written `...brilhante. ""`), and values contain LF and CRLF. DuckDB's strict reader refuses the file, its lenient one merges records, Python's `csv` splits two. A quote closes a field only before `;` or a line break, and (saneantes: `AMBIENTE "AS MENINAS"` + CRLF CRLF + `SPRAY` inside one name) a line break can only close the record's last field; read that way, every record of every file has the header's field count. |
-| Dates | `dd/mm/yyyy HH:MM:SS` in the alimentos files and in `peticoes_alimento_andamento`, **`mm/dd/yyyy HH:MM:SS`** in saneantes (`06/21/2031`), `peticoes_alimento` and `produtos_irregulares`. One order per dataset in the catalog, never both: given both, `12/08/2026` would quietly parse as whichever comes first. With one, the wrong order leaves every date with a day above 12 unparsed (65% of them in the open file) and the 20% null guard fails the build. Saneantes expiries run to the year 3033. |
-| Booleans | `S`/`N` in alimentos (`ST_PRODUTO_ATIVO`, plus one `X`), `1`/`0` in saneantes (`IS_REGISTRADO`). |
+| Dates | `dd/mm/yyyy HH:MM:SS` in the alimentos files, `peticoes_alimento_andamento` and cosméticos (`29/09/2005`), **`mm/dd/yyyy HH:MM:SS`** in saneantes (`06/21/2031`), `peticoes_alimento` and `produtos_irregulares`. One order per dataset in the catalog, never both: given both, `12/08/2026` would quietly parse as whichever comes first. With one, the wrong order leaves every date with a day above 12 unparsed (65% of them in the open file) and the 20% null guard fails the build. Saneantes expiries run to the year 3033. |
+| Booleans | `S`/`N` in alimentos (`ST_PRODUTO_ATIVO`, plus one `X`), `1`/`0` in saneantes (`IS_REGISTRADO`); cosméticos has one of each (`ST_SITUACAO_PRODUTO`, `ST_REGISTRADO`). |
 | `DT_VENCIMENTO_REGISTRO` | Month and year, **`MMYYYY`** (`122029`), three rows `MM/YYYY`. Published as a DATE on the first of the month. Every notificação carries `122029`, a placeholder; registros expire 5, 10, 15 or 20 years after `DT_REGULARIZACAO`. |
-| Text | `MARCAS` and `NO_PRODUTO` carry HTML entities (`L&apos;ANA MED`, `&quot;`, `&#8208;`), as do the irregular products' `PRODUTO`, `PRODUTOS_CONCATENADOS` and `NO_EMPRESA_INVESTIGADA`; decoded on the way. Some values end in `\xa0\r\n`; every value is stripped. `ST_PRODUTO_ATIVO` is `S`/`N` plus one `X` (NULL in the BOOLEAN). |
+| Text | `MARCAS` and `NO_PRODUTO` carry HTML entities (`L&apos;ANA MED`, `&quot;`, `&#8208;`), as do the irregular products' `PRODUTO`, `PRODUTOS_CONCATENADOS` and `NO_EMPRESA_INVESTIGADA`, and cosméticos' `NO_PRODUTO` (`&AMP;` in capitals, `&#9679;`; `&KISS;` is no entity and stays); decoded on the way. Some values end in `\xa0\r\n`; every value is stripped. `ST_PRODUTO_ATIVO` is `S`/`N` plus one `X` (NULL in the BOOLEAN). |
 | Server | ETag and Last-Modified on every file; `If-None-Match` answers **304**, so an unchanged day costs one empty response per file. TLS verifies with certifi. |
 | `NU_PROCESSO` | Digits only, but **not** a fixed length: 17 on 36,496 rows (all but 90 of the active ones), 13 on 29,647 old ones, **14 on 400** (the length of a CNPJ), a few shorter. Strip punctuation from user input and compare as text. |
 | Registration numbers | `NU_REGISTRO_PRODUTO` always equals `NU_REGISTRO_NOTIFICACAO_PRODUTO` when present. For notificações the latter equals `NU_PROCESSO`; for registros it is the 9-digit registro. `NU_REGISTRO` is per apresentação: registro + 4-digit suffix (13 digits, like an old processo). |
@@ -163,6 +164,7 @@ What the files don't tell you (verified on the 2026-10-05 files):
 | Detail coverage | 94 apresentações have no `alimentos_resultado` row, all active, regularized 2025-06 to 2026-10: ANVISA's detail export lags new notificações. |
 | Petition files | The two are **disjoint** (no expediente in both): finalized at least once, or never. The finalized file's header starts with `#` (`#NUM_EXPEDIENTE_PETICAO`), dropped on read. **Neither names the company**: join `num_processo_peticao` to `alimentos.nu_processo`, which finds 72% of the finalized file's processos, 163 of the 172 open petições of type Petição, and **none** of the 164 open of type Processo (new registration and evaluation requests: the product does not exist yet). Every open petição also has one `Todos` row (`ordem_ocorre_grupo_etapa_asc` = 0, no end date, starting the day its first stage did): leave it out when adding up stage durations. One assunto ends in `&#8203,`, an entity whose `;` the export turned into `,`; kept as written, and `cod_assunto_peticao` maps one to one to the text. |
 | Irregular products | **`nu_cnpj` is who filed the dossiê, not the company acted against**: ANVISA itself (`03112386000111`) on 1,698 of 4,916 dossiês, a marketplace on some, the company itself on others (4,636 of the 8,743 Alimento rows carry the same CNPJ in both columns). The company is `nu_cnpj_empresa_investigada`, which is not always a CNPJ: 14 digits on 35,029 rows, a CPF's 11 on 2,334, text on most of the rest (`DESCONHECIDO`, `Desconhecido`, `Não se aplica`, `NA`…), empty on 31,658. Only 1,667 of the 8,693 Alimento rows that name one join `alimentos.nu_cnpj_empresa`, and only 8 of 1,580 product names match a regularized one: most food measures target products and companies with no registration. `registro` is empty on every Alimento row; `produtos_concatenados` is cut at 4,000 characters (use `produto`); 38 rows equal another once a trailing space is stripped (`HARVONI` / `HARVONI `); `dt_publicacao_medida` is the dossiê's latest `dt_publicacao`. |
+| Cosméticos | Verified on the 2026-10-07 file. 11,144 processos are listed twice, with the same CNPJ and `nu_registro`: once with `st_registrado` false and `ds_tipo_peticao` `ISENTO DE REGISTRO` (8,936), `REGISTRO` (2,207) or `DESCARTAVEL` (1), once with true; `ds_tipo_peticao` is empty on exactly the registered rows. Upstream the two sit up to a million records apart; the sort puts them together. Count products with `DISTINCT nu_processo`. `nu_registro` holds one literal `null`. Kept as written: 260 razões sociais that begin with control characters (`\x17\x10\x16\x18VITORIA FACE...`) and 11 names that were UTF-8 read as Windows-1252 before ANVISA exported them (`LOÃ‡ÃƒO`). |
 | Completeness | ANVISA's own panel (`consultas.anvisa.gov.br/#/alimentos/`) shows nothing `alimentos` and `alimentos_resultado` lack: product page and apresentação page compared by hand on 2026-10-06. The other tables were not compared against anything. |
 
 `manifest.json` is the entry point (`schema_version` 1): for each table, its `path` (relative
@@ -179,7 +181,7 @@ For a frontend on DuckDB-WASM (what the first one, `anvisa-dash`, learned on 202
   `path` against the manifest URL. A 404 on a data path means a deploy happened mid-session:
   re-read the manifest.
 - **Download whole files; do not rely on HTTP Range on GitHub Pages.** The files are kept at a
-  few MB each on purpose (`bytes` in the manifest). Range reads worked in Chrome but: Pages answers `HEAD` + `Range`
+  few MB each on purpose (`bytes` in the manifest); `cosmeticos`, at 24 MB, is the exception. Range reads worked in Chrome but: Pages answers `HEAD` + `Range`
   with 200, which breaks duckdb-wasm's `reliableHeadRequests`; Firefox's synchronous XHR with
   `Range` fails with a NetworkError; full responses are gzip-encoded and ranged ones are not; and
   in Chrome a ranged `fetch` **poisons the cache**, so the next plain `fetch` of the same URL
@@ -228,9 +230,9 @@ anvisa dados build --out dist2 --skip-unchanged dist/manifest.json   # 304s → 
 
 Covered: the 32 endpoints the spec had before 2026-10-01, as the `fila`, `lista`, `udi`,
 `nome_tecnico`, and `assunto` domains. That includes the eight file downloads and
-`servicosAssociados`, wrapped on 2026-09-08. From the open data (`anvisa.dados`), six tables:
+`servicosAssociados`, wrapped on 2026-09-08. From the open data (`anvisa.dados`), seven tables:
 `alimentos`, `alimentos_resultado`, `saneantes`, `peticoes_alimento`,
-`peticoes_alimento_andamento` and `produtos_irregulares`. Not yet covered: the 27 endpoints ANVISA added on 2026-10-01 (`saude`,
+`peticoes_alimento_andamento`, `produtos_irregulares` and `cosmeticos`. Not yet covered: the 27 endpoints ANVISA added on 2026-10-01 (`saude`,
 `certificado`, `certificadoMedicamento`, `tabaco`), recorded in `spec/` by the `drift` workflow
 and listed in [ROADMAP.md](ROADMAP.md). The SNGPC, SAMMED and SNCR APIs (separate services) are
 out of scope.

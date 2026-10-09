@@ -21,6 +21,7 @@ from anvisa.dados import CATALOG, Unchanged, build, parse, select
 from anvisa.dados.catalog import (
     ALIMENTOS,
     ALIMENTOS_RESULTADO,
+    COSMETICOS,
     PETICOES_ALIMENTO,
     PETICOES_ALIMENTO_ANDAMENTO,
     PRODUTOS_IRREGULARES,
@@ -47,6 +48,7 @@ SAMPLES = {
     PETICOES_ALIMENTO.name: "peticoes_alimento_head.csv",
     PETICOES_ALIMENTO_ANDAMENTO.name: "peticoes_alimento_andamento_head.csv",
     PRODUTOS_IRREGULARES.name: "produtos_irregulares_head.csv",
+    COSMETICOS.name: "cosmeticos_head.csv",
 }
 HEADERS = {
     ALIMENTOS.name: "headers_alimentos.txt",
@@ -55,6 +57,7 @@ HEADERS = {
     PETICOES_ALIMENTO.name: "headers_peticoes_alimento.txt",
     PETICOES_ALIMENTO_ANDAMENTO.name: "headers_peticoes_alimento_andamento.txt",
     PRODUTOS_IRREGULARES.name: "headers_produtos_irregulares.txt",
+    COSMETICOS.name: "headers_cosmeticos.txt",
 }
 NOW = datetime(2026, 10, 6, 21, 3, 12, tzinfo=timezone.utc)
 needs_duckdb = pytest.mark.skipif(
@@ -153,7 +156,8 @@ def test_catalog_is_consistent():
         "https://dados.anvisa.gov.br/dados/CICLO_ANALISE_PETICOES_ALIMENTO.CSV"
     )
     with pytest.raises(DadosError, match="unknown dataset"):
-        select(["cosmeticos"])
+        select(["medicamentos"])
+    assert select(["cosmeticos"]) == (COSMETICOS,)
 
 
 def test_fixture_header_matches_catalog():
@@ -619,6 +623,73 @@ def test_convert_produtos_irregulares(tmp_path):
     # `HARVONI` and `HARVONI `: two records upstream, one value once stripped
     harvoni = rows(f"SELECT count(*), count(DISTINCT produto) FROM {t} WHERE produto = 'HARVONI'")
     assert harvoni == [(2, 1)]
+
+
+@needs_duckdb
+def test_convert_cosmeticos(tmp_path):
+    """Day-first dates (unlike saneantes), S/N and 0/1 booleans, `&AMP;` in capitals decoded and
+    `&KISS;` kept, control characters kept, and a processo listed twice (notified, registered)."""
+    import duckdb
+
+    from anvisa.dados.convert import convert
+
+    csv = tmp_path / COSMETICOS.file
+    csv.write_bytes(sample(COSMETICOS).read_bytes())
+    stats = convert(COSMETICOS, csv, tmp_path / "c.parquet")
+    assert stats.rows == 34 and stats.rejected == ()
+    assert stats.loaded_at == "2026-10-06T00:00:00"
+    assert all(v == 0 for v in stats.nulls_added.values())
+    assert not (tmp_path / ".duckdb_tmp").exists()
+    con = duckdb.connect()
+
+    def rows(sql):
+        return con.execute(sql.format(t=f"'{tmp_path}/c.parquet'")).fetchall()
+
+    def expiry(processo):
+        return rows(f"SELECT dt_vencimento FROM {{t}} WHERE nu_processo = '{processo}'")[0][0]
+
+    assert expiry("250000479529921") == datetime(2005, 9, 29)  # 29/09/2005
+    assert expiry("250000480459991") == datetime(2005, 9, 6)  # 06/09/2005: day first
+    assert expiry("25351000105202657") == datetime(2036, 1, 1, 9, 3, 40)
+    assert expiry("250000000259470") == datetime(1999, 12, 7)
+    keys = rows("SELECT nu_cnpj_empresa, nu_processo, st_registrado FROM {t}")
+    assert keys == sorted(keys) and len(set(keys)) == len(keys)
+    # listed twice upstream: notified (or exempt) first, registered second, same registro
+    pair = rows(
+        "SELECT nu_cnpj_empresa, st_registrado, ds_tipo_peticao, nu_registro, dt_vencimento, "
+        "st_situacao_produto FROM {t} WHERE nu_processo = '250000018199711'"
+    )
+    assert pair == [
+        ("00317372000146", False, "ISENTO DE REGISTRO", "222620013", None, False),
+        ("00317372000146", True, None, "222620013", datetime(2027, 6, 27), False),
+    ]
+    names = {n for (n,) in rows("SELECT no_produto FROM {t}")}
+    assert "CREME PARA AS MAOS M&N COSMETICA" in names  # M&AMP;N
+    assert "REESTRUTURADOR MIX OIL CUPUAÇU●TUTANO● KARITÊ TOGÊ" in names  # &#9679;
+    assert "\tMASK CONCEPTION CUPUAÇU" in names  # &#61656; then a tab, kept
+    assert any(n.endswith("PEACH&KISS;BLUE WATER") for n in names)  # no such entity
+    assert any(n.endswith("UVA M&N COSMETICOS") for n in names)  # bare `&`, untouched
+    assert 'NUTRITIVO OCEANIDE "O"' in names  # written `"NUTRITIVO OCEANIDE "O""`
+    assert "PROTETOR PRE RELAXAMENTO LEFIF AFRO LINE" in names  # leading space stripped
+    assert "SABONETE DE AROEIRA \x81‰ \x81Š - BIO SEIVA" in names  # undefined bytes passed
+    companies = {n for (n,) in rows("SELECT no_razao_social_empresa FROM {t}")}
+    assert "\x17\x10\x16\x18VITORIA FACE COMERCIO DE COSMETICOS LTDA" in companies
+    assert "HENLAU QUIMICA LTDA" in companies  # trailing space stripped
+    assert rows("SELECT nu_registro FROM {t} WHERE nu_processo = '25351014236200325'") == [
+        ("null",)  # as ANVISA wrote it
+    ]
+    kinds = rows("SELECT ds_tipo_peticao, bool_and(NOT st_registrado) FROM {t} GROUP BY 1")
+    assert dict(kinds) == {
+        "Notificado": True,
+        "ISENTO DE REGISTRO": True,
+        "REGISTRO": True,
+        "DESCARTAVEL": True,
+        None: False,
+    }
+    # month first, as saneantes, leaves every expiry with a day above 12 unparsed
+    wrong = dataclasses.replace(COSMETICOS, timestamp_formats=SANEANTES.timestamp_formats)
+    with pytest.raises(DadosError, match="did ANVISA change the format"):
+        convert(wrong, csv, tmp_path / "x.parquet")
 
 
 @needs_duckdb

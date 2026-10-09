@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -15,6 +16,9 @@ from .parse import normalize
 ROW_GROUP_SIZE = 8192
 NULL_LIMIT = 0.2  # a typed column losing more of its values than this fails the build
 REJECT_LIMIT = 0.001  # so does skipping more than this share of malformed records
+# DuckDB's cap, below the 7 GB of a GitHub runner (its default is 80% of RAM). Past it the
+# load and the sort spill to `.duckdb_tmp` beside the CSV instead of failing.
+MEMORY_LIMIT = "3GB"
 
 
 @dataclass(frozen=True)
@@ -62,6 +66,7 @@ def convert(
         raise DadosError("building Parquet needs DuckDB: pip install 'anvisa[dados]'") from None
 
     clean = Path(csv_path).with_name(Path(csv_path).name + ".utf8.csv")
+    spill = Path(csv_path).with_name(".duckdb_tmp")
     try:
         normalized = normalize(ds, Path(csv_path), clean)
         total = normalized.rows + len(normalized.rejected)
@@ -72,6 +77,8 @@ def convert(
             )
         with duckdb.connect() as con:
             con.execute("SET threads = 1")  # keeps row order and row-group layout deterministic
+            con.execute(f"SET memory_limit = {_quote(MEMORY_LIMIT)}")
+            con.execute(f"SET temp_directory = {_quote(str(spill))}")
             schema = "{" + ", ".join(f"{_quote(c)}: 'VARCHAR'" for c in ds.columns) + "}"
             con.execute(
                 f"CREATE TABLE raw AS SELECT * FROM read_csv({_quote(str(clean))}, delim = ',', "
@@ -109,6 +116,7 @@ def convert(
             )
     finally:
         clean.unlink(missing_ok=True)
+        shutil.rmtree(spill, ignore_errors=True)
     return Stats(
         rows=rows,
         rejected=normalized.rejected,

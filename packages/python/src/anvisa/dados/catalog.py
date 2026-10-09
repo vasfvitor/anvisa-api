@@ -273,6 +273,52 @@ PRODUTOS_IRREGULARES = Dataset(
     unescape=frozenset({"PRODUTO", "PRODUTOS_CONCATENADOS", "NO_EMPRESA_INVESTIGADA"}),
 )
 
+COSMETICOS = Dataset(
+    name="cosmeticos",
+    group="cosmeticos",
+    file="TA_CONSULTA_COSMETICOS.CSV",
+    title="Cosméticos: registros e notificações",
+    # Profiled 2026-10-08 on the 2026-10-07 file (228,157,510 bytes): Windows-1252 (0x96 21,282
+    # times, 0x92 5,590), LF only, 1,204,980 records, all 10 fields wide, no line break inside
+    # any value. One row per processo, except 11,144 processos listed twice with the same CNPJ
+    # and registro: once with ST_REGISTRADO 0 (ISENTO DE REGISTRO 8,936, REGISTRO 2,207,
+    # DESCARTAVEL 1) and once with 1. The 1 rows come after record 1,089,484, so a pair sits
+    # up to a million records apart, and a company's rows are scattered (1,133,012 runs for
+    # 5,246 CNPJs).
+    columns={
+        # digits only: 17 on 1,126,326 rows, 15 on 69,822, 13 on 8,826, 14 on 6
+        "NU_PROCESSO": "VARCHAR",
+        # 737 with inner quotes, 52,698 with surrounding spaces (stripped); 193 entities, 157
+        # of them `&AMP;` in capitals, then &#9679;, &#61656; (private use), &#8207;...; `&KISS;`
+        # is no entity and stays. 11 are UTF-8 read as cp1252 upstream (LOÃ‡ÃƒO), two with
+        # the bytes cp1252 leaves undefined (0x81, 0x8D): kept as written
+        "NO_PRODUTO": "VARCHAR",
+        "NU_CNPJ_EMPRESA": "VARCHAR",  # always 14 digits; one razão social per CNPJ
+        # 10,295 with surrounding whitespace (stripped); 260 begin with the control characters
+        # \x17\x10\x16\x18 (VITORIA FACE...), kept; `&G `, `&CO.` are text, not entities
+        "NO_RAZAO_SOCIAL_EMPRESA": "VARCHAR",
+        # 178,403 empty (14.8%); years 1997 to 2056; 167,350 with a time other than 00:00:00,
+        # all but 120 of them on Notificado rows
+        "DT_VENCIMENTO": "TIMESTAMP",
+        "ST_SITUACAO_PRODUTO": "BOOLEAN",  # S 1,008,853 / N 196,127
+        # 9 digits on 95,192 rows (every ST_REGISTRADO 1, and 13,283 of the 0s), one `null`
+        # as text (kept), empty on the rest
+        "NU_REGISTRO": "VARCHAR",
+        # ISENTO DE REGISTRO 591,252, Notificado 524,497, DESCARTAVEL 5,043, REGISTRO 2,278;
+        # empty on exactly the ST_REGISTRADO 1 rows
+        "DS_TIPO_PETICAO": "VARCHAR",
+        "ST_REGISTRADO": "BOOLEAN",  # 0 on 1,123,070 / 1 on 81,910
+        "DT_ATUALIZACAO": "TIMESTAMP",  # 06/10/2026 00:00:00 on every row: ANVISA's load time
+    },
+    # NU_PROCESSO is unique across CNPJs, ST_REGISTRADO tells a pair apart: a total order
+    sort=("NU_CNPJ_EMPRESA", "NU_PROCESSO", "ST_REGISTRADO"),
+    # day first, like alimentos and unlike saneantes: 636,367 expiries have a day above 12
+    # (29/09/2005 00:00:00), none a month above 12; every value carries a time
+    timestamp_formats=("%d/%m/%Y %H:%M:%S",),
+    unescape=frozenset({"NO_PRODUTO"}),
+    load_time="DT_ATUALIZACAO",
+)
+
 CATALOG: tuple[Dataset, ...] = (
     ALIMENTOS,
     ALIMENTOS_RESULTADO,
@@ -280,6 +326,7 @@ CATALOG: tuple[Dataset, ...] = (
     PETICOES_ALIMENTO,
     PETICOES_ALIMENTO_ANDAMENTO,
     PRODUTOS_IRREGULARES,
+    COSMETICOS,
 )
 
 

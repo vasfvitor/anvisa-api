@@ -7,10 +7,10 @@ guess.
 ## Status (2026-10-08)
 
 All 32 endpoints the OpenAPI document had until 2026-10-01 are wrapped, and `tests/test_spec.py`
-holds that count against the resolved spec. Six open-data tables are live on GitHub Pages and
-the parser streams, so cosméticos and AFE are unblocked on that side. What is left is
-verification of claims that come only from ANVISA's examples, robustness (retry/backoff), and
-the 27 endpoints ANVISA added on 2026-10-01.
+holds that count against the resolved spec. Six open-data tables are live on GitHub Pages, a
+seventh (cosméticos) is added, and the parser streams, so AFE is unblocked on that side. What
+is left is verification of claims that come only from ANVISA's examples, robustness
+(retry/backoff), and the 27 endpoints ANVISA added on 2026-10-01.
 
 ## New on the gateway (2026-10-01): 27 endpoints, 4 domains
 
@@ -91,10 +91,16 @@ entry in `anvisa/dados/catalog.py` plus one fixture (see CONTRIBUTING.md):
   2026-10-08, so next is a profile to decide whether the whole file is small enough as Parquet
   for a browser) and `TA_CONSULTA_CBPF.CSV` (8 MB, few food companies; it too has a requester
   CNPJ beside the inspected one).
-- **Cosméticos** (`TA_CONSULTA_COSMETICOS.CSV`, 228 MB). `parse.normalize` streams since
-  2026-10-08 (one chunk plus one record in memory); profile the file and add it. DuckDB still
-  loads the normalized CSV into an in-memory table and sorts it: set `memory_limit` and
-  `temp_directory` in `convert.py` when the first 200+ MB file shows it is needed.
+- **Cosméticos** (`TA_CONSULTA_COSMETICOS.CSV`, 228 MB). **Done 2026-10-08**: `cosmeticos`,
+  1,204,980 rows, 24.2 MB of Parquet; the parser reads it in 31 s at 68 MiB, the whole
+  conversion takes 30-40 s and peaks at ~700 MiB with no spill under the new 3 GB
+  `memory_limit` (`temp_directory` is `.duckdb_tmp` beside the CSV). Output hash stable across
+  runs. Open: **24 MB is too much for a browser that downloads whole files.** The bytes are in
+  `no_produto` (12.9 MB) and `nu_processo` (7.1 MB), so dropping columns does not help; a split
+  by `ds_tipo_peticao` does (measured: Notificado 10.5 MB, ISENTO DE REGISTRO 11.9 MB, the
+  registered rows plus REGISTRO and DESCARTAVEL 2.0 MB); one by `st_registrado` does not (1.8
+  MB registered, 22.3 MB the rest). A split needs a catalog feature: several Parquet files from
+  one download, each with a filter.
 - Medicamentos, produtos para saúde, tabaco, cannabis: same folder, not profiled yet.
 - **Keep the previous build live** for a day after a deploy (copy its `data/<id>/` into the new
   artifact), so a browser session open across a deploy never sees a 404. Today it re-reads the

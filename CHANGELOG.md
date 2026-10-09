@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- `cosmeticos`: `TA_CONSULTA_COSMETICOS.CSV` (228 MB, 1,204,980 rows of 10 fields), every
+  notified, exempt or registered cosmetic, sorted by CNPJ, processo and `st_registrado`. Dates
+  are day first (unlike saneantes, whose columns it otherwise resembles); 11,144 processos are
+  listed twice, once unregistered and once registered, so `st_registrado` completes the sort
+  key. `&AMP;` in capitals is decoded like any entity. No parser change. **24.2 MB of
+  Parquet**, the first table well above a few MB; see ROADMAP for a split.
+- `convert.py` caps DuckDB at `MEMORY_LIMIT` (3 GB, below a 7 GB GitHub runner) and lets it
+  spill to `.duckdb_tmp` beside the CSV, removed afterwards. Converting cosméticos peaks at
+  ~700 MiB and does not spill; the Parquet of the other six datasets is byte-identical
+  (sha256, same sources, downloaded 2026-10-08).
+
 ## 0.5.0 (2026-10-08)
 
 **Breaking.** One naming rule across the domains (CONTRIBUTING, "Adding a client method"):

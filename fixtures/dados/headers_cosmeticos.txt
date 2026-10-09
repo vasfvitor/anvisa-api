@@ -1,0 +1,9 @@
+HTTP/1.1 200
+Content-Type: application/octet-stream
+Content-Length: 228157510
+Last-Modified: Wed, 07 Oct 2026 15:37:33 GMT
+ETag: "d996846-65d41e4ce2d0a"
+Accept-Ranges: bytes
+Cache-Control: public
+
+body: 228,157,510 bytes (sha256 ff2606b4785b008cc2ef435ffc92e1d36054502b40a07ec64f3dee169ae7c384), Windows-1252, 1,204,980 records of 10 fields, LF only, no line breaks inside values (not kept); cosmeticos_head.csv is the header plus 34 of those records, cut byte for byte by record. Fetched 2026-10-08 with anvisa.dados.fetch.http_client() (HTTP/1.1, Accept-Encoding: identity). Text is quoted, ST_REGISTRADO and empty values are not. Dates are dd/mm/yyyy HH:MM:SS (29/09/2005 00:00:00); DT_ATUALIZACAO is 06/10/2026 00:00:00 on every row. No Access-Control-Allow-Origin header.
