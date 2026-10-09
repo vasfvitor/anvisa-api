@@ -142,14 +142,15 @@ class PageLike(Protocol[T]):
 
 
 def iterate_pages(fetch: Callable[[int], PageLike[T]]) -> Iterator[T]:
-    """Yield items across pages. `fetch` takes a 1-based page; responses report 0-based `number`."""
+    """Yield items across pages. `fetch` takes a 1-based page (responses report it 0-based in
+    `number`, which is not trusted: a null there must not send us back to page 2 forever)."""
     page_number = 1
     while True:
         page = fetch(page_number)
         yield from page.content or []
         if page.last or not page.content:
             return
-        page_number = (page.number or 0) + 2
+        page_number += 1
 
 
 class Fila:

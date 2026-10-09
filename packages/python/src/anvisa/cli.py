@@ -497,7 +497,12 @@ def dados_list(ctx: typer.Context) -> None:
 def dados_build(
     out: Path = typer.Option(..., "--out", "-o", help="directory to write the site into"),
     dataset: list[str] = typer.Option(
-        None, "--dataset", "-d", help="a table name or group; repeat for more (default: all)"
+        None,
+        "--dataset",
+        "-d",
+        help="a table name or group; repeat for more (default: all). With --skip-unchanged the "
+        "other published tables are carried over, so the manifest stays complete; without it "
+        "the manifest lists only these",
     ),
     skip_unchanged: str | None = typer.Option(
         None,

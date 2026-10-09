@@ -8,7 +8,7 @@ import importlib.util
 import json
 import re
 import sys
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import httpx
@@ -82,11 +82,14 @@ class FakeDados:
     """Serves the fixture samples at their catalog URLs with the recorded headers, honours
     If-None-Match, and serves `manifest` (when set) at MANIFEST_URL."""
 
-    MANIFEST_URL = "https://example.github.io/anvisa-api/manifest.json"
+    SITE_URL = "https://example.github.io/anvisa-api/"
+    MANIFEST_URL = SITE_URL + "manifest.json"
 
     def __init__(self) -> None:
         self.requests: list[httpx.Request] = []
         self.manifest: dict | None = None
+        self.manifest_status = 200
+        self.site: Path | None = None  # a previous build's `out`, served under SITE_URL
         self.files = {}
         for ds in CATALOG:
             headers, _ = headers_only(DADOS / HEADERS[ds.name])
@@ -99,7 +102,12 @@ class FakeDados:
         if url == self.MANIFEST_URL:
             if self.manifest is None:
                 return httpx.Response(404, text="not found")
-            return httpx.Response(200, json=self.manifest)
+            return httpx.Response(self.manifest_status, json=self.manifest)
+        if url.startswith(self.SITE_URL):
+            file = self.site / url.removeprefix(self.SITE_URL) if self.site else None
+            if file is None or not file.is_file():
+                return httpx.Response(404, text="not found")
+            return httpx.Response(200, content=file.read_bytes())
         if url not in self.files:
             return httpx.Response(404, text="not found")
         headers, body = self.files[url]
@@ -111,7 +119,8 @@ class FakeDados:
         return http_client(transport=httpx.MockTransport(self.handler))
 
     def data_requests(self) -> list[httpx.Request]:
-        return [r for r in self.requests if str(r.url) != self.MANIFEST_URL]
+        """The CSV downloads: not the manifest, not a carried-over Parquet."""
+        return [r for r in self.requests if str(r.url) in self.files]
 
 
 @pytest.fixture
@@ -705,6 +714,7 @@ def published(fake_dados, tmp_path, commit="abc123") -> dict:
     with fake_dados.client() as http:
         manifest = build(tmp_path / "first", http=http, now=NOW, commit=commit)
     fake_dados.manifest = manifest
+    fake_dados.site = tmp_path / "first"
     fake_dados.requests.clear()
     return manifest
 
@@ -758,6 +768,71 @@ def test_build_proceeds_without_published_manifest(fake_dados, tmp_path):
         result = build(tmp_path / "dist", http=http, skip_unchanged=FakeDados.MANIFEST_URL)
     assert isinstance(result, dict) and (tmp_path / "dist" / "manifest.json").exists()
     assert all("If-None-Match" not in r.headers for r in fake_dados.data_requests())
+
+
+@needs_duckdb
+def test_build_says_why_it_ignores_a_broken_published_manifest(fake_dados, tmp_path):
+    """A 500 from Pages must not look like 'nothing changed': the full rebuild is logged."""
+    published(fake_dados, tmp_path)
+    fake_dados.manifest_status = 500
+    log = []
+    with fake_dados.client() as http:
+        result = build(
+            tmp_path / "second", http=http, skip_unchanged=FakeDados.MANIFEST_URL, log=log.append
+        )
+    assert isinstance(result, dict)
+    assert any("could not read the published manifest" in m and "HTTP 500" in m for m in log)
+
+
+@needs_duckdb
+@pytest.mark.parametrize("where", ["url", "path"])
+def test_partial_build_carries_published_tables(fake_dados, tmp_path, where):
+    """`-d alimentos` against a live site must not publish a one-table manifest: the other
+    tables come along from the published build, verified, under the new build's directory."""
+    first = published(fake_dados, tmp_path)
+    headers, body = fake_dados.files[ALIMENTOS.url]
+    fake_dados.files[ALIMENTOS.url] = ({**headers, "ETag": '"new"'}, body)
+    location = (
+        FakeDados.MANIFEST_URL if where == "url" else str(tmp_path / "first" / "manifest.json")
+    )
+    out = tmp_path / "second"
+    with fake_dados.client() as http:
+        result = build(
+            out,
+            http=http,
+            datasets=(ALIMENTOS,),
+            skip_unchanged=location,
+            commit="abc123",
+            now=NOW + timedelta(days=1),
+        )
+    assert list(result["tables"]) == [ds.name for ds in CATALOG]
+    assert result["tables"]["alimentos"]["source"]["etag"] == '"new"'
+    assert {str(r.url) for r in fake_dados.data_requests()} == {ALIMENTOS.url}
+    for name, old in first["tables"].items():
+        if name == "alimentos":
+            continue
+        new = result["tables"][name]
+        assert new["path"] == f"data/{result['build_id']}/{name}.parquet"
+        assert (out / new["path"]).read_bytes() == (tmp_path / "first" / old["path"]).read_bytes()
+        assert {k: v for k, v in new.items() if k != "path"} == {
+            k: v for k, v in old.items() if k != "path"
+        }
+    assert not list(out.rglob("*.part"))
+
+
+@needs_duckdb
+def test_carry_over_rejects_a_changed_parquet(fake_dados, tmp_path):
+    published(fake_dados, tmp_path)
+    fake_dados.manifest["tables"]["saneantes"]["sha256"] = "0" * 64
+    with fake_dados.client() as http, pytest.raises(DadosError, match="saneantes"):
+        build(
+            tmp_path / "second",
+            http=http,
+            datasets=(ALIMENTOS,),
+            skip_unchanged=FakeDados.MANIFEST_URL,
+            commit="other",  # not the published one, so the all-304 path does not short-circuit
+        )
+    assert not list((tmp_path / "second").rglob("saneantes.parquet*"))
 
 
 @needs_duckdb

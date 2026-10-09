@@ -6,6 +6,14 @@
   named `exports` when the directory did not exist yet (`Path` drops the trailing slash before
   `is_dir()` is asked). `download.target_path` now treats a trailing separator as a directory,
   as the docstring and README always said. Found in a code review.
+- `anvisa dados build -d <table> --skip-unchanged <manifest>` carries the other published
+  tables over into the new build (fetched from the live site, checked against the published
+  size and SHA-256, listed under the new `data/<build_id>/` path), so a partial build no longer
+  publishes a manifest with one table and takes the rest offline. Without a published manifest
+  the manifest still lists only the tables built. A published manifest that cannot be read is
+  now logged (URL, status) instead of silently turning into a full rebuild.
+- `iterate_pages` counts pages itself instead of trusting the response's `number`: a page with
+  `number: null` and `last: false` would have fetched page 2 forever.
 - One request path in `Client` (`_send`: throttle, send, learn the bucket, raise) instead of
   three copies, and one stream-to-disk helper (`download.write_stream`: `.part` file, SHA-256 on
   the way, rename when complete) shared by `udi.download_snapshot` and the open-data downloads;

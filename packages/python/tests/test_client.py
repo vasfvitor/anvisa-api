@@ -1,4 +1,5 @@
 import json
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -303,3 +304,15 @@ def test_iterate_pages_stops_on_empty_content():
         last = False
 
     assert list(iterate_pages(lambda p: Page())) == []
+
+
+def test_iterate_pages_counts_pages_itself():
+    """A response with `number: null` and `last: false` used to send the loop back to page 2."""
+    asked = []
+
+    def fetch(page):
+        asked.append(page)
+        return SimpleNamespace(content=["x"] if page < 3 else [], number=None, last=False)
+
+    assert list(iterate_pages(fetch)) == ["x", "x"]
+    assert asked == [1, 2, 3]
