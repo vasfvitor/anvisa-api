@@ -36,8 +36,12 @@ packages/python/   The `anvisa` Python library and CLI.
 ```
 
 The overlay follows the [OpenAPI Overlay Specification 1.0](https://spec.openapis.org/overlay/v1.0.0.html),
-so any overlay tool can apply it. `spec/apply_overlay.py` is the ~50-line applier used here.
+so any overlay tool can apply it. `spec/apply_overlay.py` is the small applier used here.
 Models are generated from the resolved spec; everything else is hand-written and small.
+
+Two sibling repositories build on this one: `anvisa-feeds` (daily fila snapshots published as
+Atom feeds; installs `anvisa` from PyPI) and `anvisa-dash` (a DuckDB-WASM search over the
+Parquet files published here, see "Dados abertos" below).
 
 ## Python package
 
@@ -112,7 +116,7 @@ raises typed exceptions (`MissingFilterError`, `InvalidPageError`, `MalformedReq
 ```bash
 cd packages/python && uv sync --extra dados
 uv run pytest             # fixture-only, no network
-uv run pytest -m live     # 5 real requests; the 4 API ones need credentials
+uv run pytest -m live     # 6 real requests: 4 to the API (credentials) + the token + a HEAD on dados.anvisa.gov.br
 make spec && make models  # at the repo root; a non-empty git diff means the overlay drifted
 make snapshot             # re-download the spec and portal docs; a diff means ANVISA changed them
 ```
@@ -126,7 +130,8 @@ alimentos petição sits at the root of the [same server](https://dados.anvisa.g
 the measures behind the portal's "Consulta de produtos irregulares", for every area, in
 `CONSULTAS/EMPRESA_FISCALIZACAO_PRODUTO/`. A daily workflow here
 (`.github/workflows/dados.yml`) converts them to typed, sorted Parquet and publishes them on
-GitHub Pages, at <https://vasfvitor.github.io/anvisa-api/> once Pages is enabled:
+GitHub Pages, at <https://vasfvitor.github.io/anvisa-api/>. Row counts below are from the
+day the table was added; the live `manifest.json` has today's:
 
 | Table | Source | Rows (file of) | One row per |
 |---|---|---|---|
@@ -173,8 +178,8 @@ For a frontend on DuckDB-WASM (what the first one, `anvisa-dash`, learned on 202
 - Fetch `manifest.json` (add `?t=<now>` to bypass the 10-minute Pages cache) and resolve each
   `path` against the manifest URL. A 404 on a data path means a deploy happened mid-session:
   re-read the manifest.
-- **Download whole files; do not rely on HTTP Range on GitHub Pages.** The files are small (3.7,
-  3.3, 1.7, 1.2 and 1.1 MB, and 21 KB) on purpose. Range reads worked in Chrome but: Pages answers `HEAD` + `Range`
+- **Download whole files; do not rely on HTTP Range on GitHub Pages.** The files are kept at a
+  few MB each on purpose (`bytes` in the manifest). Range reads worked in Chrome but: Pages answers `HEAD` + `Range`
   with 200, which breaks duckdb-wasm's `reliableHeadRequests`; Firefox's synchronous XHR with
   `Range` fails with a NetworkError; full responses are gzip-encoded and ranged ones are not; and
   in Chrome a ranged `fetch` **poisons the cache**, so the next plain `fetch` of the same URL
@@ -223,8 +228,9 @@ anvisa dados build --out dist2 --skip-unchanged dist/manifest.json   # 304s → 
 
 Covered: the 32 endpoints the spec had before 2026-10-01, as the `fila`, `lista`, `udi`,
 `nome_tecnico`, and `assunto` domains. That includes the eight file downloads and
-`servicosAssociados`, wrapped on 2026-09-08. From the open data, the two alimentos files and
-saneantes (`anvisa.dados`). Not yet covered: the 27 endpoints ANVISA added on 2026-10-01 (`saude`,
+`servicosAssociados`, wrapped on 2026-09-08. From the open data (`anvisa.dados`), six tables:
+`alimentos`, `alimentos_resultado`, `saneantes`, `peticoes_alimento`,
+`peticoes_alimento_andamento` and `produtos_irregulares`. Not yet covered: the 27 endpoints ANVISA added on 2026-10-01 (`saude`,
 `certificado`, `certificadoMedicamento`, `tabaco`), recorded in `spec/` by the `drift` workflow
 and listed in [ROADMAP.md](ROADMAP.md). The SNGPC, SAMMED and SNCR APIs (separate services) are
 out of scope.

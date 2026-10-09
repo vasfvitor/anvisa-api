@@ -4,11 +4,13 @@ Where the library stands after 0.4.0 and what is worth doing next, in order. Eve
 touches the API follows the rule in CONTRIBUTING.md: it goes in with a recorded response, not a
 guess.
 
-## Status (2026-09-08)
+## Status (2026-10-08)
 
-All 32 endpoints the OpenAPI document had until 2026-10-01 are wrapped. What is left is
-verification of claims that come only from ANVISA's examples, ergonomics, robustness, and the
-27 endpoints ANVISA added since.
+All 32 endpoints the OpenAPI document had until 2026-10-01 are wrapped, and `tests/test_spec.py`
+holds that count against the resolved spec. Six open-data tables are live on GitHub Pages and
+the parser streams, so cosméticos and AFE are unblocked on that side. What is left is
+verification of claims that come only from ANVISA's examples, robustness (retry/backoff), and
+the 27 endpoints ANVISA added on 2026-10-01.
 
 ## New on the gateway (2026-10-01): 27 endpoints, 4 domains
 

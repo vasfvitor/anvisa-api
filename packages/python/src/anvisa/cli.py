@@ -1,4 +1,4 @@
-"""`anvisa` command line: fila de análise, UDI and assunto lookups."""
+"""`anvisa` command line: fila, lista, UDI, nome técnico and assunto lookups, and `dados`."""
 
 from __future__ import annotations
 

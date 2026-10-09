@@ -6,7 +6,7 @@
 overlay: 1.0.0
 info:
   title: ANVISA Consultas Externas — observed-behavior corrections
-  version: "2026-09-08"
+  version: "2026-10-08"
 extends: ./consultas-externas.openapi.json
 
 actions:
@@ -14,11 +14,13 @@ actions:
   - target: $.info
     update:
       title: ANVISA Consultas Externas API
-      version: "2026-09-06"
+      version: "2026-10-08"
       description: >-
-        Consultas públicas da ANVISA (UDI de dispositivos médicos, nomes técnicos, fila de
-        análise, listas e assuntos de peticionamento). Esta descrição foi corrigida por overlay
-        a partir do comportamento observado: veja `x-anvisa-client-requirements`.
+        Consultas públicas da ANVISA: UDI de dispositivos médicos, nomes técnicos, fila de
+        análise, listas e assuntos de peticionamento (observadas ao vivo em 2026-09) e, desde
+        2026-10-01, produtos para saúde, certificados de boas práticas e tabaco (ainda sem
+        correções nem respostas gravadas). Esta descrição foi corrigida por overlay a partir do
+        comportamento observado: veja `x-anvisa-client-requirements`.
 
   # 2. Token lifetime and the absence of a refresh token are not documented.
   - target: $.components.securitySchemes.Keycloak

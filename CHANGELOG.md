@@ -22,6 +22,11 @@ ANVISA's nouns stay Portuguese, verbs are English and mean the same everywhere.
   named `exports` when the directory did not exist yet (`Path` drops the trailing slash before
   `is_dir()` is asked). `download.target_path` now treats a trailing separator as a directory,
   as the docstring and README always said. Found in a code review.
+- Docs caught up with the code: README scope names the six open-data tables and the two sibling
+  repositories (`anvisa-feeds`, `anvisa-dash`); the live-test and snapshot request counts are
+  the real ones (6 and ~20); the overlay's info block and the package description name every
+  domain; the `build.py`/`convert.py` comments no longer justify the layout with HTTP Range on
+  Pages, which the README says not to use.
 - `spec/snapshot.py` removes portal pages that left the menu, so `spec/portal/` is always the
   current site and the drift check sees a page disappear. Five pages that left it between
   2026-09-06 and 2026-10-01 (consulta-alimentos, dossie-doc, empresa-internacional-doc,
@@ -114,10 +119,9 @@ ANVISA's nouns stay Portuguese, verbs are English and mean the same everywhere.
 - New errors `DadosError` and `SchemaDriftError` (a changed CSV header).
 - `.github/workflows/dados.yml`: daily build, deployed to GitHub Pages when something changed.
   CI installs the `dados` extra so the Parquet tests run on every Python version.
-
-- `spec/snapshot.py` normalizes the OpenAPI documents before writing them: `responses` and
-  `components.schemas` sorted by key, Keycloak `nonce` stripped from the OAuth 2.0 URLs. The 2026-09-15
-  `drift` run went red on exactly that noise. Snapshots, `resolved.json` and `models.py` are
+- 2026-09-15: `spec/snapshot.py` normalizes the OpenAPI documents before writing them: `responses`
+  and `components.schemas` sorted by key, Keycloak `nonce` stripped from the OAuth 2.0 URLs. That
+  day's `drift` run went red on exactly that noise. Snapshots, `resolved.json` and `models.py` are
   re-recorded in the new order; no schema changed.
 
 ## 0.4.0 (2026-09-08)

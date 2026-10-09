@@ -1,4 +1,5 @@
-"""Opt-in smoke test against the real API: 4 requests + 1 token. Run with `pytest -m live`."""
+"""Opt-in smoke test against the real API: 4 requests + 1 token (test_dados adds one HEAD).
+Run with `pytest -m live`."""
 
 import pytest
 

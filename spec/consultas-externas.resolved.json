@@ -2,12 +2,12 @@
   "openapi": "3.0.1",
   "info": {
     "title": "ANVISA Consultas Externas API",
-    "description": "Consultas públicas da ANVISA (UDI de dispositivos médicos, nomes técnicos, fila de análise, listas e assuntos de peticionamento). Esta descrição foi corrigida por overlay a partir do comportamento observado: veja `x-anvisa-client-requirements`.",
+    "description": "Consultas públicas da ANVISA: UDI de dispositivos médicos, nomes técnicos, fila de análise, listas e assuntos de peticionamento (observadas ao vivo em 2026-09) e, desde 2026-10-01, produtos para saúde, certificados de boas práticas e tabaco (ainda sem correções nem respostas gravadas). Esta descrição foi corrigida por overlay a partir do comportamento observado: veja `x-anvisa-client-requirements`.",
     "contact": {
       "name": "Contato",
       "email": "arquitetura@anvisa.gov.br"
     },
-    "version": "2026-09-06"
+    "version": "2026-10-08"
   },
   "servers": [
     {

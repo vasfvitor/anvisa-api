@@ -6,9 +6,10 @@ Layout of `out` (what GitHub Pages serves):
     index.html                        a human-readable listing
     data/<build_id>/<name>.parquet    immutable: a new build gets a new directory
 
-Versioned paths are what make DuckDB-WASM's HTTP Range reads safe: bytes under one path never
-change, so a browser session cannot mix row groups from two builds. After the next deploy the
-old path answers 404, and the frontend re-reads the manifest.
+Versioned paths make a published file immutable: a browser that fetched the manifest keeps
+reading files that all belong to one build, and caches (Pages, the browser) can never serve a
+stale file under a current name. After the next deploy the old path answers 404, and the
+frontend re-reads the manifest. (HTTP Range is not used on Pages; see the README.)
 """
 
 from __future__ import annotations

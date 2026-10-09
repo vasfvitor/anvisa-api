@@ -9,8 +9,9 @@ from ..errors import DadosError
 from .catalog import Dataset
 from .parse import normalize
 
-# ~9 row groups for alimentos' 66k rows. Sorted by CNPJ, a point lookup over HTTP Range reads the
-# footer and one group's column chunks; DuckDB's default (122,880) would make one group of it all.
+# ~9 row groups for alimentos' 66k rows. Sorted by CNPJ, a point lookup with native DuckDB over
+# HTTP (`read_parquet('https://...')`, not the browser: see the README) reads the footer and one
+# group's column chunks; DuckDB's default (122,880) would make one group of it all.
 ROW_GROUP_SIZE = 8192
 NULL_LIMIT = 0.2  # a typed column losing more of its values than this fails the build
 REJECT_LIMIT = 0.001  # so does skipping more than this share of malformed records

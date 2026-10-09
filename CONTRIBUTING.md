@@ -86,10 +86,10 @@ throttling, but the same rule holds: profile the real file before writing its ca
 ```bash
 cd packages/python && uv sync --extra dados
 uv run pytest             # fixture-only; safe to run on a loop
-uv run pytest -m live     # 5 real requests; the 4 API ones need credentials
+uv run pytest -m live     # 6 real requests: 4 to the API (credentials) + the token + a HEAD on dados.anvisa.gov.br
 uv run ruff check . && uv run ruff format .
 make spec models          # from the repo root; commit the diff if any
-make snapshot             # re-download ANVISA's spec and portal docs (12 unauthenticated requests)
+make snapshot             # re-download ANVISA's spec and portal docs (~20 unauthenticated requests)
 ```
 
 ## Pull requests

@@ -14,7 +14,7 @@ models: spec     ## regenerate packages/python/src/anvisa/models.py
 test:
 	$(PY) pytest
 
-live:            ## 4 real requests; needs credentials
+live:            ## 6 real requests (4 need credentials, 1 token, 1 HEAD on dados.anvisa.gov.br)
 	$(PY) pytest -m live
 
 lint:
