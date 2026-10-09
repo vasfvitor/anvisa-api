@@ -26,11 +26,11 @@ def test_fila_chain(client, fake_api):
     assert len(subfilas) == 13
     assert any(s.id == 167 for s in subfilas)
 
-    fila = client.fila.consulta(167)
+    fila = client.fila.query(167)
     assert len(fila) == 40
     assert fila[0].nuOrdem == 1
     assert fake_api.json_bodies()[-1] == {"filter": {"subfila": 167}}
-    assert len(client.fila.consulta(161)) == 35  # a second recorded queue; sizes vary, no cap
+    assert len(client.fila.query(161)) == 35  # a second recorded queue; sizes vary, no cap
 
 
 def test_empty_queue_is_an_empty_404_returned_as_a_list(fake_api):
@@ -44,8 +44,8 @@ def test_empty_queue_is_an_empty_404_returned_as_a_list(fake_api):
         transport=httpx.MockTransport(handler),
         throttle=Throttle(sleep=lambda s: None),
     ) as c:
-        assert c.fila.consulta(1721) == []
-        assert c.lista.consulta(1721) == []
+        assert c.fila.query(1721) == []
+        assert c.lista.query(1721) == []
         with pytest.raises(NotFoundError):  # other endpoints keep raising
             c.udi.get(999999)
 
@@ -57,7 +57,7 @@ def test_lista_chain_uses_the_subfila_key(client, fake_api):
     assert grupos[0].descricao == "Bula, Rotulagem e Nome Comercial"
     subs = client.lista.sublistas(921)
     assert [s.id for s in subs] == [2141]
-    rows = client.lista.consulta(2141)
+    rows = client.lista.query(2141)
     assert len(rows) == 555 and rows[0].numeroProcessoFormatado == "25351.459189/2024-70"
     assert fake_api.json_bodies()[-1] == {"filter": {"subfila": 2141}}
 
@@ -112,7 +112,7 @@ def test_udi_historicos_and_gmdn_search(client, fake_api):
     assert len(snapshots) == 171
     first = snapshots[0]
     assert (first.id, first.tipoHistorico, first.totalRegistros) == (171, "DIARIO", 88)
-    page = client.udi.termos_gmdn(size=2, conteudo="pacing")
+    page = client.udi.search_gmdn(size=2, conteudo="pacing")
     assert page.totalElements == 3
     assert page.content[1].codigo == "47852"
 
@@ -154,16 +154,16 @@ def test_udi_get_and_gmdn(client):
     detail = client.udi.get(377)
     assert detail.dispositivo.nomeComercial.startswith("CATETER ELETRODO")
     assert detail.autorizacaoFuncionamento.cnpj == "06167295000171"
-    termo = client.udi.termo_gmdn("47852")
+    termo = client.udi.get_gmdn("47852")
     assert termo.nomeOriginal == "Temporary cardiac pacing catheter"
 
 
-def test_assunto_lista_and_detalhe(client):
-    assuntos = client.assunto.lista()
+def test_assunto_all_and_get(client):
+    assuntos = client.assunto.all()
     assert len(assuntos) == 2595
     assert assuntos[0].id == 10013
 
-    detalhe = client.assunto.detalhe(10013)
+    detalhe = client.assunto.get(10013)
     assert detalhe.assunto.startswith("BIOEQUIVALÊNCIA")
     assert detalhe.sistemas[0].codigoSistema == "SOLICITA"
     assert len(detalhe.documentosRequeridos) == 5

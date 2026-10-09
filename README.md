@@ -59,19 +59,19 @@ or export `ANVISA_CLIENT_ID` / `ANVISA_CLIENT_SECRET`.
 anvisa fila areas                       # Medicamento=1, Dispositivos Médicos=8, ...
 anvisa fila grupos 8                    # Registros, Alterações, Revalidações, ...
 anvisa fila subfilas 285
-anvisa fila consulta 167                # the queue, in order, with protocol numbers
+anvisa fila query 167                # the queue, in order, with protocol numbers
 anvisa lista areas && anvisa lista grupos 1 && anvisa lista sublistas 921
-anvisa lista consulta 2141              # same shape as fila consulta
+anvisa lista query 2141              # same shape as fila query
 anvisa udi search --nome cateter --size 5
 anvisa udi get 377
-anvisa udi gmdn 47852
-anvisa udi gmdn-search pacing           # GMDN terms by text (names are in Portuguese)
+anvisa udi get-gmdn 47852
+anvisa udi search-gmdn pacing           # GMDN terms by text (names are in Portuguese)
 anvisa nome-tecnico search --size 50    # nomes técnicos with risk class
 anvisa nome-tecnico categorias
-anvisa assunto lista --busca bioequival   # petition subject codes
+anvisa assunto list --busca bioequival   # petition subject codes
 anvisa assunto get 10013                  # documents, forms, legal basis, fees by size
 anvisa assunto servicos-associados 13497  # gov.br services behind a serviço code
-anvisa --format json fila consulta 167 | jq length
+anvisa --format json fila query 167 | jq length
 ```
 
 Downloads. `-o` takes a file or a directory (default `.`, filled in with the name the server
@@ -91,7 +91,7 @@ anvisa udi snapshot 173 -o ./exports       # the week's zip, streamed to disk
 from anvisa import Client
 
 with Client() as anvisa:  # credentials from the environment or ~/.config/anvisa/credentials.env
-    for row in anvisa.fila.consulta(167):
+    for row in anvisa.fila.query(167):
         print(row.nuOrdem, row.numeroProcessoFormatado, row.dsAssunto)
 
     page = anvisa.udi.search(nomeComercial="cateter", size=50)

@@ -53,6 +53,14 @@ pagination, encode that in the method (raise locally before any request) and in 
 (`x-required-filters`, `x-paginated`). Say in the docstring what was verified live and what
 comes only from the spec.
 
+Names: ANVISA's nouns stay Portuguese (fila, subfila, lista, assunto, UDI, nome técnico, GMDN,
+histórico, formulário); verbs are English and mean the same in every domain. `search(**filters)`
+is a paginated search, `get(<x>_id)` one item, `query(<x>_id)` an unpaginated lookup,
+`download(...)` bytes, `all()` the domain's own list, a plural noun an enumeration
+(`areas()`, `categorias()`, `historicos()`). A second kind of the same verb takes a suffix
+(`search_gmdn`, `get_gmdn`, `get_historico`). No parameter is called `id`. The CLI command is
+the method name with `-` for `_`.
+
 ## Adding an open-data dataset
 
 The open-data files (`dados.anvisa.gov.br/dados/`) need no credentials and no

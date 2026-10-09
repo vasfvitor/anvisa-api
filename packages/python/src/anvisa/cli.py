@@ -197,13 +197,13 @@ def fila_subfilas(
         emit(ctx, client.fila.subfilas(grupo_id), f"Subfilas do grupo {grupo_id}")
 
 
-@fila_app.command("consulta")
-def fila_consulta(
+@fila_app.command("query")
+def fila_query(
     ctx: typer.Context, subfila_id: int = typer.Argument(help="id from `anvisa fila subfilas`")
 ) -> None:
     """A fila calculada completa de uma subfila, em ordem."""
     with handle_errors(), make_client() as client:
-        emit(ctx, client.fila.consulta(subfila_id), f"Fila da subfila {subfila_id}")
+        emit(ctx, client.fila.query(subfila_id), f"Fila da subfila {subfila_id}")
 
 
 @fila_app.command("download")
@@ -244,14 +244,14 @@ def lista_sublistas(
         emit(ctx, client.lista.sublistas(grupo_id), f"Sublistas do grupo {grupo_id}")
 
 
-@lista_app.command("consulta")
-def lista_consulta(
+@lista_app.command("query")
+def lista_query(
     ctx: typer.Context,
     sublista_id: int = typer.Argument(help="id from `anvisa lista sublistas`"),
 ) -> None:
     """A lista calculada completa de uma sublista."""
     with handle_errors(), make_client() as client:
-        emit(ctx, client.lista.consulta(sublista_id), f"Lista da sublista {sublista_id}")
+        emit(ctx, client.lista.query(sublista_id), f"Lista da sublista {sublista_id}")
 
 
 @lista_app.command("download")
@@ -303,10 +303,10 @@ def udi_search(
 
 
 @udi_app.command("get")
-def udi_get(ctx: typer.Context, id: int) -> None:
+def udi_get(ctx: typer.Context, dispositivo_id: int) -> None:
     """Detalhe de um dispositivo (id interno, de `udi search`)."""
     with handle_errors(), make_client() as client:
-        emit(ctx, client.udi.get(id), f"UDI {id}")
+        emit(ctx, client.udi.get(dispositivo_id), f"UDI {dispositivo_id}")
 
 
 @udi_app.command("historico")
@@ -317,10 +317,10 @@ def udi_historico(ctx: typer.Context, id_dispositivo: int, id_historico: int) ->
 
 
 @udi_app.command("download")
-def udi_download(id: int, out: str = OUT) -> None:
+def udi_download(dispositivo_id: int, out: str = OUT) -> None:
     """Exporta o detalhe de um dispositivo como planilha (udi.xlsx)."""
     with handle_errors(), make_client() as client:
-        write(client.udi.download(id), out, f"udi_{id}.xlsx")
+        write(client.udi.download(dispositivo_id), out, f"udi_{dispositivo_id}.xlsx")
 
 
 @udi_app.command("download-historico")
@@ -342,8 +342,8 @@ def udi_snapshot(
         typer.echo(f"saved {path} ({path.stat().st_size} bytes)", err=True)
 
 
-@udi_app.command("gmdn-search")
-def udi_gmdn_search(
+@udi_app.command("search-gmdn")
+def udi_search_gmdn(
     ctx: typer.Context,
     texto: str = typer.Argument(help="text matched against the term's name and definition"),
     page: int = typer.Option(1, "--page", min=1),
@@ -351,16 +351,16 @@ def udi_gmdn_search(
 ) -> None:
     """Busca de termos GMDN por texto (nomes em português)."""
     with handle_errors(), make_client() as client:
-        result = client.udi.termos_gmdn(page=page, size=size, conteudo=texto)
+        result = client.udi.search_gmdn(page=page, size=size, conteudo=texto)
         total = f" (página {page} de {result.totalPages}, {result.totalElements} no total)"
         emit(ctx, result.content or [], "GMDN" + total)
 
 
-@udi_app.command("gmdn")
-def udi_gmdn(ctx: typer.Context, codigo: str) -> None:
+@udi_app.command("get-gmdn")
+def udi_get_gmdn(ctx: typer.Context, codigo: str) -> None:
     """Termo GMDN por código."""
     with handle_errors(), make_client() as client:
-        emit(ctx, client.udi.termo_gmdn(codigo), f"GMDN {codigo}")
+        emit(ctx, client.udi.get_gmdn(codigo), f"GMDN {codigo}")
 
 
 # --- nome-tecnico -----------------------------------------------------------
@@ -423,14 +423,14 @@ def nome_tecnico_download(
 # --- assunto ----------------------------------------------------------------
 
 
-@assunto_app.command("lista")
-def assunto_lista(
+@assunto_app.command("list")
+def assunto_list(
     ctx: typer.Context,
     busca: str | None = typer.Option(None, "--busca", "-b", help="filter locally by text"),
 ) -> None:
     """Todos os códigos de assunto de peticionamento (uma requisição, ~2.600 linhas)."""
     with handle_errors(), make_client() as client:
-        rows = client.assunto.lista()
+        rows = client.assunto.all()
         if busca:
             rows = [r for r in rows if busca.lower() in (r.descricao or "").lower()]
         emit(ctx, rows, "Assuntos")
@@ -440,7 +440,7 @@ def assunto_lista(
 def assunto_get(ctx: typer.Context, codigo: int) -> None:
     """Detalhe de um assunto: sistema, serviços, formulários, checklist e taxas por porte."""
     with handle_errors(), make_client() as client:
-        emit(ctx, client.assunto.detalhe(codigo), f"Assunto {codigo}")
+        emit(ctx, client.assunto.get(codigo), f"Assunto {codigo}")
 
 
 @assunto_app.command("servicos-associados")
@@ -465,12 +465,12 @@ def assunto_download(
 
 @assunto_app.command("formulario")
 def assunto_formulario(
-    id: int = typer.Argument(help="formulários[].id from `anvisa assunto get`"),
+    formulario_id: int = typer.Argument(help="formulários[].id from `anvisa assunto get`"),
     out: str = OUT,
 ) -> None:
     """Baixa o arquivo de um formulário de assunto (a resposta não traz nome nem tipo)."""
     with handle_errors(), make_client() as client:
-        write(client.assunto.formulario(id), out, f"formulario_{id}")
+        write(client.assunto.formulario(formulario_id), out, f"formulario_{formulario_id}")
 
 
 # --- dados ------------------------------------------------------------------

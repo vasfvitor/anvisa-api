@@ -14,19 +14,19 @@ or export `ANVISA_CLIENT_ID` / `ANVISA_CLIENT_SECRET`.
 
 ```bash
 anvisa fila areas
-anvisa fila consulta 167
+anvisa fila query 167
 anvisa udi search --nome cateter
 anvisa --format json udi get 377
-anvisa lista consulta 2141
+anvisa lista query 2141
 anvisa nome-tecnico search --size 50
-anvisa assunto lista --busca bioequival
+anvisa assunto list --busca bioequival
 ```
 
 ```python
 from anvisa import Client
 
 with Client() as anvisa:  # credentials from the environment or ~/.config/anvisa/credentials.env
-    queue = anvisa.fila.consulta(167)
+    queue = anvisa.fila.query(167)
     page = anvisa.udi.search(nomeComercial="cateter", size=50)
 ```
 

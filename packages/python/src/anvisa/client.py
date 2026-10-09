@@ -170,11 +170,11 @@ class Fila:
         return [models.ChaveValorLong.model_validate(x) for x in data]
 
     def subfilas(self, grupo_id: int) -> list[models.ChaveValorInteger]:
-        """Subfilas of a grupo; their ids are what `consulta` takes."""
+        """Subfilas of a grupo; their ids are what `query` takes."""
         data = self._client.get(f"/api/v1/fila/{grupo_id}/subfila")
         return [models.ChaveValorInteger.model_validate(x) for x in data]
 
-    def consulta(self, subfila_id: int) -> list[models.FilaCalculadaDTO]:
+    def query(self, subfila_id: int) -> list[models.FilaCalculadaDTO]:
         """The whole calculated queue of a subfila, in order. Not paginated by the API.
 
         A subfila with nothing queued answers HTTP 404 with an empty body (88 of 314 subfilas
@@ -190,8 +190,8 @@ class Fila:
 
         The bytes are OOXML (`PK`) despite the `application/vnd.ms-excel` content type, and
         hold a 7-row header block above the rows (40 rows for subfila 167 on 2026-09-08).
-        Pagination is ignored, as in `consulta`. A subfila with nothing queued raises
-        `EmptyExportError` here, where `consulta` returns `[]`."""
+        Pagination is ignored, as in `query`. A subfila with nothing queued raises
+        `EmptyExportError` here, where `query` returns `[]`."""
         return self._client.post_bytes(
             "/api/v1/fila/downloadfila", {"filter": {"subfila": subfila_id}}
         )
@@ -215,11 +215,11 @@ class Lista:
         return [models.ChaveValorLong.model_validate(x) for x in data]
 
     def sublistas(self, grupo_id: int) -> list[models.ChaveValorInteger]:
-        """Sublistas of a grupo; their ids are what `consulta` takes."""
+        """Sublistas of a grupo; their ids are what `query` takes."""
         data = self._client.get(f"/api/v1/lista/{grupo_id}/sublista")
         return [models.ChaveValorInteger.model_validate(x) for x in data]
 
-    def consulta(self, sublista_id: int) -> list[models.FilaCalculadaDTO]:
+    def query(self, sublista_id: int) -> list[models.FilaCalculadaDTO]:
         """The whole calculated list of a sublista. Not paginated by the API.
 
         The filter key is `subfila` even here (the API answers "Filtro 'subfila' não
@@ -309,8 +309,10 @@ class Udi:
         """Every device matching the filters, across pages."""
         return iterate_pages(lambda page: self.search(page, size, sort, **filters))
 
-    def get(self, id: int) -> models.DetalheDispositivoDTO:
-        return models.DetalheDispositivoDTO.model_validate(self._client.get(f"/api/v1/udi/{id}"))
+    def get(self, dispositivo_id: int) -> models.DetalheDispositivoDTO:
+        return models.DetalheDispositivoDTO.model_validate(
+            self._client.get(f"/api/v1/udi/{dispositivo_id}")
+        )
 
     def get_historico(self, id_dispositivo: int, id_historico: int) -> models.DetalheDispositivoDTO:
         """A device as recorded in one snapshot from `historicos`. Raises `NotFoundError`
@@ -324,11 +326,11 @@ class Udi:
         data = self._client.get("/api/v1/udi/historico")
         return [models.HistoricoUdiDTO.model_validate(x) for x in data]
 
-    def download(self, id: int) -> Download:
+    def download(self, dispositivo_id: int) -> Download:
         """The device detail as `udi.xlsx` (OOXML, one sheet "UDI-DI - Dispositivo" with a
         header row and one data row). The only download ANVISA also serves to
         `Accept: application/json`."""
-        return self._client.get_bytes(f"/api/v1/udi/{id}/download")
+        return self._client.get_bytes(f"/api/v1/udi/{dispositivo_id}/download")
 
     def download_historico(self, id_dispositivo: int, id_historico: int) -> Download:
         """The device as recorded in one snapshot, as a spreadsheet.
@@ -353,7 +355,7 @@ class Udi:
             f"udi_historico_{id_historico}.zip",
         )
 
-    def termos_gmdn(
+    def search_gmdn(
         self,
         page: int = 1,
         size: int = 20,
@@ -365,7 +367,7 @@ class Udi:
         data = self._client.post("/api/v1/udi/termoGmdn", page_body(page, size, sort, filters))
         return models.PageTermoGMDNDTO.model_validate(data)
 
-    def termo_gmdn(self, codigo: str) -> models.TermoGMDNDTO:
+    def get_gmdn(self, codigo: str) -> models.TermoGMDNDTO:
         return models.TermoGMDNDTO.model_validate(
             self._client.get(f"/api/v1/udi/termoGmdn/{codigo}")
         )
@@ -373,19 +375,19 @@ class Udi:
 
 class Assunto:
     """Assuntos de peticionamento: subject codes, and per code the required documents,
-    forms, legal basis and fees. `lista`, `detalhe`, the four catalogs, `servicos_associados`
-    and the two downloads are verified live; `busca` is not usable as of 2026-09-06 (see its
+    forms, legal basis and fees. `all`, `get`, the four catalogs, `servicos_associados`
+    and the two downloads are verified live; `search` is not usable as of 2026-09-06 (see its
     docstring)."""
 
     def __init__(self, client: Client) -> None:
         self._client = client
 
-    def lista(self) -> list[models.AssuntoDTO]:
+    def all(self) -> list[models.AssuntoDTO]:
         """Every subject code with its description (~2,600 entries, one request)."""
         data = self._client.get("/api/v1/assunto/assuntos")
         return [models.AssuntoDTO.model_validate(x) for x in data]
 
-    def detalhe(self, codigo: int | str) -> models.DetalheAssunto:
+    def get(self, codigo: int | str) -> models.DetalheAssunto:
         """Full detail of one subject: system, services, forms, checklist, fees by company size."""
         return models.DetalheAssunto.model_validate(self._client.get(f"/api/v1/assunto/{codigo}"))
 
@@ -416,7 +418,7 @@ class Assunto:
 
         Without filters this is every assunto: 2,599 rows, about 5 MB, buffered in memory.
         `codigosAssunto` takes a list of ids and does bind here (13 KB for `[10013]` on
-        2026-09-08), unlike `busca`, whose body the server cannot bind at all."""
+        2026-09-08), unlike `search`, whose body the server cannot bind at all."""
         return self._client.post_bytes("/api/v1/assunto/download", {"filter": dict(filters)})
 
     def formulario(self, formulario_id: int, filename: str | None = None) -> Download:
@@ -433,7 +435,7 @@ class Assunto:
         name = download.filename or filename or f"formulario_{formulario_id}"
         return replace(download, filename=name)
 
-    def busca(
+    def search(
         self,
         page: int = 1,
         size: int = 20,
@@ -444,6 +446,6 @@ class Assunto:
         HTTP 500 "PaginationBuilder.getColumn() because filtro is null" to a JSON body, and the
         path without the trailing slash is a 404 (fixture `err_assunto_busca`). Filter keys from
         ANVISA's example: `codigosAssunto`, `servicos`, `sistemas`, `tiposProduto`,
-        `tiposSolicitacao`. Use `lista` and filter locally instead."""
+        `tiposSolicitacao`. Use `all` and filter locally instead."""
         data = self._client.post("/api/v1/assunto/", page_body(page, size, sort, filters))
         return models.PageConsultaAssunto.model_validate(data)

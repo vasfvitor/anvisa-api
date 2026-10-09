@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+**Breaking.** One naming rule across the domains (CONTRIBUTING, "Adding a client method"):
+ANVISA's nouns stay Portuguese, verbs are English and mean the same everywhere.
+
+| before | after | CLI |
+|---|---|---|
+| `fila.consulta(subfila_id)` | `fila.query(subfila_id)` | `fila consulta` → `fila query` |
+| `lista.consulta(sublista_id)` | `lista.query(sublista_id)` | `lista consulta` → `lista query` |
+| `udi.get(id)`, `udi.download(id)` | parameter `dispositivo_id` | unchanged |
+| `udi.termos_gmdn(...)` | `udi.search_gmdn(...)` | `udi gmdn-search` → `udi search-gmdn` |
+| `udi.termo_gmdn(codigo)` | `udi.get_gmdn(codigo)` | `udi gmdn` → `udi get-gmdn` |
+| `assunto.lista()` | `assunto.all()` | `assunto lista` → `assunto list` |
+| `assunto.detalhe(codigo)` | `assunto.get(codigo)` | `assunto get` (unchanged) |
+| `assunto.busca(...)` | `assunto.search(...)` | (no command) |
+| `Client.from_env()` | `Client()` | |
+| `Client.stream_to(...)` | `Client.get_stream(...)` | |
+
 - `Download.save("exports/")` and `udi.download_snapshot(..., "exports/")` created a *file*
   named `exports` when the directory did not exist yet (`Path` drops the trailing slash before
   `is_dir()` is asked). `download.target_path` now treats a trailing separator as a directory,

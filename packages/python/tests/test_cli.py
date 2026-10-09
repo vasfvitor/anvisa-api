@@ -35,9 +35,7 @@ def test_fila_areas_json(fake_cli_client):
 
 
 def test_fila_consulta_table(fake_cli_client):
-    result = runner.invoke(
-        cli.app, ["-f", "table", "fila", "consulta", "167"], env={"COLUMNS": "250"}
-    )
+    result = runner.invoke(cli.app, ["-f", "table", "fila", "query", "167"], env={"COLUMNS": "250"})
     assert result.exit_code == 0, result.output
     assert "25351.216322/2025-86" in result.output
     assert "2026-08-18" in result.output  # dtEntrada rendered as a date
@@ -51,7 +49,7 @@ def test_udi_search_and_get(fake_cli_client):
     assert [d["udiDi"] for d in json.loads(result.output)] == ["07898620922696", "07898620922702"]
     assert fake_cli_client.json_bodies()[-1]["filter"] == {"nomeComercial": "cateter"}
 
-    result = runner.invoke(cli.app, ["-f", "json", "udi", "gmdn-search", "pacing", "--size", "2"])
+    result = runner.invoke(cli.app, ["-f", "json", "udi", "search-gmdn", "pacing", "--size", "2"])
     assert result.exit_code == 0, result.output
     assert [t["codigo"] for t in json.loads(result.output)] == ["17882", "47852"]
 
@@ -65,13 +63,13 @@ def test_assunto_get_and_local_filter(fake_cli_client):
     assert result.exit_code == 0, result.output
     assert json.loads(result.output)["fatoGerador"] == "4499"
 
-    result = runner.invoke(cli.app, ["-f", "json", "assunto", "lista", "--busca", "bioequival"])
+    result = runner.invoke(cli.app, ["-f", "json", "assunto", "list", "--busca", "bioequival"])
     assert result.exit_code == 0, result.output
     assert all("BIOEQUIVAL" in row["descricao"].upper() for row in json.loads(result.output))
 
 
 def test_lista_and_nome_tecnico_commands(fake_cli_client):
-    result = runner.invoke(cli.app, ["-f", "json", "lista", "consulta", "2141"])
+    result = runner.invoke(cli.app, ["-f", "json", "lista", "query", "2141"])
     assert result.exit_code == 0, result.output
     assert len(json.loads(result.output)) == 555
 
