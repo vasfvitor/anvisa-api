@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 (2026-10-08)
 
 **Breaking.** One naming rule across the domains (CONTRIBUTING, "Adding a client method"):
 ANVISA's nouns stay Portuguese, verbs are English and mean the same everywhere.

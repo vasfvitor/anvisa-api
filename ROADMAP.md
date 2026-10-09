@@ -1,6 +1,6 @@
 # Roadmap
 
-Where the library stands after 0.4.0 and what is worth doing next, in order. Every item that
+Where the library stands after 0.5.0 and what is worth doing next, in order. Every item that
 touches the API follows the rule in CONTRIBUTING.md: it goes in with a recorded response, not a
 guess.
 
