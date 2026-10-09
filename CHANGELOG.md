@@ -22,6 +22,12 @@ ANVISA's nouns stay Portuguese, verbs are English and mean the same everywhere.
   named `exports` when the directory did not exist yet (`Path` drops the trailing slash before
   `is_dir()` is asked). `download.target_path` now treats a trailing separator as a directory,
   as the docstring and README always said. Found in a code review.
+- `tests/test_spec.py` holds the client against the resolved spec: every path the client calls
+  is in it, the 27 it does not call are exactly the tabaco/saude/certificado domains ANVISA
+  added on 2026-10-01 (wrapping one, or ANVISA adding one, fails the test), `x-accept: */*` is
+  exactly the set of byte-returning methods, and every `x-required-filters` rule is either
+  refused before a request (`anyOf`) or present in the body sent (`allOf`). Until now nothing
+  read the overlay's `x-*` keys.
 - The generated models are used where the client used to hand-build the same shapes:
   `page_body` is `models.PaginationBuilder` (so `sorting` values must be `ASC`/`DESC` before the
   request goes out) and `raise_for_response` reads `models.ErroApi`. For that the overlay

@@ -12,12 +12,19 @@ from anvisa.auth import Credentials
 from anvisa.client import Client
 from anvisa.throttle import Throttle
 
-FIXTURES = Path(__file__).resolve().parents[3] / "fixtures" / "consultas-externas"
+REPO = Path(__file__).resolve().parents[3]
+FIXTURES = REPO / "fixtures" / "consultas-externas"
 MANIFEST = json.loads((FIXTURES / "manifest.json").read_text(encoding="utf-8"))
+SPEC = REPO / "spec" / "consultas-externas.resolved.json"
 
 
 def load(name: str):
     return json.loads((FIXTURES / name).read_text(encoding="utf-8"))
+
+
+def spec() -> dict:
+    """ANVISA's OpenAPI document with the overlay applied (`make spec`)."""
+    return json.loads(SPEC.read_text(encoding="utf-8"))
 
 
 def headers_only(path: Path) -> tuple[dict[str, str], bytes]:
