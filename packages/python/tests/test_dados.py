@@ -1084,12 +1084,14 @@ def test_produtos_on_the_fixtures(fake_dados, tmp_path):
         manifest = build(out, http=http, now=NOW, commit="abc123")
     entry = manifest["tables"]["produtos"]
     assert entry["path"] == "data/20261006T210312Z/produtos.parquet"
-    assert entry["fontes"] == ["alimentos", "saneantes"] and entry["sort"] == ["cnpj", "area", "id"]
-    assert entry["source"]["name"] == "derivada de alimentos, saneantes"
+    assert entry["fontes"] == ["alimentos", "alimentos_resultado", "saneantes"]
+    assert entry["sort"] == ["cnpj", "area", "id"]
+    assert entry["source"]["name"] == "derivada de alimentos, alimentos_resultado, saneantes"
     assert entry["source"]["url"].endswith(
         "/blob/abc123/packages/python/src/anvisa/dados/derivar.py"
     )
-    assert entry["source"]["loaded_at"] == "2026-10-05T00:00:00"  # the latest among the sources
+    # the latest load among the sources: alimentos_resultado's
+    assert entry["source"]["loaded_at"] == "2026-10-05T01:12:00"
     assert entry["nulls_added"] == {} and entry["rejected_records"] == 0
     assert [c["name"] for c in entry["columns"]] == list(derivar.PRODUTOS.descriptions)
     path = out / entry["path"]
@@ -1119,9 +1121,104 @@ def test_produtos_on_the_fixtures(fake_dados, tmp_path):
         types["ativo"] == "BOOLEAN" and types["desde"] == "DATE" and types["vencimento"] == "DATE"
     )
     assert types["apresentacoes"] == "INTEGER" and types["registros"] == "VARCHAR[]"
+    assert types["gluten"] == "VARCHAR" and types["contem"] == "VARCHAR[]"
+    assert types["alergia_varia"] == "BOOLEAN"
+    # allergens, from the label (alimentos_resultado): 15 of the 36 fixture products declare
+    # (4 of the 19 resultado products there have no alimentos row in the fixture); the other 21
+    # and every saneante are NULL throughout, not empty lists
+    q = lambda sql: con.execute(sql.replace("FROM P", f"FROM '{path}'")).fetchall()  # noqa: E731
+    assert q("SELECT count(*) FROM P WHERE contem IS NOT NULL") == [(15,)]
+    assert q(
+        "SELECT count(*) FROM P WHERE contem IS NULL AND (gluten IS NOT NULL "
+        "OR lactose IS NOT NULL OR pode_conter IS NOT NULL OR nao_contem IS NOT NULL "
+        "OR alergia_varia IS NOT NULL)"
+    ) == [(0,)]
+    assert q(
+        "SELECT gluten, lactose, count(*) FROM P WHERE contem IS NOT NULL GROUP BY 1, 2 ORDER BY 2"
+    ) == [
+        ("Não", "Não", 11),
+        ("Não", "Sim", 4),
+    ]
+    # "Contém" and "Contém derivado de" both land in contem; the rest of the legal list in
+    # nao_contem
+    (row,) = q(
+        "SELECT contem, pode_conter, len(nao_contem), alergia_varia FROM P WHERE id = '3932328'"
+    )
+    assert row[0] == ["Leites de todas as espécies de animais mamíferos", "Soja"]
+    assert row[1] == [] and row[2] > 10 and row[3] is False
+    (row,) = q("SELECT contem FROM P WHERE id = '3868153'")  # "Contém derivado de"
+    assert row[0] == ["Leites de todas as espécies de animais mamíferos", "Soja"]
+    # no item sits in two lists, and the lists are sorted
+    assert q(
+        "SELECT count(*) FROM P WHERE len(list_intersect(contem, pode_conter)) > 0 "
+        "OR len(list_intersect(contem, nao_contem)) > 0 "
+        "OR len(list_intersect(pode_conter, nao_contem)) > 0 "
+        "OR contem <> list_sort(contem) OR nao_contem <> list_sort(nao_contem)"
+    ) == [(0,)]
     # the dictionary lists it like the others, naming its sources
     docs = (out / "dicionario.html").read_text(encoding="utf-8")
     assert '<section id="produtos">' in docs and 'Derivada de <a href="#alimentos">' in docs
+
+
+@needs_duckdb
+def test_allergen_summary_rules(tmp_path):
+    """The rules the fixtures cannot show (no product there varies or contains gluten): a
+    product whose apresentações disagree says Varia, an item one apresentação contains leaves
+    the other lists, an unknown rótulo counts as contains, and a product with rows but no
+    declaration stays NULL. Synthetic alimentos and alimentos_resultado files, two products."""
+    import duckdb
+
+    con = duckdb.connect()
+    con.execute(
+        "CREATE TABLE a AS SELECT * FROM (VALUES "
+        "(1, 101, '11111111000191', 'A', '1', 'Ativo', 'Notificado', DATE '2020-01-01'), "
+        "(1, 102, '11111111000191', 'A', '1', 'Ativo', 'Notificado', DATE '2020-01-01'), "
+        "(2, 201, '11111111000191', 'B', '2', 'Ativo', 'Notificado', DATE '2020-01-01')) "
+        "t(co_seq_produto, co_seq_apresentacao_produto, nu_cnpj_empresa, no_produto, nu_processo, "
+        "situacao_registro, tipo_regularizacao, dt_regularizacao)"
+    )
+    con.execute(
+        "ALTER TABLE a ADD COLUMN marcas VARCHAR; ALTER TABLE a ADD COLUMN no_razao_social_empresa "
+        "VARCHAR; ALTER TABLE a ADD COLUMN nu_registro_notificacao_produto VARCHAR; "
+        "ALTER TABLE a ADD COLUMN ds_categoria_produto VARCHAR; "
+        "ALTER TABLE a ADD COLUMN dt_vencimento_registro DATE; "
+        "ALTER TABLE a ADD COLUMN nu_registro VARCHAR"
+    )
+    con.execute(
+        "CREATE TABLE r AS SELECT * FROM (VALUES "
+        "(101, 1, 'Contém Glúten - Sim | Contém Lactose - Não', "
+        " 'Contém - Trigo | Pode conter - Soja#Ovos | Não contém - Amendoim#Soja |'), "
+        "(102, 1, 'Contém Glúten - Não | Contém Lactose - Não', "
+        " 'Rótulo novo - Ovos | Não contém - Amendoim#Trigo'), "
+        "(201, 2, NULL, '')) "
+        "t(co_seq_apresentacao_produto, co_produto, intolerancias, alergenicos)"
+    )
+    con.execute(
+        "CREATE TABLE s (nu_expediente VARCHAR, no_produto VARCHAR, "
+        "no_razao_social_empresa VARCHAR, nu_cnpj_empresa VARCHAR, nu_processo VARCHAR, "
+        "nu_registro_produto VARCHAR, "
+        "st_produto_ativo BOOLEAN, is_registrado BOOLEAN, dt_vencimento_produto TIMESTAMP)"
+    )
+    paths = {}
+    for name, table in (("alimentos", "a"), ("alimentos_resultado", "r"), ("saneantes", "s")):
+        paths[name] = tmp_path / f"{name}.parquet"
+        con.execute(f"COPY {table} TO '{paths[name]}' (FORMAT parquet)")
+    rows, _ = derivar.write(
+        derivar.PRODUTOS, paths, tmp_path / "produtos.parquet", tmp_path / "spill"
+    )
+    assert rows == 2
+    got = {
+        r[0]: r[1:]
+        for r in con.execute(
+            "SELECT id, gluten, lactose, contem, pode_conter, nao_contem, alergia_varia "
+            f"FROM '{tmp_path / 'produtos.parquet'}'"
+        ).fetchall()
+    }
+    # gluten: one apresentação Sim, one Não -> Varia; lactose agrees. Trigo is contained by one
+    # apresentação, so it leaves nao_contem; Soja is "pode conter" on one, so it leaves nao_contem
+    # but stays in pode_conter; Ovos under an unknown rótulo counts as contained.
+    assert got["1"] == ("Varia", "Não", ["Ovos", "Trigo"], ["Soja"], ["Amendoim"], True)
+    assert got["2"] == (None, None, None, None, None, None)
 
 
 @needs_duckdb
@@ -1239,7 +1336,10 @@ def test_derived_table_with_a_missing_source(fake_dados, tmp_path, monkeypatch):
     with fake_dados.client() as http:
         result = build(tmp_path / "one", http=http, datasets=(COSMETICOS,), now=NOW, log=log.append)
     assert list(result["tables"]) == ["cosmeticos"]
-    assert any(m.startswith("skipping produtos: alimentos, saneantes not in") for m in log)
+    assert any(
+        m.startswith("skipping produtos: alimentos, alimentos_resultado, saneantes not in")
+        for m in log
+    )
     broken = dataclasses.replace(derivar.PRODUTOS, fontes=("alimentos", "nope"))
     monkeypatch.setattr(derivar, "DERIVADAS", (broken,))
     with fake_dados.client() as http, pytest.raises(DadosError, match="produtos needs nope"):

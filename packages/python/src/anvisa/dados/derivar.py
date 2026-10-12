@@ -43,12 +43,76 @@ class Derivada:
         return DESCRICOES[self.name]
 
 
+def _alergia(resultado: str) -> str:
+    # What the labels declare, per product, from alimentos_resultado (one row per apresentação):
+    # `intolerancias` is "Contém Glúten - Sim | Contém Lactose - Não"; `alergenicos` is groups
+    # "Rótulo - item#item" joined by " | ", the rótulos being Não contém, Pode conter, Contém
+    # derivado de and Contém (profiled 2026-10-12: the only four; 11,244 of 50,522 products
+    # declare anything). Apresentações of one product can disagree (227 products): the lists
+    # join every apresentação, an item some apresentação contains leaves "pode conter" and
+    # "não contém", and alergia_varia says so. Same rules as the site's resumirAlergia.
+    rotulo = "lower(strip_accents(rotulo))"
+    sinal = "CASE WHEN {sim} AND {nao} THEN 'Varia' WHEN {sim} THEN 'Sim' WHEN {nao} THEN 'Não' END"
+    flag = "bool_or(lower(strip_accents(intolerancias)) LIKE '%{termo} - {valor}%')"
+    return f"""
+        WITH grupos AS (
+          SELECT co_produto, trim(g) AS g
+          FROM (SELECT co_produto, unnest(string_split(alergenicos, '|')) AS g
+                FROM {resultado} WHERE alergenicos <> '')
+          WHERE trim(g) <> ''),
+        itens AS (
+          SELECT co_produto, trim(item) AS item,
+            CASE WHEN strpos(g, ' - ') > 0 THEN trim(g[1:strpos(g, ' - ') - 1]) ELSE '' END
+              AS rotulo
+          FROM (SELECT co_produto, g,
+                  unnest(string_split(CASE WHEN strpos(g, ' - ') > 0 THEN g[strpos(g, ' - ') + 3:]
+                                           ELSE g END, '#')) AS item
+                FROM grupos)
+          WHERE trim(item) <> ''),
+        listas AS (
+          SELECT co_produto,
+            coalesce(list_sort(list(DISTINCT item)
+              FILTER (WHERE {rotulo} NOT IN ('nao contem', 'pode conter'))), []) AS contem,
+            coalesce(list_sort(list(DISTINCT item) FILTER (WHERE {rotulo} = 'pode conter')), [])
+              AS pode,
+            coalesce(list_sort(list(DISTINCT item) FILTER (WHERE {rotulo} = 'nao contem')), [])
+              AS nao
+          FROM itens GROUP BY co_produto),
+        sinais AS (
+          SELECT co_produto,
+            {flag.format(termo="gluten", valor="sim")} AS g_sim,
+            {flag.format(termo="gluten", valor="nao")} AS g_nao,
+            {flag.format(termo="lactose", valor="sim")} AS l_sim,
+            {flag.format(termo="lactose", valor="nao")} AS l_nao,
+            count(DISTINCT nullif(alergenicos, '')) > 1 OR count(DISTINCT intolerancias) > 1
+              AS varia,
+            count(nullif(alergenicos, '')) + count(intolerancias) > 0 AS declara
+          FROM {resultado} GROUP BY co_produto)
+        SELECT co_produto,
+          {sinal.format(sim="g_sim", nao="g_nao")} AS gluten,
+          {sinal.format(sim="l_sim", nao="l_nao")} AS lactose,
+          CASE WHEN declara THEN coalesce(contem, []) END AS contem,
+          CASE WHEN declara THEN
+            list_filter(coalesce(pode, []), x -> NOT list_contains(coalesce(contem, []), x)) END
+            AS pode_conter,
+          CASE WHEN declara THEN
+            list_filter(coalesce(nao, []), x -> NOT list_contains(coalesce(contem, []), x)
+                                               AND NOT list_contains(coalesce(pode, []), x)) END
+            AS nao_contem,
+          CASE WHEN declara THEN varia END AS alergia_varia
+        FROM sinais LEFT JOIN listas USING (co_produto)"""
+
+
 def _produtos(t: dict[str, str]) -> str:
     # alimentos: one row per apresentação, grouped into the product (co_seq_produto). Name,
     # brands, company, processo and situação are constant within a product (README,
-    # "Products"), so min() reads the one value; the dates take the earliest.
+    # "Products"), so min() reads the one value; the dates take the earliest. The label's
+    # allergen declaration joins from alimentos_resultado, per product (_alergia).
     alimentos = f"""
+        SELECT base.* EXCLUDE (co), gluten, lactose, contem, pode_conter, nao_contem, alergia_varia
+        FROM (
         SELECT 'alimentos' AS area,
+          co_seq_produto AS co,
           CAST(co_seq_produto AS VARCHAR) AS id,
           min(no_produto) AS nome,
           min(marcas) AS marcas,
@@ -65,7 +129,8 @@ def _produtos(t: dict[str, str]) -> str:
           coalesce(list(nu_registro ORDER BY nu_registro) FILTER (WHERE nu_registro IS NOT NULL),
             []) AS registros
         FROM {t["alimentos"]}
-        GROUP BY co_seq_produto"""
+        GROUP BY co_seq_produto) base
+        LEFT JOIN ({_alergia(t["alimentos_resultado"])}) alergia ON alergia.co_produto = base.co"""
     # saneantes: one row per record already (nu_expediente is unique), no detail file
     saneantes = f"""
         SELECT 'saneantes' AS area,
@@ -82,7 +147,13 @@ def _produtos(t: dict[str, str]) -> str:
           CAST(NULL AS DATE) AS desde,
           CAST(dt_vencimento_produto AS DATE) AS vencimento,
           1 AS apresentacoes,
-          CAST([] AS VARCHAR[]) AS registros
+          CAST([] AS VARCHAR[]) AS registros,
+          CAST(NULL AS VARCHAR) AS gluten,
+          CAST(NULL AS VARCHAR) AS lactose,
+          CAST(NULL AS VARCHAR[]) AS contem,
+          CAST(NULL AS VARCHAR[]) AS pode_conter,
+          CAST(NULL AS VARCHAR[]) AS nao_contem,
+          CAST(NULL AS BOOLEAN) AS alergia_varia
         FROM {t["saneantes"]}"""
     return f"{alimentos}\n        UNION ALL BY NAME\n{saneantes}"
 
@@ -91,12 +162,17 @@ PRODUTOS = Derivada(
     name="produtos",
     group="produtos",
     title="Produtos: uma linha por alimento ou saneante regularizado",
-    fontes=("alimentos", "saneantes"),
+    fontes=("alimentos", "alimentos_resultado", "saneantes"),
     sort=("cnpj", "area", "id"),
     notes=(
         "Uma linha por produto, com as mesmas colunas para alimentos (agrupados por "
         "co_seq_produto: um produto, várias apresentações) e saneantes (uma linha por "
-        "nu_expediente). Derivada de alimentos e saneantes a cada build.",
+        "nu_expediente). Derivada de alimentos, alimentos_resultado e saneantes a cada build.",
+        "gluten, lactose, contem, pode_conter, nao_contem e alergia_varia resumem o que os "
+        "rótulos das apresentações do alimento declaram (alimentos_resultado); nulos quando "
+        "nenhuma apresentação declara nada (a maioria) e nos saneantes. contem junta "
+        '"Contém" e "Contém derivado de"; um item que alguma apresentação contém sai de '
+        "pode_conter e de nao_contem; alergia_varia marca apresentações que divergem.",
         "Os cosméticos não estão aqui (1,2 milhão de linhas): use os arquivos de busca da "
         "tabela cosmeticos.",
         "vencimento nas notificações de alimentos é 2029-12-01, um valor de preenchimento da "

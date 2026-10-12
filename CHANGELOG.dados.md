@@ -8,6 +8,12 @@ consumer must change to keep reading it; everything below has been additive, so 
 
 ## 2026-10-12
 
+- **Allergens on `produtos`.** Six new columns from `alimentos_resultado`, now a fonte:
+  `gluten` and `lactose` (`Sim`, `Não`, `Varia` when the apresentações disagree), the sorted
+  lists `contem` ("Contém" and "Contém derivado de"), `pode_conter` and `nao_contem` (an
+  item some apresentação contains leaves the other two), and `alergia_varia`. NULL on the
+  39,278 alimentos whose labels declare nothing and on every saneante; 11,244 products
+  declare, 227 vary. The same rules as the site's own summary. The file grows 120 KB.
 - **`medidas`**, the third derived table: one row per dossiê × produto of
   `produtos_irregulares` (which has one per dossiê × ação × atividade × produto), with `acoes`,
   `atividades` and `registros` as sorted lists, `primeira` and `ultima` publication, the

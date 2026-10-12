@@ -267,6 +267,27 @@ DESCRICOES: dict[str, dict[str, str]] = {
             "Os nº de registro das apresentações do alimento (13 dígitos cada), em ordem; lista "
             "vazia nas notificações e nos saneantes."
         ),
+        "gluten": (
+            '"Sim", "Não" ou "Varia" (apresentações divergem), pelo rótulo; nulo quando o '
+            "alimento não declara e nos saneantes."
+        ),
+        "lactose": '"Sim", "Não" ou "Varia", pelo rótulo; nulo quando não declara e nos saneantes.',
+        "contem": (
+            'Alergênicos que o rótulo declara conter ("Contém" ou "Contém derivado de"), nomes '
+            "legais em ordem, juntando todas as apresentações; nulo quando não declara."
+        ),
+        "pode_conter": (
+            'Alergênicos que o rótulo diz "Pode conter" e nenhuma apresentação declara conter; '
+            "nulo quando não declara."
+        ),
+        "nao_contem": (
+            'Alergênicos que o rótulo diz "Não contém" e nenhuma apresentação contém ou pode '
+            "conter; nulo quando não declara."
+        ),
+        "alergia_varia": (
+            "Verdadeiro quando as apresentações do alimento declaram alergênicos ou "
+            "intolerâncias diferentes entre si; nulo quando não declara."
+        ),
     },
     "empresas": {
         "cnpj": "CNPJ, 14 dígitos com zeros à esquerda. Texto, nunca número.",
