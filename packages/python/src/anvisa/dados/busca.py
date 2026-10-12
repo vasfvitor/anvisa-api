@@ -33,7 +33,7 @@ from typing import Any
 
 from ..errors import DadosError
 from .catalog import Dataset
-from .convert import _quote, connect
+from .convert import _quote, connect, copy_parquet
 
 VERSION = 1
 TARGET = 3000  # rows per file in palavras/ and empresas/
@@ -54,7 +54,6 @@ ROW_COLUMNS = (
     "st_registrado",
 )
 COMPANY_NAME = "no_razao_social_empresa"
-PARQUET = "FORMAT parquet, COMPRESSION zstd"
 
 
 def normalize(text: str) -> str:
@@ -239,5 +238,5 @@ def write(ds: Dataset, parquet: Path, folder: Path, *, target: int = TARGET) -> 
 
 def _copy(con, query: str, dest: Path) -> int:
     """COPY `query` to `dest` as zstd Parquet and return the file's size."""
-    con.execute(f"COPY ({query}) TO {_quote(str(dest))} ({PARQUET})")
+    copy_parquet(con, query, dest)
     return dest.stat().st_size

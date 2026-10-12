@@ -34,6 +34,16 @@ def _quote(value: str) -> str:
     return "'" + value.replace("'", "''") + "'"
 
 
+def copy_parquet(con, query: str, dest: Path, row_group_size: int | None = None) -> int:
+    """COPY `query` to `dest` as zstd Parquet, the one way every file here is written; returns
+    the row count DuckDB reports for the COPY. Without `row_group_size` DuckDB's default
+    applies (the search files are small enough for one group each)."""
+    options = "FORMAT parquet, COMPRESSION zstd"
+    if row_group_size is not None:
+        options += f", ROW_GROUP_SIZE {int(row_group_size)}"
+    return int(con.execute(f"COPY ({query}) TO {_quote(str(dest))} ({options})").fetchone()[0])
+
+
 def connect(spill: Path):
     """A DuckDB connection set up for a reproducible build: one thread (row order and row-group
     layout are then deterministic), memory capped at MEMORY_LIMIT, spilling to `spill`."""
@@ -118,10 +128,7 @@ def convert(
                     )
 
             parquet.parent.mkdir(parents=True, exist_ok=True)
-            con.execute(
-                f"COPY ({select_sql(ds)}) TO {_quote(str(parquet))} "
-                f"(FORMAT parquet, COMPRESSION zstd, ROW_GROUP_SIZE {int(row_group_size)})"
-            )
+            copy_parquet(con, select_sql(ds), parquet, row_group_size)
     finally:
         con.close()  # a no-op after `with con`; needed when the parse failed first
         clean.unlink(missing_ok=True)

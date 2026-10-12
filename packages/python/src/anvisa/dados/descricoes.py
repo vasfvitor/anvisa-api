@@ -18,6 +18,11 @@ _PROCESSO = (
 )
 _CNPJ = "CNPJ da empresa detentora, 14 dígitos com zeros à esquerda. Texto, nunca número."
 _RAZAO = "Razão social da empresa detentora."
+_NOME_PRODUTO = "Nome do produto como regularizado."
+_TIPO = (
+    '"Registrado" (a ANVISA analisou antes de liberar) ou "Notificado" (a empresa '
+    "comunicou e pode vender sem análise prévia)."
+)
 _CARGA_ETL = "Quando a ANVISA gerou o arquivo aberto" + _BRASILIA + "; igual em todas as linhas."
 _ATUALIZACAO = (
     "Quando a ANVISA atualizou o arquivo aberto" + _BRASILIA + "; igual em todas as linhas."
@@ -102,10 +107,7 @@ DESCRICOES: dict[str, dict[str, str]] = {
         ),
         "MARCAS": 'Marcas do produto, separadas por " ; ".',
         "SITUACAO_REGISTRO": '"Ativo" ou "Inativo" (cancelado, vencido ou encerrado a pedido).',
-        "TIPO_REGULARIZACAO": (
-            '"Registrado" (a ANVISA analisou antes de liberar) ou "Notificado" (a empresa '
-            "comunicou e pode vender sem análise prévia)."
-        ),
+        "TIPO_REGULARIZACAO": _TIPO,
         "DS_CATEGORIA_PRODUTO": 'Categoria do produto (ex.: "Suplementos alimentares").',
         "DS_ALEGACAO_FUNCIONAL": 'Alegações funcionais autorizadas, separadas por ";".',
         "DT_CARGA_ETL": _CARGA_ETL,
@@ -137,7 +139,7 @@ DESCRICOES: dict[str, dict[str, str]] = {
         "DT_CARGA_ETL": _CARGA_ETL,
     },
     "saneantes": {
-        "NO_PRODUTO": "Nome do produto como regularizado.",
+        "NO_PRODUTO": _NOME_PRODUTO,
         "NU_PROCESSO": _PROCESSO,
         "NU_CNPJ_EMPRESA": _CNPJ,
         "NO_RAZAO_SOCIAL_EMPRESA": _RAZAO,
@@ -161,7 +163,7 @@ DESCRICOES: dict[str, dict[str, str]] = {
             "a ser analisada."
         ),
     },
-    "peticoes_alimento_andamento": dict(_PETICAO),
+    "peticoes_alimento_andamento": _PETICAO,
     "produtos_irregulares": {
         "CO_SEQ_DOSSIE_INVESTIG_MED": (
             "Identificador do dossiê de investigação; um dossiê tem várias linhas (ação × "
@@ -214,7 +216,7 @@ DESCRICOES: dict[str, dict[str, str]] = {
     "cosmeticos": {
         "NU_PROCESSO": _PROCESSO
         + " Único por produto; veja st_registrado para as linhas em dobro.",
-        "NO_PRODUTO": "Nome do produto como regularizado.",
+        "NO_PRODUTO": _NOME_PRODUTO,
         "NU_CNPJ_EMPRESA": _CNPJ,
         "NO_RAZAO_SOCIAL_EMPRESA": _RAZAO + " Uma por CNPJ.",
         "DT_VENCIMENTO": (
@@ -243,7 +245,7 @@ DESCRICOES: dict[str, dict[str, str]] = {
             "Identificador na origem: co_seq_produto nos alimentos, nu_expediente nos saneantes. "
             "Único com area."
         ),
-        "nome": "Nome do produto como regularizado.",
+        "nome": _NOME_PRODUTO,
         "marcas": 'Marcas do alimento, separadas por " ; "; nulo nos saneantes.',
         "empresa": _RAZAO,
         "cnpj": _CNPJ,
@@ -253,10 +255,7 @@ DESCRICOES: dict[str, dict[str, str]] = {
             "processo; vazio nas de saneantes."
         ),
         "ativo": "Regularização ativa na ANVISA no dia do build.",
-        "tipo": (
-            '"Registrado" (a ANVISA analisou antes de liberar) ou "Notificado" (a empresa '
-            "comunicou e pode vender sem análise prévia)."
-        ),
+        "tipo": _TIPO,
         "categoria": "Categoria do alimento (ex.: Suplementos alimentares); nulo nos saneantes.",
         "desde": "Primeira regularização do alimento (data); nulo nos saneantes.",
         "vencimento": (

@@ -480,17 +480,14 @@ def assunto_formulario(
 def dados_list(ctx: typer.Context) -> None:
     """As tabelas publicadas: as do catálogo (com a URL de origem) e as derivadas delas."""
     rows = [
-        {"name": d.name, "group": d.group, "title": d.title, "url": d.url, "fontes": ""}
-        for d in dados.CATALOG
-    ] + [
         {
             "name": d.name,
             "group": d.group,
             "title": d.title,
-            "url": "",
-            "fontes": ", ".join(d.fontes),
+            "url": getattr(d, "url", ""),  # a Derivada has no file of its own
+            "fontes": ", ".join(getattr(d, "fontes", ())),
         }
-        for d in dados.DERIVADAS
+        for d in (*dados.CATALOG, *dados.DERIVADAS)
     ]
     if ctx.obj == Format.json:
         typer.echo(json.dumps(rows, ensure_ascii=False, indent=2))
@@ -553,7 +550,7 @@ def dados_build(
             "build_id": result["build_id"],
             "out": str(out),
             "tables": {
-                name: {k: t.get(k) for k in ("rows", "bytes", "nulls_added", "rejected_records")}
+                name: {k: t[k] for k in ("rows", "bytes", "nulls_added", "rejected_records")}
                 for name, t in result["tables"].items()
             },
         }

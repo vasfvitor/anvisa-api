@@ -21,11 +21,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from .convert import _quote, connect
+from .convert import ROW_GROUP_SIZE, _quote, connect, copy_parquet
 from .descricoes import DESCRICOES
-
-ROW_GROUP_SIZE = 8192
-PARQUET = "FORMAT parquet, COMPRESSION zstd"
 
 
 @dataclass(frozen=True)
@@ -211,15 +208,7 @@ def write(
     query = f"SELECT * FROM ({d.sql(sources)}) ORDER BY {order}"
     parquet.parent.mkdir(parents=True, exist_ok=True)
     spill.mkdir(parents=True, exist_ok=True)
-    con = connect(spill)
-    try:
-        con.execute(
-            f"COPY ({query}) TO {_quote(str(parquet))} ({PARQUET}, ROW_GROUP_SIZE {ROW_GROUP_SIZE})"
-        )
-        target = f"read_parquet({_quote(str(parquet))})"
-        rows = con.execute(f"SELECT count(*) FROM {target}").fetchone()[0]
-        described = con.execute(f"DESCRIBE SELECT * FROM {target}").fetchall()
-        columns = [(row[0], row[1]) for row in described]
-    finally:
-        con.close()
-    return int(rows), columns
+    with connect(spill) as con:
+        rows = copy_parquet(con, query, parquet, ROW_GROUP_SIZE)
+        columns = [(row[0], row[1]) for row in con.execute(f"DESCRIBE {query}").fetchall()]
+    return rows, columns

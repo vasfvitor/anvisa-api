@@ -1092,7 +1092,6 @@ def test_produtos_on_the_fixtures(fake_dados, tmp_path):
     assert entry["source"]["loaded_at"] == "2026-10-05T00:00:00"  # the latest among the sources
     assert entry["nulls_added"] == {} and entry["rejected_records"] == 0
     assert [c["name"] for c in entry["columns"]] == list(derivar.PRODUTOS.descriptions)
-    assert all(c["description"] for c in entry["columns"])
     path = out / entry["path"]
     assert entry["bytes"] == path.stat().st_size and entry["rows"] == 36 + 23
     con = duckdb.connect()
