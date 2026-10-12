@@ -37,7 +37,10 @@ pages against 0-based responses, required filter keys, and typed exceptions for 
 validation errors ANVISA reports as HTTP 500.
 
 Open data, no credentials: `pip install 'anvisa[dados]'` adds `anvisa dados build`, which turns
-ANVISA's alimentos CSVs from dados.anvisa.gov.br (Windows-1252, unescaped quotes) into typed,
-sorted Parquet plus a `manifest.json`.
+ANVISA's bulk CSVs from dados.anvisa.gov.br (alimentos, saneantes, cosméticos, petições,
+produtos irregulares; Windows-1252, unescaped quotes) into typed, sorted Parquet plus two
+derived tables (`produtos`, `empresas`), a `manifest.json` with Portuguese column descriptions
+and a data dictionary page. The daily result is live at
+https://vasfvitor.github.io/anvisa-api/ (dictionary: `dicionario.html`).
 
 Full write-up, spec overlay and recorded fixtures: https://github.com/vasfvitor/anvisa-api

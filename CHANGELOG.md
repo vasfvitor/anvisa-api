@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- **The published data has its own surface.** `CHANGELOG.dados.md` (repo root) logs the data
+  product by build; the Pages site gains a generated `dicionario.html` (notes and columns of
+  every table, from the manifest alone), and the manifest gains top-level `docs` and `license`
+  keys, a Portuguese `description` on every column and `notes` on every table. The text lives
+  in `dados/descricoes.py` (119 columns) and in each `Dataset.notes`;
+  `test_descriptions_cover_every_column` is the gate. A carried-over table takes the current
+  text (`build.refresh_metadata`). `schema_version` stays 1.
+- **Derived tables** (`anvisa.dados.derivar`, `Derivada`, `DERIVADAS`): Parquet built on every
+  build from the build's own converted tables, never carried over, byte-identical for
+  identical inputs (one thread, every aggregate ordered). `produtos` (one row per alimento or
+  saneante, one schema; 194,935 rows, 6.0 MB on 2026-10-11) and `empresas` (one row per
+  14-digit CNPJ holding a product or targeted by a measure; 16,923 rows, 450 KB). Each takes
+  0.3 s. Manifest entries carry `fontes` and a `source.url` pointing at `derivar.py` at the
+  build's commit; `anvisa dados list` lists them with their sources; `-d` cannot select them,
+  and a full build that lacks a source fails instead of publishing without it. Sums were
+  checked against the raw tables and the cosméticos pair rule against a hand count.
 - **Search files** (`anvisa.dados.busca`, format version 1): a dataset with `busca=True` in
   the catalog (cosméticos) is published once more under `data/<build_id>/<name>/`, its rows
   re-partitioned into about 3,200 small Parquet files by word of the product name, by CNPJ and

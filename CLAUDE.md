@@ -40,4 +40,8 @@ Daily `.github/workflows/dados.yml` converts the CSVs and deploys `manifest.json
 to GitHub Pages (`https://vasfvitor.github.io/anvisa-api/manifest.json`). Adding a dataset is
 mechanical once the real file is profiled; an Opus agent did cosméticos from a single brief, so
 delegate the next one the same way. Files above about 200 MB need `parse.stream`; DuckDB's
-`memory_limit` and `temp_directory` are set in `convert.py`.
+`memory_limit` and `temp_directory` are set in `convert.py`. Derived tables (`produtos`,
+`empresas`) live in `dados/derivar.py` and are rebuilt every build with order-stable aggregates
+only; column descriptions and table `notes` are Portuguese, in `dados/descricoes.py` and the
+catalog, and feed the manifest and the Pages `dicionario.html`. Data-side changes go in
+`CHANGELOG.dados.md`, by build, not only in the package CHANGELOG.

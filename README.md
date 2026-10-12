@@ -143,9 +143,26 @@ day the table was added; the live `manifest.json` has today's:
 | `produtos_irregulares` | `TA_CONSULTA_PRODUTOS_IRREGULARES_RESULTADO.CSV` | 79,986 (10-05) | product × ação (suspensão, proibição, recolhimento, apreensão, interdição, inutilização) × atividade of a fiscalização dossiê, every area (Alimento: 8,743 rows, 722 dossiês); sorted by `co_tipo_produto` (6 = Alimento), `nu_cnpj_empresa_investigada`, `co_seq_dossie_investig_med` |
 | `cosmeticos` | `TA_CONSULTA_COSMETICOS.CSV` | 1,204,980 (10-07) | notified, exempt (`ISENTO DE REGISTRO`) or registered cosmetic, one row per processo except 11,144 processos listed twice (`st_registrado` false, then true, same `nu_registro`); sorted by `nu_cnpj_empresa`, `nu_processo`, `st_registrado`. **24 MB** of Parquet, far above the others, so it is also published as **search files** (`busca` below). No detail file. |
 
+Two more tables are **derived** from these on every build (`anvisa/dados/derivar.py`), so that
+"one row per product" and "one row per company" are decided once, here, instead of in every
+consumer's SQL. Their manifest entries carry `fontes` (the tables they were built from) and a
+`source.url` that points at the recipe; they are never carried over, always rebuilt from the
+build's own files, and byte-identical for identical inputs (one DuckDB thread, every aggregate
+ordered):
+
+| Table | Built from | One row per |
+|---|---|---|
+| `produtos` | `alimentos`, `saneantes` | product: alimentos grouped by `co_seq_produto` (first regularization, apresentação count, the list of `registros`), saneantes one per `nu_expediente`; one schema (`area`, `id`, `nome`, `marcas`, `empresa`, `cnpj`, `processo`, `registro`, `ativo`, `tipo`, `categoria`, `desde`, `vencimento`, `apresentacoes`, `registros`), sorted by `cnpj`, `area`, `id`. Cosméticos are not in it (1.2M rows): use the search files. |
+| `empresas` | `alimentos`, `saneantes`, `cosmeticos`, `produtos_irregulares` | 14-digit CNPJ that holds a product or was the target of a measure: commonest spelling of the name, products and active products per area and in total (cosméticos by distinct processo), `medidas` (dossiês against it) and `medida_ultima`; sorted by `cnpj`. |
+
 Column names are ANVISA's, lowercased, so the
 [data dictionary](https://dados.anvisa.gov.br/dados/CONSULTAS/PRODUTOS/Documentacao_e_Dicionario_de_Dados_Regularizados_Alimentos.pdf)
-applies. Timestamps are naive **Brasília local time**, as ANVISA writes them.
+applies. Timestamps are naive **Brasília local time**, as ANVISA writes them. What each column
+means and what a reader of each table should know is published with the data, in Portuguese:
+[`dicionario.html`](https://vasfvitor.github.io/anvisa-api/dicionario.html), generated at build
+from `dados/descricoes.py` and each dataset's `notes` in the catalog, and the same text in the
+manifest (`columns[].description`, `notes`). This README keeps what a parser needs; that page
+keeps what a consumer needs.
 
 What the files don't tell you (verified on the 2026-10-05 files):
 
@@ -168,11 +185,14 @@ What the files don't tell you (verified on the 2026-10-05 files):
 | Completeness | ANVISA's own panel (`consultas.anvisa.gov.br/#/alimentos/`) shows nothing `alimentos` and `alimentos_resultado` lack: product page and apresentação page compared by hand on 2026-10-06. The other tables were not compared against anything. |
 
 `manifest.json` is the entry point (`schema_version` 1): for each table, its `path` (relative
-to the manifest, under `data/<build_id>/`), rows, bytes, sha256, column names and types, sort
-order, the source file's ETag and ANVISA's load time, and `nulls_added`, the count of values per
-typed column that did not parse (the build fails if a column loses more than 20%). Data paths
-are immutable: a new build gets a new directory and the previous one disappears with the next
-deploy.
+to the manifest, under `data/<build_id>/`), rows, bytes, sha256, column names, types and
+descriptions, `notes` for the reader, sort order, the source file's ETag and ANVISA's load time,
+and `nulls_added`, the count of values per typed column that did not parse (the build fails if a
+column loses more than 20%). At the top level, `docs` names the generated dictionary page and
+`license` says whose the data is (ANVISA's) and the code's (MIT). Data paths are immutable: a new
+build gets a new directory and the previous one disappears with the next deploy. A table carried
+over from the previous build keeps its file but takes the current code's title, notes and
+descriptions.
 
 A table too big to download whole (`cosmeticos`) also carries a `busca` key: the same rows
 published once more under `data/<build_id>/<name>/`, re-partitioned into about 3,200 small

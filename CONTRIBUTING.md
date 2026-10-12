@@ -74,7 +74,10 @@ throttling, but the same rule holds: profile the real file before writing its ca
 3. Add a `Dataset` to `anvisa/dados/catalog.py` and to `CATALOG`. The `columns` dict is the
    header in order; the header check, the typed SELECT and the manifest all come from it. Give
    each dataset exactly **one** date order: a day-first and a month-first format together would
-   parse `12/08` as whichever is listed first, and the null guard could not notice.
+   parse `12/08` as whichever is listed first, and the null guard could not notice. Describe
+   every column in `dados/descricoes.py` and give the entry `notes`, both in Portuguese and for
+   someone reading the Parquet, not the parser: they go into the manifest and the Pages
+   dictionary. `test_descriptions_cover_every_column` is the gate.
 4. Cut a sample into `fixtures/dados/<name>_head.csv`: the header plus a few dozen records that
    cover the odd cases, copied **by record, byte for byte** (records contain line breaks, so not
    by line, and never re-encoded; `.gitattributes` keeps git from touching them). Save the
@@ -83,6 +86,25 @@ throttling, but the same rule holds: profile the real file before writing its ca
 6. If the Parquet comes out far above 15 MB (anvisa-dash downloads whole files), set
    `busca=True` on the entry: `dados/busca.py` then publishes the rows again as small search
    files. Today it expects cosméticos' column names; generalize it before reusing it.
+
+## Adding a derived table
+
+A derived table (`anvisa/dados/derivar.py`) is Parquet built from the converted tables, not
+from an ANVISA file: `produtos` and `empresas` are the first two. Add a `Derivada` and put it in
+`DERIVADAS`; its `sql` gets a map fonte name → `read_parquet('…')` and returns a SELECT. Rules:
+
+1. Every aggregate is order-stable (`min`, `arg_min`, `list(x ORDER BY x)`,
+   `first(x ORDER BY …)`): the build must give byte-identical Parquet for identical inputs, and
+   `test_partial_build_carries_published_tables` checks the sha256 across two builds.
+2. Nothing depends on the day of the build (no "vencida" flag) and nothing is
+   search-normalized text; both are the consumer's job.
+3. Describe every output column in `dados/descricoes.py` and write `notes`, Portuguese, and
+   assert the column list against the built file in a fixture-level test (see
+   `test_produtos_on_the_fixtures`). The fixtures are small; if the rule you are testing needs
+   a case they lack, extend a fixture by record, byte for byte.
+4. Note it in `CHANGELOG.dados.md`. Derived tables are rebuilt on every build and cannot be
+   selected with `-d`; a missing fonte is an error on a full build and a logged skip on a
+   partial one without a published site.
 
 ## Running things
 
