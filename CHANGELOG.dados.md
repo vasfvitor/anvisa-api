@@ -6,6 +6,15 @@ when known. The package's own `CHANGELOG.md` records the Python API; a data chan
 no package release still appears here. `schema_version` in the manifest only changes when a
 consumer must change to keep reading it; everything below has been additive, so it is still 1.
 
+## 2026-10-12
+
+- **`medidas`**, the third derived table: one row per dossiê × produto of
+  `produtos_irregulares` (which has one per dossiê × ação × atividade × produto), with `acoes`,
+  `atividades` and `registros` as sorted lists, `primeira` and `ultima` publication, the
+  target's `cnpj` only when the source has a 14-digit one, `pessoa` when the target is a CPF
+  (then neither number nor name is published), and who filed the dossiê (`autor_cnpj`,
+  `autor`). Sorted by `area_codigo`, `dossie`, `produto`; 14,092 rows, 426 KB.
+
 ## 2026-10-11
 
 - **Descriptions and notes.** Every column of every table carries a Portuguese

@@ -13,8 +13,9 @@
   build from the build's own converted tables, never carried over, byte-identical for
   identical inputs (one thread, every aggregate ordered). `produtos` (one row per alimento or
   saneante, one schema; 194,935 rows, 6.0 MB on 2026-10-11) and `empresas` (one row per
-  14-digit CNPJ holding a product or targeted by a measure; 16,923 rows, 450 KB). Each takes
-  0.3 s. Manifest entries carry `fontes` and a `source.url` pointing at `derivar.py` at the
+  14-digit CNPJ holding a product or targeted by a measure; 16,923 rows, 450 KB) take 0.3 s
+  each; `medidas` (one row per dossiê × produto of produtos_irregulares, lists of ações and
+  atividades, the target's CNPJ only when it is one; 14,092 rows, 426 KB) takes 0.1 s. Manifest entries carry `fontes` and a `source.url` pointing at `derivar.py` at the
   build's commit; `anvisa dados list` lists them with their sources; `-d` cannot select them,
   and a full build that lacks a source fails instead of publishing without it. Sums were
   checked against the raw tables and the cosméticos pair rule against a hand count.

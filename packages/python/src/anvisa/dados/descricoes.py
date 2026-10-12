@@ -288,4 +288,36 @@ DESCRICOES: dict[str, dict[str, str]] = {
         ),
         "medida_ultima": "Data da publicação mais recente entre essas medidas; nulo sem medidas.",
     },
+    "medidas": {
+        "dossie": "Identificador do dossiê (produtos_irregulares.co_seq_dossie_investig_med).",
+        "produto": "Produto atingido, como escrito na medida, sem espaços nas pontas.",
+        "area": "Área do produto (Alimento, Cosmético, Saneantes, Medicamento…).",
+        "area_codigo": "Código da área: 1 medicamento, 2 cosmético, 3 saneante, 6 alimento.",
+        "risco": "Classe de risco do produto (Risco I, II ou III).",
+        "processo": "Nº do processo da medida, 17 dígitos; não é o de um produto.",
+        "cnpj": (
+            "CNPJ da empresa fiscalizada, 14 dígitos; nulo quando a origem traz CPF, texto ou nada."
+        ),
+        "empresa": "Nome da empresa fiscalizada; nulo quando falta ou quando o alvo é uma pessoa.",
+        "pessoa": "Verdadeiro quando o alvo é uma pessoa física (CPF na origem).",
+        "registros": (
+            "Números de registro citados na medida, só dígitos, em ordem; lista vazia nos "
+            "alimentos."
+        ),
+        "acoes": (
+            "Ações da medida, em ordem alfabética: Apreensão, Interdição cautelar, Inutilização, "
+            "Proibição, Recolhimento, Suspensão."
+        ),
+        "atividades": (
+            "Atividades atingidas, em ordem alfabética (Comercialização, Distribuição, "
+            "Fabricação, Propaganda, Uso…); vazia quando a origem não traz."
+        ),
+        "primeira": "Data da primeira publicação entre as medidas do dossiê para este produto.",
+        "ultima": "Data da publicação mais recente.",
+        "autor_cnpj": (
+            "CNPJ de quem abriu o dossiê: a própria ANVISA (03112386000111), um marketplace ou "
+            "a própria empresa (recolhimento voluntário)."
+        ),
+        "autor": "Razão social de quem abriu o dossiê.",
+    },
 }

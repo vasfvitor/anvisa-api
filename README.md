@@ -154,6 +154,7 @@ ordered):
 |---|---|---|
 | `produtos` | `alimentos`, `saneantes` | product: alimentos grouped by `co_seq_produto` (first regularization, apresentação count, the list of `registros`), saneantes one per `nu_expediente`; one schema (`area`, `id`, `nome`, `marcas`, `empresa`, `cnpj`, `processo`, `registro`, `ativo`, `tipo`, `categoria`, `desde`, `vencimento`, `apresentacoes`, `registros`), sorted by `cnpj`, `area`, `id`. Cosméticos are not in it (1.2M rows): use the search files. |
 | `empresas` | `alimentos`, `saneantes`, `cosmeticos`, `produtos_irregulares` | 14-digit CNPJ that holds a product or was the target of a measure: commonest spelling of the name, products and active products per area and in total (cosméticos by distinct processo), `medidas` (dossiês against it) and `medida_ultima`; sorted by `cnpj`. |
+| `medidas` | `produtos_irregulares` | dossiê × produto (the source has one row per dossiê × ação × atividade × produto): `area`/`area_codigo`, `risco`, `processo` (the measure's), `cnpj` only when the target is a 14-digit CNPJ, `empresa`, `pessoa` (target is a CPF: no number, no name), sorted lists `registros`, `acoes`, `atividades`, `primeira`/`ultima` publication, `autor_cnpj`/`autor` (who filed); sorted by `area_codigo`, `dossie`, `produto`. 14,092 rows, 0.4 MB on 2026-10-12. |
 
 Column names are ANVISA's, lowercased, so the
 [data dictionary](https://dados.anvisa.gov.br/dados/CONSULTAS/PRODUTOS/Documentacao_e_Dicionario_de_Dados_Regularizados_Alimentos.pdf)

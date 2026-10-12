@@ -195,7 +195,62 @@ EMPRESAS = Derivada(
     sql=_empresas,
 )
 
-DERIVADAS: tuple[Derivada, ...] = (PRODUTOS, EMPRESAS)
+
+def _medidas(t: dict[str, str]) -> str:
+    # One row per dossiê × produto; the source has one per dossiê × ação × atividade × produto
+    # (about 6 per pair). The per-dossiê columns are constant within a dossiê (profiled
+    # 2026-10-12: one distinct value each), so min() reads the one value; ações, atividades and
+    # registros become sorted lists. The target's CNPJ is kept only when it is one (14 digits,
+    # not the 00000000000000 filler); a person (CPF) is flagged and neither number nor name is
+    # published, as the site already does.
+    alvo = "nu_cnpj_empresa_investigada"
+    cnpj14 = f"regexp_full_match({alvo}, '[0-9]{{14}}') AND {alvo} <> '00000000000000'"
+    pessoa = f"coalesce(bool_or(regexp_full_match({alvo}, '[0-9]{{11}}')), false)"
+    lista = "coalesce(list_sort(list(DISTINCT {x}) FILTER (WHERE {x} IS NOT NULL)), [])"
+    return f"""
+        SELECT co_seq_dossie_investig_med AS dossie,
+          trim(produto) AS produto,
+          min(ds_tipo_produto) AS area,
+          co_tipo_produto AS area_codigo,
+          min(ds_risco_produto) AS risco,
+          min(nu_processo) AS processo,
+          min({alvo}) FILTER (WHERE {cnpj14}) AS cnpj,
+          CASE WHEN {pessoa} THEN NULL ELSE min(nullif(trim(no_empresa_investigada), '')) END
+            AS empresa,
+          {pessoa} AS pessoa,
+          {lista.format(x="nullif(regexp_replace(registro, '[^0-9]', '', 'g'), '')")} AS registros,
+          {lista.format(x="ds_acao_fiscalizacao")} AS acoes,
+          {lista.format(x="ds_atividade_fiscalizacao")} AS atividades,
+          CAST(min(dt_publicacao) AS DATE) AS primeira,
+          CAST(max(dt_publicacao) AS DATE) AS ultima,
+          min(nu_cnpj) AS autor_cnpj,
+          min(no_razao_social) AS autor
+        FROM {t["produtos_irregulares"]}
+        WHERE coalesce(trim(produto), '') <> ''
+        GROUP BY co_tipo_produto, co_seq_dossie_investig_med, trim(produto)"""
+
+
+MEDIDAS = Derivada(
+    name="medidas",
+    group="produtos_irregulares",
+    title="Medidas de fiscalização: uma linha por dossiê e produto",
+    fontes=("produtos_irregulares",),
+    sort=("area_codigo", "dossie", "produto"),
+    notes=(
+        "Uma linha por dossiê × produto de produtos_irregulares, que tem uma por dossiê × ação "
+        "× atividade × produto: as ações e atividades viram listas. Todas as áreas; filtre por "
+        "area_codigo (6 é alimento). Derivada a cada build.",
+        "cnpj é a empresa fiscalizada só quando a origem traz um CNPJ de 14 dígitos; CPF, texto "
+        '("DESCONHECIDO", "Não se aplica") e o preenchimento 00000000000000 viram nulo. Quando '
+        "o alvo é uma pessoa (CPF), pessoa é verdadeiro e empresa também é nulo.",
+        "processo é o da medida, não o de um produto; registros são os números de registro "
+        "citados (vazio nos alimentos, que a origem não traz).",
+        "Linhas com produto vazio na origem (49 em 80 mil) ficam de fora.",
+    ),
+    sql=_medidas,
+)
+
+DERIVADAS: tuple[Derivada, ...] = (PRODUTOS, EMPRESAS, MEDIDAS)
 
 
 def write(

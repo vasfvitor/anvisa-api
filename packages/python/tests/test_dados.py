@@ -1174,6 +1174,64 @@ def test_empresas_on_the_fixtures(fake_dados, tmp_path):
 
 
 @needs_duckdb
+def test_medidas_on_the_fixtures(fake_dados, tmp_path):
+    """One row per dossiê × produto of produtos_irregulares, ações and atividades as sorted
+    lists, the target's CNPJ only when it is one and nothing about a person."""
+    import duckdb
+
+    out = tmp_path / "dist"
+    with fake_dados.client() as http:
+        manifest = build(out, http=http, now=NOW, commit="abc123")
+    entry = manifest["tables"]["medidas"]
+    assert entry["fontes"] == ["produtos_irregulares"]
+    assert [c["name"] for c in entry["columns"]] == list(derivar.MEDIDAS.descriptions)
+    assert {c["type"] for c in entry["columns"]} == {
+        "INTEGER",
+        "VARCHAR",
+        "BOOLEAN",
+        "VARCHAR[]",
+        "DATE",
+    }
+    path = out / entry["path"]
+    src = out / manifest["tables"]["produtos_irregulares"]["path"]
+    con = duckdb.connect()
+    q = lambda sql: con.execute(sql.replace("FROM M", f"FROM '{path}'")).fetchall()  # noqa: E731
+    # 54 source rows (one with an empty PRODUTO, left out) collapse to 19 dossiê × produto rows
+    pairs = con.execute(
+        f"SELECT count(DISTINCT (co_seq_dossie_investig_med, trim(produto))) FROM '{src}' "
+        "WHERE coalesce(trim(produto), '') <> ''"
+    ).fetchone()[0]
+    assert entry["rows"] == pairs == 19
+    assert q("SELECT count(*) FROM M WHERE produto = '' OR produto <> trim(produto)") == [(0,)]
+    assert q("SELECT area_codigo, count(*) FROM M WHERE area = 'Alimento' GROUP BY 1") == [(6, 13)]
+    # the company also in alimentos_head.csv: one dossiê, a Proibição, published on one day
+    assert q("SELECT dossie, acoes, primeira = ultima FROM M WHERE cnpj = '02200052000137'") == [
+        (53236, ["Proibição"], True)
+    ]
+    # a dossiê with two ações and a voluntary recall filed by the company itself
+    (row,) = q("SELECT acoes, atividades, autor_cnpj = cnpj FROM M WHERE dossie = 17441")
+    assert row == (
+        ["Proibição", "Recolhimento"],
+        ["Comercialização", "Distribuição", "Voluntário"],
+        True,
+    )
+    # targets that are a CPF, 13 digits or text: no cnpj; a person gets no name either
+    assert q("SELECT count(cnpj), count(*) FILTER (WHERE pessoa) FROM M") == [(10, 1)]
+    assert q("SELECT cnpj, empresa FROM M WHERE pessoa") == [(None, None)]
+    assert q(
+        "SELECT count(*) FROM M WHERE cnpj IS NOT NULL AND NOT regexp_full_match(cnpj, '[0-9]{14}')"
+    ) == [(0,)]
+    assert q(
+        "SELECT count(*) FROM M WHERE registros IS NULL OR acoes IS NULL OR atividades IS NULL"
+    ) == [(0,)]
+    assert q("SELECT count(*) FROM M WHERE len(registros) > 0") == [(3,)]  # never on alimentos
+    assert q("SELECT count(*) FROM M WHERE area = 'Alimento' AND len(registros) > 0") == [(0,)]
+    assert q("SELECT count(*) FROM M WHERE primeira > ultima") == [(0,)]
+    keys = q("SELECT area_codigo, dossie, produto FROM M")
+    assert keys == sorted(keys) and len(set(keys)) == len(keys)
+
+
+@needs_duckdb
 def test_derived_table_with_a_missing_source(fake_dados, tmp_path, monkeypatch):
     """`-d cosmeticos` with no published site has nothing to derive produtos from: skipped,
     said so. A full build that lacks a source is a bug, not a skip."""
