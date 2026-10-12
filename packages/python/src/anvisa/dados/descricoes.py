@@ -151,7 +151,8 @@ DESCRICOES: dict[str, dict[str, str]] = {
         ),
         "IS_REGISTRADO": "Verdadeiro nos registrados, falso nos notificados.",
         "NU_EXPEDIENTE": (
-            "Nº do expediente, 9 ou 10 dígitos com zeros à esquerda; único por linha."
+            "Nº do expediente, 9 ou 10 dígitos com zeros à esquerda; identifica o produto, mas "
+            "seis vêm em duas linhas (Registrado e Notificado)."
         ),
         "DT_ATUALIZACAO": _ATUALIZACAO,
     },

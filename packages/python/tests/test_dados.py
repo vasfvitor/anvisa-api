@@ -482,8 +482,9 @@ def test_convert_saneantes_values(tmp_path):
     csv = tmp_path / SANEANTES.file
     csv.write_bytes(sample(SANEANTES).read_bytes())
     stats = convert(SANEANTES, csv, tmp_path / "s.parquet")
-    assert stats.rows == 23 and stats.rejected == ()
-    assert stats.loaded_at == "2026-10-05T00:00:00"
+    assert stats.rows == 25 and stats.rejected == ()
+    # the two records of the pair come from a later file: the load time is the newest
+    assert stats.loaded_at == "2026-10-06T00:00:00"
     assert all(v == 0 for v in stats.nulls_added.values())
     con = duckdb.connect()
     first = con.execute(
@@ -1090,15 +1091,20 @@ def test_produtos_on_the_fixtures(fake_dados, tmp_path):
     assert entry["source"]["url"].endswith(
         "/blob/abc123/packages/python/src/anvisa/dados/derivar.py"
     )
-    # the latest load among the sources: alimentos_resultado's
-    assert entry["source"]["loaded_at"] == "2026-10-05T01:12:00"
+    # the latest load among the sources: saneantes' (its fixture has two records of a later file)
+    assert entry["source"]["loaded_at"] == "2026-10-06T00:00:00"
     assert entry["nulls_added"] == {} and entry["rejected_records"] == 0
     assert [c["name"] for c in entry["columns"]] == list(derivar.PRODUTOS.descriptions)
     path = out / entry["path"]
-    assert entry["bytes"] == path.stat().st_size and entry["rows"] == 36 + 23
+    assert entry["bytes"] == path.stat().st_size and entry["rows"] == 36 + 24
     con = duckdb.connect()
     rows = con.execute(f"SELECT area, count(*) FROM '{path}' GROUP BY 1 ORDER BY 1").fetchall()
-    assert rows == [("alimentos", 36), ("saneantes", 23)]  # 38 apresentações of 36 products
+    # 38 apresentações of 36 products; 25 saneante records, one expediente listed twice
+    assert rows == [("alimentos", 36), ("saneantes", 24)]
+    # of the Registrado/Notificado pair, the registered row stays
+    assert con.execute(
+        f"SELECT tipo, registro FROM '{path}' WHERE id = '0152242186'"
+    ).fetchall() == [("Registrado", "371460002")]
     # the two alimentos products with two apresentações carry both registros, in order
     multi = con.execute(
         f"SELECT id, apresentacoes, registros FROM '{path}' WHERE apresentacoes > 1 ORDER BY id"
@@ -1113,7 +1119,7 @@ def test_produtos_on_the_fixtures(fake_dados, tmp_path):
     ]
     assert con.execute(
         f"SELECT count(*) FILTER (WHERE ativo), count(*) FROM '{path}' WHERE area = 'saneantes'"
-    ).fetchone() == (17, 23)
+    ).fetchone() == (18, 24)
     key = con.execute(f"SELECT cnpj, area, id FROM '{path}'").fetchall()
     assert key == sorted(key) and len(set(key)) == len(key)
     types = {r[0]: r[1] for r in con.execute(f"DESCRIBE SELECT * FROM '{path}'").fetchall()}
@@ -1242,7 +1248,9 @@ def test_empresas_on_the_fixtures(fake_dados, tmp_path):
     for name in ("alimentos", "saneantes", "cosmeticos"):
         src = out / manifest["tables"][name]["path"]
         holders |= {r[0] for r in con.execute(f"SELECT nu_cnpj_empresa FROM '{src}'").fetchall()}
-    assert holders <= cnpjs and len(holders) == 33 + 19 + 29  # disjoint in the fixtures
+    assert holders <= cnpjs and len(holders) == 33 + 20 + 29  # disjoint in the fixtures
+    # the saneante listed twice counts once for its company
+    assert q("SELECT saneantes, saneantes_ativos FROM E WHERE cnpj = '19145925000159'") == [(1, 1)]
     # the one company present in two sources: holds alimentos and was the target of a measure
     (row,) = q(
         "SELECT alimentos, saneantes, cosmeticos, medidas, medida_ultima FROM E "

@@ -103,6 +103,16 @@ def _alergia(resultado: str) -> str:
         FROM sinais LEFT JOIN listas USING (co_produto)"""
 
 
+def _saneantes_unicos(saneantes: str) -> str:
+    """saneantes with one row per nu_expediente: of a Registrado/Notificado pair, the registered
+    one; the remaining ORDER BY terms only make a future tie deterministic."""
+    return f"""
+        SELECT * FROM {saneantes}
+        QUALIFY row_number() OVER (PARTITION BY nu_expediente
+          ORDER BY is_registrado DESC, dt_vencimento_produto DESC NULLS LAST,
+                   nu_registro_produto NULLS LAST, no_produto, nu_processo) = 1"""
+
+
 def _produtos(t: dict[str, str]) -> str:
     # alimentos: one row per apresentação, grouped into the product (co_seq_produto). Name,
     # brands, company, processo and situação are constant within a product (README,
@@ -131,7 +141,9 @@ def _produtos(t: dict[str, str]) -> str:
         FROM {t["alimentos"]}
         GROUP BY co_seq_produto) base
         LEFT JOIN ({_alergia(t["alimentos_resultado"])}) alergia ON alergia.co_produto = base.co"""
-    # saneantes: one row per record already (nu_expediente is unique), no detail file
+    # saneantes: one row per nu_expediente, no detail file. Six expedientes come twice, as a
+    # Registrado and a Notificado row equal in everything else (found by the site, 2026-10-11):
+    # the registered row stays, the registro being what exists.
     saneantes = f"""
         SELECT 'saneantes' AS area,
           nu_expediente AS id,
@@ -154,7 +166,7 @@ def _produtos(t: dict[str, str]) -> str:
           CAST(NULL AS VARCHAR[]) AS pode_conter,
           CAST(NULL AS VARCHAR[]) AS nao_contem,
           CAST(NULL AS BOOLEAN) AS alergia_varia
-        FROM {t["saneantes"]}"""
+        FROM ({_saneantes_unicos(t["saneantes"])})"""
     return f"{alimentos}\n        UNION ALL BY NAME\n{saneantes}"
 
 
@@ -167,7 +179,9 @@ PRODUTOS = Derivada(
     notes=(
         "Uma linha por produto, com as mesmas colunas para alimentos (agrupados por "
         "co_seq_produto: um produto, várias apresentações) e saneantes (uma linha por "
-        "nu_expediente). Derivada de alimentos, alimentos_resultado e saneantes a cada build.",
+        "nu_expediente; dos seis expedientes que a origem lista como Registrado e Notificado, "
+        "fica a linha registrada). Derivada de alimentos, alimentos_resultado e saneantes a "
+        "cada build.",
         "gluten, lactose, contem, pode_conter, nao_contem e alergia_varia resumem o que os "
         "rótulos das apresentações do alimento declaram (alimentos_resultado); nulos quando "
         "nenhuma apresentação declara nada (a maioria) e nos saneantes. contem junta "
@@ -202,7 +216,7 @@ def _empresas(t: dict[str, str]) -> str:
         sa AS (
           SELECT nu_cnpj_empresa AS cnpj, CAST(count(*) AS INTEGER) AS saneantes,
             CAST(count(*) FILTER (WHERE st_produto_ativo) AS INTEGER) AS saneantes_ativos
-          FROM {t["saneantes"]} GROUP BY 1),
+          FROM ({_saneantes_unicos(t["saneantes"])}) GROUP BY 1),
         co AS (
           SELECT cnpj, CAST(count(*) AS INTEGER) AS cosmeticos,
             CAST(count(*) FILTER (WHERE ativo) AS INTEGER) AS cosmeticos_ativos
@@ -258,13 +272,15 @@ EMPRESAS = Derivada(
     notes=(
         "Uma linha por CNPJ (14 dígitos) que detém um alimento, saneante ou cosmético ou que "
         "foi alvo de uma medida de fiscalização. Derivada a cada build.",
-        "Os totais contam produtos, não linhas: alimentos por co_seq_produto e cosméticos por "
-        "nu_processo (um processo listado duas vezes conta uma, e a linha sem registro decide "
-        "se está ativo).",
+        "Os totais contam produtos, não linhas: alimentos por co_seq_produto, saneantes por "
+        "nu_expediente e cosméticos por nu_processo (um processo listado duas vezes conta uma, "
+        "e a linha sem registro decide se está ativo).",
         "nome é a grafia mais frequente da razão social nas tabelas de produtos; empresas "
         "conhecidas só por medidas levam o nome escrito na medida.",
-        "medidas conta dossiês de fiscalização contra a empresa (nu_cnpj_empresa_investigada), "
-        "não os que ela abriu. Alvos sem CNPJ de 14 dígitos (CPF, texto, CNPJ com 13 dígitos) "
+        "medidas conta dossiês de fiscalização contra a empresa (nu_cnpj_empresa_investigada) "
+        "em todas as áreas da ANVISA, não só nas três com tabela de produtos aqui: 457 empresas "
+        "existem só por uma medida em medicamentos, dispositivos ou outra área. Não conta os "
+        "dossiês que ela abriu. Alvos sem CNPJ de 14 dígitos (CPF, texto, CNPJ com 13 dígitos) "
         "ficam de fora; o CNPJ da própria ANVISA (03112386000111) aparece como alvo em alguns "
         "dossiês e vem como está.",
     ),

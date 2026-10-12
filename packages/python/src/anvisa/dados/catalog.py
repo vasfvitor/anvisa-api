@@ -176,7 +176,9 @@ SANEANTES = Dataset(
         "NU_REGISTRO_PRODUTO": "VARCHAR",  # 9 digits on registros (one 10), empty on notificações
         "DT_VENCIMENTO_PRODUTO": "TIMESTAMP",  # 8,563 empty; years 2001 to 3033 (sic)
         "IS_REGISTRADO": "BOOLEAN",  # 0 = notificado (115,561), 1 = registrado (28,823)
-        "NU_EXPEDIENTE": "VARCHAR",  # 9 or 10 digits, leading zeros; unique per record
+        # 9 or 10 digits, leading zeros; 6 expedientes appear twice (Registrado + Notificado,
+        # equal otherwise), the other 144,401 once (2026-10-11 file)
+        "NU_EXPEDIENTE": "VARCHAR",
         "DT_ATUALIZACAO": "TIMESTAMP",  # the same value on every row: ANVISA's load time
     },
     sort=("NU_CNPJ_EMPRESA", "NU_PROCESSO"),
@@ -188,7 +190,9 @@ SANEANTES = Dataset(
         "notificado; is_registrado distingue os dois. Não há arquivo de detalhe.",
         "dt_vencimento_produto está vazio em parte das linhas e a ANVISA publica datas até o ano "
         "3033; não trate uma data distante como erro de leitura.",
-        "nu_expediente é único por linha; nu_processo tem 17, 15 ou 13 dígitos.",
+        "nu_expediente identifica o produto, mas seis vêm em par: uma linha Registrado e uma "
+        "Notificado, iguais no resto (a tabela produtos fica com a registrada). nu_processo "
+        "tem 17, 15 ou 13 dígitos.",
     ),
 )
 

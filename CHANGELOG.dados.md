@@ -8,6 +8,14 @@ consumer must change to keep reading it; everything below has been additive, so 
 
 ## 2026-10-12
 
+- **One row per saneante in `produtos`.** Six expedientes come twice in `saneantes`, as a
+  Registrado and a Notificado row equal in everything else (found by the site against build
+  `20261012T012351Z`); `produtos` now keeps the registered row, so `(area, id)` is unique
+  again and `empresas.saneantes` counts expedientes: 144,407, not 144,413. The `saneantes`
+  notes and the `nu_expediente` description no longer call it unique per row.
+- `empresas` notes say that `medidas` counts dossiês of every ANVISA area: 457 companies
+  exist there only through a measure in medicamentos, dispositivos or another area without a
+  product table here.
 - **Allergens on `produtos`.** Six new columns from `alimentos_resultado`, now a fonte:
   `gluten` and `lactose` (`Sim`, `Não`, `Varia` when the apresentações disagree), the sorted
   lists `contem` ("Contém" and "Contém derivado de"), `pode_conter` and `nao_contem` (an
