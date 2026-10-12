@@ -8,6 +8,9 @@ consumer must change to keep reading it; everything below has been additive, so 
 
 ## 2026-10-12
 
+- **`vencimento` in `produtos` and `alimentos_por_produto` is the latest expiry** among a
+  food's apresentações, not the earliest: 141 products renew them at different times, and
+  the question the date answers is whether the product is still valid. Asked by the site.
 - **`alimentos_por_produto`**, the fifth derived table, asked by the site: the alimentos rows
   of `produtos` (same columns, same values) plus `situacao_assunto`, `alegacao`, `publicacao`
   and `situacao_em` (latest among the apresentações) and `inicio_analise` (earliest). A food

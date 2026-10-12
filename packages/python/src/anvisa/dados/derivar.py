@@ -117,7 +117,9 @@ def _alimentos(t: dict[str, str], extras: dict[str, str] | None = None) -> str:
     """alimentos as one row per product (co_seq_produto) with the produtos columns, plus the
     `extras` (output name -> aggregate over the product's apresentações) after them. Name,
     brands, company, processo and situação are constant within a product (README,
-    "Products"), so min() reads the one value; the dates take the earliest. The label's
+    "Products"), so min() reads the one value; desde is the earliest regularization and
+    vencimento the latest expiry (141 products renew apresentações at different times; the
+    site asked for the latest, 2026-10-12). The label's
     allergen declaration joins from alimentos_resultado, per product (_alergia)."""
     names = "".join(f", {name}" for name in extras or ())
     more = "".join(f",\n          {expr} AS {name}" for name, expr in (extras or {}).items())
@@ -138,7 +140,7 @@ def _alimentos(t: dict[str, str], extras: dict[str, str] | None = None) -> str:
           min(tipo_regularizacao) AS tipo,
           min(ds_categoria_produto) AS categoria,
           CAST(min(dt_regularizacao) AS DATE) AS desde,
-          min(dt_vencimento_registro) AS vencimento,
+          max(dt_vencimento_registro) AS vencimento,
           CAST(count(*) AS INTEGER) AS apresentacoes,
           coalesce(list(nu_registro ORDER BY nu_registro) FILTER (WHERE nu_registro IS NOT NULL),
             []) AS registros{more}

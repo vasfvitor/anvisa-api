@@ -80,8 +80,9 @@ _PRODUTOS_COLS = {
     "categoria": "Categoria do alimento (ex.: Suplementos alimentares); nulo nos saneantes.",
     "desde": "Primeira regularização do alimento (data); nulo nos saneantes.",
     "vencimento": (
-        "Vencimento da regularização (data). Nos alimentos tem precisão de mês e vale "
-        "2029-12-01 em toda notificação; nos saneantes pode faltar ou ir até o ano 3033."
+        "Vencimento da regularização (data): nos alimentos, o mais tardio entre as "
+        "apresentações, com precisão de mês, e 2029-12-01 em toda notificação; nos saneantes "
+        "pode faltar ou ir até o ano 3033."
     ),
     "apresentacoes": "Quantas apresentações o alimento tem em alimentos; 1 nos saneantes.",
     "registros": (
