@@ -478,9 +478,19 @@ def assunto_formulario(
 
 @dados_app.command("list")
 def dados_list(ctx: typer.Context) -> None:
-    """Os arquivos do catálogo: nome da tabela, grupo e URL de origem."""
+    """As tabelas publicadas: as do catálogo (com a URL de origem) e as derivadas delas."""
     rows = [
-        {"name": d.name, "group": d.group, "title": d.title, "url": d.url} for d in dados.CATALOG
+        {"name": d.name, "group": d.group, "title": d.title, "url": d.url, "fontes": ""}
+        for d in dados.CATALOG
+    ] + [
+        {
+            "name": d.name,
+            "group": d.group,
+            "title": d.title,
+            "url": "",
+            "fontes": ", ".join(d.fontes),
+        }
+        for d in dados.DERIVADAS
     ]
     if ctx.obj == Format.json:
         typer.echo(json.dumps(rows, ensure_ascii=False, indent=2))
@@ -502,7 +512,8 @@ def dados_build(
         "-d",
         help="a table name or group; repeat for more (default: all). With --skip-unchanged the "
         "other published tables are carried over, so the manifest stays complete; without it "
-        "the manifest lists only these",
+        "the manifest lists only these. Derived tables (produtos…) cannot be selected: they are "
+        "rebuilt on every build from the tables present",
     ),
     skip_unchanged: str | None = typer.Option(
         None,
@@ -542,7 +553,7 @@ def dados_build(
             "build_id": result["build_id"],
             "out": str(out),
             "tables": {
-                name: {k: t[k] for k in ("rows", "bytes", "nulls_added", "rejected_records")}
+                name: {k: t.get(k) for k in ("rows", "bytes", "nulls_added", "rejected_records")}
                 for name, t in result["tables"].items()
             },
         }

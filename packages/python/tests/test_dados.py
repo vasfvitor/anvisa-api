@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 import hashlib
+import html
 import importlib.util
 import json
 import re
@@ -17,7 +18,7 @@ from conftest import headers_only
 from typer.testing import CliRunner
 
 from anvisa import cli
-from anvisa.dados import CATALOG, Unchanged, build, busca, parse, select
+from anvisa.dados import CATALOG, DERIVADAS, Unchanged, build, busca, derivar, parse, select
 from anvisa.dados.catalog import (
     ALIMENTOS,
     ALIMENTOS_RESULTADO,
@@ -28,6 +29,7 @@ from anvisa.dados.catalog import (
     SANEANTES,
     TYPES,
 )
+from anvisa.dados.descricoes import DESCRICOES
 from anvisa.dados.fetch import download, http_client
 from anvisa.dados.parse import (
     check_header,
@@ -166,6 +168,24 @@ def test_fixture_header_matches_catalog():
         check_header(ds, read_header(sample(ds)))
     # the `#` comment marker on the finalized-petitions header is dropped, not a schema change
     assert sample(PETICOES_ALIMENTO).read_bytes().startswith(b"#NUM_EXPEDIENTE_PETICAO;")
+
+
+PUBLISHED = [ds.name for ds in CATALOG] + [d.name for d in DERIVADAS]  # manifest order
+
+
+def test_descriptions_cover_every_column():
+    """Every published column has a Portuguese description and every table its notes: the
+    manifest and the Pages dictionary are generated from them. The derived tables' columns
+    are checked against the built file in test_produtos_on_the_fixtures."""
+    for ds in CATALOG:
+        assert set(ds.descriptions) == set(ds.columns), ds.name
+        assert all(text.strip() for text in ds.descriptions.values()), ds.name
+        assert ds.notes and all(note.strip() for note in ds.notes), ds.name
+    for d in DERIVADAS:
+        assert all(text.strip() for text in d.descriptions.values()), d.name
+        assert d.notes and set(d.sort) <= set(d.descriptions), d.name
+        assert set(d.fontes) <= {ds.name for ds in CATALOG}, d.name
+    assert set(DESCRICOES) == set(PUBLISHED)
 
 
 def test_header_drift_is_loud():
@@ -845,14 +865,25 @@ def test_build_end_to_end(fake_dados, tmp_path):
     assert manifest["schema_version"] == 1 and manifest["build_id"] == "20261006T210312Z"
     assert manifest["built_at"] == "2026-10-06T21:03:12Z" and manifest["commit"] == "abc123"
     assert manifest["generator"].startswith("anvisa-python/")
-    assert list(manifest["tables"]) == [ds.name for ds in CATALOG]
+    assert list(manifest["tables"]) == PUBLISHED
     main = manifest["tables"]["alimentos"]
     assert main["path"] == "data/20261006T210312Z/alimentos.parquet"
     parquet = out / main["path"]
     assert main["bytes"] == parquet.stat().st_size
     assert main["sha256"] == hashlib.sha256(parquet.read_bytes()).hexdigest()
     assert main["sort"] == ["nu_cnpj_empresa", "nu_processo"]
-    assert main["columns"][0] == {"name": "no_produto", "type": "VARCHAR", "source": "NO_PRODUTO"}
+    assert main["columns"][0] == {
+        "name": "no_produto",
+        "type": "VARCHAR",
+        "source": "NO_PRODUTO",
+        "description": ALIMENTOS.descriptions["NO_PRODUTO"],
+    }
+    assert main["notes"] == list(ALIMENTOS.notes) and main["notes"]
+    assert manifest["docs"] == "dicionario.html"
+    assert manifest["license"] == {
+        "data": "dados abertos da ANVISA (dados.anvisa.gov.br)",
+        "code": "MIT",
+    }
     assert main["source"]["etag"] == '"20230eb-65d1981268f1f"'
     assert main["source"]["loaded_at"] == "2026-10-05T00:00:00"
     assert main["rejected_records"] == 0 and main["timezone"] == "America/Sao_Paulo"
@@ -864,6 +895,13 @@ def test_build_end_to_end(fake_dados, tmp_path):
     assert products == sorted(products)  # a product's apresentações are contiguous
     page = (out / "index.html").read_text(encoding="utf-8")
     assert "alimentos_resultado.parquet" in page and 'href="manifest.json"' in page
+    assert 'href="dicionario.html"' in page
+    # the dictionary describes the files beside it: every table, its notes, every column
+    docs = (out / "dicionario.html").read_text(encoding="utf-8")
+    assert all(f'<section id="{ds.name}">' in docs for ds in CATALOG)
+    assert html.escape(COSMETICOS.notes[0]) in docs
+    assert html.escape(ALIMENTOS.descriptions["DT_VENCIMENTO_REGISTRO"]) in docs
+    assert "<code>co_seq_apresentacao_produto</code>" in docs and 'href="index.html"' in docs
     joined = duckdb.sql(
         f"SELECT count(*) FROM '{parquet}' m JOIN "
         f"'{out / manifest['tables']['alimentos_resultado']['path']}' r "
@@ -903,7 +941,7 @@ def test_build_skips_when_published_matches(fake_dados, tmp_path):
     assert result == Unchanged(first["build_id"])
     assert not (tmp_path / "second").exists()
     sent = [r.headers.get("If-None-Match") for r in fake_dados.data_requests()]
-    assert sent == [t["source"]["etag"] for t in first["tables"].values()]
+    assert sent == [t["source"]["etag"] for t in first["tables"].values() if "fontes" not in t]
     manifest_request = fake_dados.requests[0]
     assert manifest_request.headers["Cache-Control"] == "no-cache"
 
@@ -917,7 +955,7 @@ def test_build_rebuilds_when_one_file_changed(fake_dados, tmp_path):
         result = build(
             tmp_path / "second", http=http, skip_unchanged=FakeDados.MANIFEST_URL, commit="abc123"
         )
-    assert list(result["tables"]) == [ds.name for ds in CATALOG]
+    assert list(result["tables"]) == PUBLISHED
     assert result["tables"]["alimentos"]["source"]["etag"] == '"new"'
     # the unchanged files answered 304 first, then were fetched again for a complete build
     statuses = [r.headers.get("If-None-Match") for r in fake_dados.data_requests()]
@@ -979,7 +1017,7 @@ def test_partial_build_carries_published_tables(fake_dados, tmp_path, where):
             commit="abc123",
             now=NOW + timedelta(days=1),
         )
-    assert list(result["tables"]) == [ds.name for ds in CATALOG]
+    assert list(result["tables"]) == PUBLISHED
     assert result["tables"]["alimentos"]["source"]["etag"] == '"new"'
     assert {str(r.url) for r in fake_dados.data_requests()} == {ALIMENTOS.url}
     for name, old in first["tables"].items():
@@ -988,6 +1026,9 @@ def test_partial_build_carries_published_tables(fake_dados, tmp_path, where):
         new = result["tables"][name]
         assert new["path"] == f"data/{result['build_id']}/{name}.parquet"
         assert (out / new["path"]).read_bytes() == (tmp_path / "first" / old["path"]).read_bytes()
+        if "fontes" in old:  # derived: rebuilt from the same inputs, byte for byte the same
+            assert new["sha256"] == old["sha256"] and new["source"]["url"] == old["source"]["url"]
+            continue
         moved = {"path", "busca"}
         assert {k: v for k, v in new.items() if k not in moved} == {
             k: v for k, v in old.items() if k not in moved
@@ -1000,6 +1041,152 @@ def test_partial_build_carries_published_tables(fake_dados, tmp_path, where):
         k: v for k, v in old.items() if k != "indice"
     }
     assert folder_files(out / new["indice"]) == folder_files(tmp_path / "first" / old["indice"])
+
+
+@needs_duckdb
+def test_carry_over_refreshes_the_documentation(fake_dados, tmp_path):
+    """A carried table keeps its published file but takes this code's title, notes and column
+    descriptions: documentation must not lag until ANVISA happens to change that file. A
+    published column the catalog does not know keeps what it carried."""
+    published(fake_dados, tmp_path)
+    entry = fake_dados.manifest["tables"]["saneantes"]
+    entry["title"] = "old title"
+    entry["notes"] = ["old note"]
+    entry["columns"][0]["description"] = "old text"
+    entry["columns"].append({"name": "gone", "type": "VARCHAR", "description": "kept"})
+    with fake_dados.client() as http:
+        result = build(
+            tmp_path / "second",
+            http=http,
+            datasets=(ALIMENTOS,),
+            skip_unchanged=FakeDados.MANIFEST_URL,
+            commit="docs-changed",  # all sources answer 304: a new commit forces the rebuild
+            now=NOW + timedelta(days=1),
+        )
+    carried = result["tables"]["saneantes"]
+    assert carried["title"] == SANEANTES.title and carried["notes"] == list(SANEANTES.notes)
+    assert carried["columns"][0]["description"] == SANEANTES.descriptions["NO_PRODUTO"]
+    assert carried["columns"][-1] == {"name": "gone", "type": "VARCHAR", "description": "kept"}
+    assert carried["sha256"] == entry["sha256"]  # the data is still the published file
+
+
+# --- derived tables (derivar.py) ------------------------------------------------------------
+
+
+@needs_duckdb
+def test_produtos_on_the_fixtures(fake_dados, tmp_path):
+    """One row per product: alimentos grouped by co_seq_produto, saneantes one per record,
+    one schema, sorted by company. The manifest entry reads like a converted table's."""
+    import duckdb
+
+    out = tmp_path / "dist"
+    with fake_dados.client() as http:
+        manifest = build(out, http=http, now=NOW, commit="abc123")
+    entry = manifest["tables"]["produtos"]
+    assert entry["path"] == "data/20261006T210312Z/produtos.parquet"
+    assert entry["fontes"] == ["alimentos", "saneantes"] and entry["sort"] == ["cnpj", "area", "id"]
+    assert entry["source"]["name"] == "derivada de alimentos, saneantes"
+    assert entry["source"]["url"].endswith(
+        "/blob/abc123/packages/python/src/anvisa/dados/derivar.py"
+    )
+    assert entry["source"]["loaded_at"] == "2026-10-05T00:00:00"  # the latest among the sources
+    assert entry["nulls_added"] == {} and entry["rejected_records"] == 0
+    assert [c["name"] for c in entry["columns"]] == list(derivar.PRODUTOS.descriptions)
+    assert all(c["description"] for c in entry["columns"])
+    path = out / entry["path"]
+    assert entry["bytes"] == path.stat().st_size and entry["rows"] == 36 + 23
+    con = duckdb.connect()
+    rows = con.execute(f"SELECT area, count(*) FROM '{path}' GROUP BY 1 ORDER BY 1").fetchall()
+    assert rows == [("alimentos", 36), ("saneantes", 23)]  # 38 apresentações of 36 products
+    # the two alimentos products with two apresentações carry both registros, in order
+    multi = con.execute(
+        f"SELECT id, apresentacoes, registros FROM '{path}' WHERE apresentacoes > 1 ORDER BY id"
+    ).fetchall()
+    assert [m[1] for m in multi] == [2, 2]
+    # registros: one per apresentação on registros, an empty list (never NULL) on notificações
+    assert all(len(m[2]) in (0, 2) and m[2] == sorted(m[2]) for m in multi)
+    assert con.execute(f"SELECT count(*) FROM '{path}' WHERE registros IS NULL").fetchone() == (0,)
+    assert con.execute(f"SELECT DISTINCT tipo FROM '{path}' ORDER BY 1").fetchall() == [
+        ("Notificado",),
+        ("Registrado",),
+    ]
+    assert con.execute(
+        f"SELECT count(*) FILTER (WHERE ativo), count(*) FROM '{path}' WHERE area = 'saneantes'"
+    ).fetchone() == (17, 23)
+    key = con.execute(f"SELECT cnpj, area, id FROM '{path}'").fetchall()
+    assert key == sorted(key) and len(set(key)) == len(key)
+    types = {r[0]: r[1] for r in con.execute(f"DESCRIBE SELECT * FROM '{path}'").fetchall()}
+    assert (
+        types["ativo"] == "BOOLEAN" and types["desde"] == "DATE" and types["vencimento"] == "DATE"
+    )
+    assert types["apresentacoes"] == "INTEGER" and types["registros"] == "VARCHAR[]"
+    # the dictionary lists it like the others, naming its sources
+    docs = (out / "dicionario.html").read_text(encoding="utf-8")
+    assert '<section id="produtos">' in docs and 'Derivada de <a href="#alimentos">' in docs
+
+
+@needs_duckdb
+def test_empresas_on_the_fixtures(fake_dados, tmp_path):
+    """One row per 14-digit CNPJ across the three product tables and the measures' targets;
+    counts are products, and only a real CNPJ makes a company."""
+    import duckdb
+
+    out = tmp_path / "dist"
+    with fake_dados.client() as http:
+        manifest = build(out, http=http, now=NOW, commit="abc123")
+    entry = manifest["tables"]["empresas"]
+    assert entry["fontes"] == ["alimentos", "saneantes", "cosmeticos", "produtos_irregulares"]
+    assert [c["name"] for c in entry["columns"]] == list(derivar.EMPRESAS.descriptions)
+    path = out / entry["path"]
+    con = duckdb.connect()
+    q = lambda sql: con.execute(sql.replace("FROM E", f"FROM '{path}'")).fetchall()  # noqa: E731
+    cnpjs = {r[0] for r in q("SELECT cnpj FROM E")}
+    assert len(cnpjs) == entry["rows"] and all(re.fullmatch(r"\d{14}", c) for c in cnpjs)
+    holders = set()
+    for name in ("alimentos", "saneantes", "cosmeticos"):
+        src = out / manifest["tables"][name]["path"]
+        holders |= {r[0] for r in con.execute(f"SELECT nu_cnpj_empresa FROM '{src}'").fetchall()}
+    assert holders <= cnpjs and len(holders) == 33 + 19 + 29  # disjoint in the fixtures
+    # the one company present in two sources: holds alimentos and was the target of a measure
+    (row,) = q(
+        "SELECT alimentos, saneantes, cosmeticos, medidas, medida_ultima FROM E "
+        "WHERE cnpj = '02200052000137'"
+    )
+    assert row[0] > 0 and row[1] == 0 and row[2] == 0 and row[3] == 1 and row[4] is not None
+    # targets that are not a 14-digit CNPJ make no company; the fixture has these three kinds
+    assert not {"0203396000198", "03855103143", "DESCONHECIDO", "00000000000000"} & cnpjs
+    # cosméticos: a processo listed twice (one per st_registrado) counts once
+    cos = out / manifest["tables"]["cosmeticos"]["path"]
+    pairs = con.execute(
+        f"SELECT nu_cnpj_empresa, count(*) FROM '{cos}' GROUP BY nu_processo, 1 HAVING count(*) = 2"
+    ).fetchall()
+    assert len(pairs) == 2
+    for cnpj, _ in pairs:
+        distinct = con.execute(
+            f"SELECT count(DISTINCT nu_processo) FROM '{cos}' WHERE nu_cnpj_empresa = '{cnpj}'"
+        ).fetchone()[0]
+        assert q(f"SELECT cosmeticos FROM E WHERE cnpj = '{cnpj}'") == [(distinct,)]
+    (sums,) = q(
+        "SELECT bool_and(produtos = alimentos + saneantes + cosmeticos AND ativos <= produtos) "
+        "FROM E"
+    )
+    assert sums == (True,)
+    assert q("SELECT count(*) FROM E WHERE nome IS NULL AND produtos > 0") == [(0,)]
+
+
+@needs_duckdb
+def test_derived_table_with_a_missing_source(fake_dados, tmp_path, monkeypatch):
+    """`-d cosmeticos` with no published site has nothing to derive produtos from: skipped,
+    said so. A full build that lacks a source is a bug, not a skip."""
+    log: list[str] = []
+    with fake_dados.client() as http:
+        result = build(tmp_path / "one", http=http, datasets=(COSMETICOS,), now=NOW, log=log.append)
+    assert list(result["tables"]) == ["cosmeticos"]
+    assert any(m.startswith("skipping produtos: alimentos, saneantes not in") for m in log)
+    broken = dataclasses.replace(derivar.PRODUTOS, fontes=("alimentos", "nope"))
+    monkeypatch.setattr(derivar, "DERIVADAS", (broken,))
+    with fake_dados.client() as http, pytest.raises(DadosError, match="produtos needs nope"):
+        build(tmp_path / "two", http=http, now=NOW)
 
 
 def folder_files(index: Path) -> dict[str, bytes]:
@@ -1058,7 +1245,7 @@ def test_cli_list_and_build(fake_dados, monkeypatch, tmp_path):
     result = runner.invoke(cli.app, ["-f", "json", "dados", "list"])
     assert result.exit_code == 0, result.output
     names = [d["name"] for d in json.loads(result.stdout)]
-    assert names == [ds.name for ds in CATALOG]
+    assert names == PUBLISHED
 
     monkeypatch.setattr(cli, "dados_http", fake_dados.client)
     out = tmp_path / "dist"
@@ -1095,7 +1282,7 @@ def test_missing_duckdb_is_a_clear_error(monkeypatch, tmp_path):
     with pytest.raises(DadosError, match=re.escape("pip install 'anvisa[dados]'")):
         convert(ALIMENTOS, csv, tmp_path / "x.parquet")
     result = runner.invoke(cli.app, ["-f", "json", "dados", "list"])
-    assert result.exit_code == 0 and len(json.loads(result.stdout)) == len(CATALOG)
+    assert result.exit_code == 0 and len(json.loads(result.stdout)) == len(PUBLISHED)
 
 
 def test_dataset_is_a_frozen_value():

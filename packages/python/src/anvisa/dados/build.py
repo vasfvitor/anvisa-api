@@ -4,8 +4,10 @@ Layout of `out` (what GitHub Pages serves):
 
     manifest.json                     what the frontend reads first (schema below)
     index.html                        a human-readable listing
+    dicionario.html                   the data dictionary: notes and columns of every table
     data/<build_id>/<name>.parquet    immutable: a new build gets a new directory
     data/<build_id>/<name>/           the search files of a dataset with `busca` (busca.py)
+    data/<build_id>/<derived>.parquet tables built from the others (derivar.py), every build
 
 Versioned paths make a published file immutable: a browser that fetched the manifest keeps
 reading files that all belong to one build, and caches (Pages, the browser) can never serve a
@@ -32,7 +34,7 @@ import httpx
 
 from .. import __version__
 from ..errors import DadosError
-from . import busca
+from . import busca, derivar
 from .catalog import CATALOG, Dataset
 from .convert import ROW_GROUP_SIZE, Stats, convert
 from .fetch import Source, download, fetch_file, http_client
@@ -40,6 +42,12 @@ from .parse import check_header, read_header
 
 SCHEMA_VERSION = 1
 TIMEZONE = "America/Sao_Paulo"  # TIMESTAMP columns are naive local time, as ANVISA writes them
+DOCS = "dicionario.html"  # the data dictionary, generated beside the manifest
+LICENSE = {"data": "dados abertos da ANVISA (dados.anvisa.gov.br)", "code": "MIT"}
+REPO = "https://github.com/vasfvitor/anvisa-api"
+CHANGELOG = f"{REPO}/blob/main/CHANGELOG.dados.md"  # the data product's own log, by build
+BY_NAME = {ds.name: ds for ds in CATALOG}
+DERIVED = {d.name for d in derivar.DERIVADAS}
 
 
 @dataclass(frozen=True)
@@ -117,7 +125,9 @@ def carry_over(
         if (size, digest) != (entry["bytes"], entry["sha256"]):
             dest.unlink()
             raise DadosError(f"published table {name} does not match its manifest entry")
-        tables[name] = {**entry, "path": dest.relative_to(out).as_posix()}
+        tables[name] = refresh_metadata(
+            {**entry, "path": dest.relative_to(out).as_posix()}, BY_NAME[name]
+        )
         if "busca" in entry:
             folder = out / "data" / bid / name
             carried = carry_over_busca(http, entry["busca"], location, folder, log)
@@ -177,12 +187,73 @@ def table_entry(
         "sort": [c.lower() for c in ds.sort],
         "timezone": TIMEZONE,
         "columns": [
-            {"name": name.lower(), "type": kind, "source": name}
+            {
+                "name": name.lower(),
+                "type": kind,
+                "source": name,
+                "description": ds.descriptions[name],
+            }
             for name, kind in ds.columns.items()
         ],
+        "notes": list(ds.notes),
         "source": {**asdict(source), "loaded_at": stats.loaded_at},
         "nulls_added": stats.nulls_added,
         "rejected_records": len(stats.rejected),
+    }
+
+
+def refresh_metadata(entry: dict[str, Any], ds: Dataset) -> dict[str, Any]:
+    """A carried-over entry with this code's `title`, `notes` and column descriptions. The
+    data fields stay (the file is the published one); the text is documentation, and it would
+    otherwise lag until ANVISA happens to change that file. Columns are matched by name, so a
+    published column this catalog no longer has keeps whatever it carried."""
+    texts = {name.lower(): text for name, text in ds.descriptions.items()}
+    columns = [
+        {**column, "description": texts[column["name"]]} if column.get("name") in texts else column
+        for column in entry.get("columns", [])
+    ]
+    return {**entry, "title": ds.title, "notes": list(ds.notes), "columns": columns}
+
+
+def derived_entry(
+    d: derivar.Derivada,
+    parquet: Path,
+    rows: int,
+    columns: list[tuple[str, str]],
+    tables: dict[str, Any],
+    out: Path,
+    commit: str | None,
+) -> dict[str, Any]:
+    """A derived table's manifest entry. `source` is an object with `name`, `url` and
+    `loaded_at` like a converted table's, so every reader of the manifest treats it alike: the
+    URL is the recipe (derivar.py at this commit), the load time the latest among its sources.
+    `fontes` names the tables it was built from."""
+    loaded = [tables[f]["source"].get("loaded_at") for f in d.fontes]
+    loaded = [value for value in loaded if value]
+    ref = commit or "main"
+    return {
+        "group": d.group,
+        "title": d.title,
+        "path": parquet.relative_to(out).as_posix(),
+        "bytes": parquet.stat().st_size,
+        "sha256": _sha256(parquet),
+        "rows": rows,
+        "row_group_size": derivar.ROW_GROUP_SIZE,
+        "sort": list(d.sort),
+        "timezone": TIMEZONE,
+        "columns": [
+            {"name": name, "type": kind, "description": d.descriptions[name]}
+            for name, kind in columns
+        ],
+        "notes": list(d.notes),
+        "fontes": list(d.fontes),
+        "source": {
+            "name": "derivada de " + ", ".join(d.fontes),
+            "url": f"{REPO}/blob/{ref}/packages/python/src/anvisa/dados/derivar.py",
+            "loaded_at": max(loaded) if loaded else None,
+        },
+        "nulls_added": {},
+        "rejected_records": 0,
     }
 
 
@@ -262,12 +333,28 @@ def build(
 
             catalog = {ds.name for ds in CATALOG}
             carried = [name for name in known if name not in tables and name in catalog]
-            for name in known.keys() - catalog:
+            for name in known.keys() - catalog - DERIVED:
                 log(f"dropping {name}: no longer in the catalog")
             if carried:
                 assert skip_unchanged is not None  # `known` is non-empty only through it
                 tables.update(carry_over(http, published, skip_unchanged, carried, out, bid, log))
                 tables = {ds.name: tables[ds.name] for ds in CATALOG if ds.name in tables}
+
+            # derived tables: always rebuilt, from this build's files (fresh or carried alike)
+            for d in derivar.DERIVADAS:
+                missing = [f for f in d.fontes if f not in tables]
+                if missing:
+                    partial = datasets != CATALOG and not any(f in known for f in missing)
+                    if partial:  # `-d x` with no published site: nothing to derive from
+                        log(f"skipping {d.name}: {', '.join(missing)} not in this build")
+                        continue
+                    raise DadosError(f"{d.name} needs {', '.join(missing)}, which this build lacks")
+                parquet = out / "data" / bid / f"{d.name}.parquet"
+                log(f"derive {d.name} from {', '.join(d.fontes)} -> {parquet.relative_to(out)}")
+                paths = {f: out / tables[f]["path"] for f in d.fontes}
+                rows, columns = derivar.write(d, paths, parquet, work / "spill-derivadas")
+                tables[d.name] = derived_entry(d, parquet, rows, columns, tables, out, commit)
+                log(f"  {rows} rows, {tables[d.name]['bytes']} bytes")
     finally:
         if own_http:
             http.close()
@@ -278,12 +365,15 @@ def build(
         "built_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "generator": f"anvisa-python/{__version__}",
         "commit": commit,
+        "docs": DOCS,
+        "license": LICENSE,
         "tables": tables,
     }
     (out / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
     (out / "index.html").write_text(index_html(manifest), encoding="utf-8")
+    (out / DOCS).write_text(dicionario_html(manifest), encoding="utf-8")
     return manifest
 
 
@@ -318,7 +408,10 @@ code{{word-break:break-all}}</style>
 <p>Build <code>{e(manifest["build_id"])}</code> ({e(manifest["built_at"])}),
 from <a href="https://dados.anvisa.gov.br/dados/">dados.anvisa.gov.br</a>.
 Machine-readable index: <a href="manifest.json">manifest.json</a>.
-Timestamps are Brasília local time.</p>
+Column meanings and notes per table: <a href="{e(DOCS)}">dicionário de dados</a>;
+what changed and when: <a href="{CHANGELOG}">CHANGELOG.dados.md</a>.
+Timestamps are Brasília local time.
+The data is ANVISA's open data; the pipeline is MIT.</p>
 <table>
 <tr><th>table</th><th>title</th><th>rows</th><th>bytes</th><th>ANVISA load</th><th>source</th>
 <th>search files</th></tr>
@@ -328,5 +421,85 @@ Timestamps are Brasília local time.</p>
 <pre><code>SELECT no_produto, marcas FROM '{e(first["path"])}'
 WHERE nu_cnpj_empresa = '40208221000174';</code></pre>
 <p>Generated by <a href="https://github.com/vasfvitor/anvisa-api">{e(manifest["generator"])}</a>.</p>
+</html>
+"""
+
+
+def _n(value: int) -> str:
+    """1.234.567: the dictionary page is Portuguese."""
+    return f"{value:,}".replace(",", ".")
+
+
+def _fontes(t: dict[str, Any]) -> str:
+    if not t.get("fontes"):
+        return ""
+    links = ", ".join(f'<a href="#{html.escape(f)}">{html.escape(f)}</a>' for f in t["fontes"])
+    return f" Derivada de {links}, refeita a cada build."
+
+
+def _table_section(name: str, t: dict[str, Any]) -> str:
+    e = html.escape
+    notes = "".join(f"<li>{e(note)}</li>" for note in t.get("notes", []))
+    nulls = t.get("nulls_added") or {}
+    columns = "\n".join(
+        f"<tr><td><code>{e(c['name'])}</code></td><td>{e(c['type'])}</td>"
+        f"<td><code>{e(c.get('source') or '')}</code></td><td>{e(c.get('description') or '')}"
+        + (
+            f" <small>({_n(nulls[c['name']])} valores não lidos viraram nulos)</small>"
+            if nulls.get(c["name"])
+            else ""
+        )
+        + "</td></tr>"
+        for c in t["columns"]
+    )
+    search = ""
+    if "busca" in t:
+        b = t["busca"]
+        search = (
+            f'<p>Arquivos de busca: <a href="{e(b["indice"])}">{_n(b["arquivos"])} arquivos</a>, '
+            f"{_n(b['bytes_total'])} bytes (formato {b['versao']}).</p>"
+        )
+    sort = ", ".join(f"<code>{e(c)}</code>" for c in t.get("sort", []))
+    return f"""<section id="{e(name)}">
+<h2><a href="{e(t["path"])}">{e(name)}</a></h2>
+<p>{e(t["title"])}. {_n(t["rows"])} linhas, {_n(t["bytes"])} bytes, ordenado por {sort}.
+Origem: <a href="{e(t["source"]["url"])}">{e(t["source"]["name"])}</a>
+(carga da ANVISA: {e(t["source"].get("loaded_at") or "não informada")}).{_fontes(t)}</p>
+{f"<ul>{notes}</ul>" if notes else ""}
+{search}
+<table>
+<tr><th>coluna</th><th>tipo</th><th>origem</th><th>descrição</th></tr>
+{columns}
+</table>
+</section>"""
+
+
+def dicionario_html(manifest: dict[str, Any]) -> str:
+    """The data dictionary: every table's notes and columns, from the manifest alone, so it
+    describes exactly the files beside it."""
+    e = html.escape
+    tables = manifest["tables"]
+    menu = " · ".join(f'<a href="#{e(name)}">{e(name)}</a>' for name in tables)
+    sections = "\n".join(_table_section(name, t) for name, t in tables.items())
+    return f"""<!doctype html>
+<html lang="pt-BR">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dicionário de dados: ANVISA dados abertos em Parquet</title>
+<style>body{{font:16px/1.5 system-ui,sans-serif;max-width:60rem;margin:2rem auto;padding:0 1rem}}
+table{{border-collapse:collapse;width:100%}}
+td,th{{border-bottom:1px solid #ccc;padding:.25rem .5rem;text-align:left;vertical-align:top}}
+code{{word-break:break-all}} section{{margin-top:3rem}} small{{color:#555}}</style>
+<h1>Dicionário de dados</h1>
+<p>Build <code>{e(manifest["build_id"])}</code> ({e(manifest["built_at"])}).
+As colunas têm o nome da ANVISA em minúsculas; os horários são de Brasília, sem fuso.
+Índice legível por máquina: <a href="manifest.json">manifest.json</a>
+(as descrições abaixo estão em <code>columns[].description</code> e <code>notes</code>);
+lista de arquivos: <a href="index.html">index.html</a>;
+histórico do formato e das tabelas: <a href="{CHANGELOG}">CHANGELOG.dados.md</a>.</p>
+<p>{menu}</p>
+{sections}
+<p>Dados: {e(manifest["license"]["data"])}. Código: {e(manifest["license"]["code"])},
+<a href="{REPO}">{e(manifest["generator"])}</a>.</p>
 </html>
 """

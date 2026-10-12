@@ -9,12 +9,15 @@ Importing this package does not import DuckDB; only converting does (`anvisa[dad
 from ..errors import DadosError, SchemaDriftError
 from .build import Unchanged, build
 from .catalog import CATALOG, Dataset, select
+from .derivar import DERIVADAS, Derivada
 from .fetch import Source
 
 __all__ = [
     "CATALOG",
+    "DERIVADAS",
     "DadosError",
     "Dataset",
+    "Derivada",
     "SchemaDriftError",
     "Source",
     "Unchanged",

@@ -12,6 +12,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 
 from ..errors import DadosError
+from .descricoes import DESCRICOES
 
 BASE_URL = "https://dados.anvisa.gov.br/dados/"
 TIMESTAMP_BR = ("%d/%m/%Y %H:%M:%S", "%d/%m/%Y")
@@ -40,10 +41,19 @@ class Dataset:
     # also publish `data/<build_id>/<name>/`: the rows re-partitioned by word, CNPJ and number
     # into files small enough for a browser that downloads whole files (busca.py)
     busca: bool = False
+    # what a reader of the Parquet should know, in Portuguese: what one row is, which values are
+    # placeholders, how to count. Published in the manifest and the Pages dictionary; the
+    # parser-level quirks (encoding, quoting, date order) stay in the README
+    notes: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if self.directory and not self.directory.endswith("/") or self.directory.startswith("/"):
             raise ValueError(f"{self.name}: directory must be '' or end in '/': {self.directory!r}")
+
+    @property
+    def descriptions(self) -> dict[str, str]:
+        """Source header -> Portuguese description (descricoes.py)."""
+        return DESCRICOES[self.name]
 
     @property
     def url(self) -> str:
@@ -97,6 +107,18 @@ ALIMENTOS = Dataset(
     # notificação carries 122029, registros expire 5, 10, 15 or 20 years after DT_REGULARIZACAO.
     formats={"DT_VENCIMENTO_REGISTRO": ("%m%Y", "%m/%Y")},
     unescape=frozenset({"MARCAS", "NO_PRODUTO"}),  # L&apos;ANA MED, &quot;, &#8208;
+    notes=(
+        "Uma linha por apresentação de um alimento ou suplemento regularizado; o produto é "
+        "co_seq_produto, e nome, marcas, empresa, processo e situação são iguais em todas as "
+        "suas apresentações.",
+        "O detalhe de cada apresentação (embalagem, ingredientes, alergênicos) está em "
+        "alimentos_resultado, junto por co_seq_apresentacao_produto; apresentações recentes "
+        "podem ainda não ter detalhe.",
+        "dt_vencimento_registro tem precisão de mês; nas notificações é sempre 12/2029, um "
+        "valor de preenchimento.",
+        "nu_processo não tem tamanho fixo (17 dígitos nos atuais, 13 nos antigos): compare "
+        "como texto, sem pontuação.",
+    ),
 )
 
 ALIMENTOS_RESULTADO = Dataset(
@@ -128,6 +150,14 @@ ALIMENTOS_RESULTADO = Dataset(
     sort=("CO_PRODUTO", "CO_SEQ_APRESENTACAO_PRODUTO"),
     # Recent rows carry long tabela_nutricional text: at 8192 rows a group reached 411 KB.
     row_group_size=2048,
+    notes=(
+        "Uma linha por apresentação, com o que o rótulo diz: embalagem, forma física, "
+        "ingredientes (em tabela_nutricional), intolerâncias e alergênicos.",
+        "Para todas as apresentações de um produto, filtre co_produto = alimentos.co_seq_produto; "
+        "as linhas de um produto são contíguas.",
+        'Os campos de lista usam " | " entre itens e, nos alergênicos, "#" entre os itens de '
+        "um grupo.",
+    ),
 )
 
 SANEANTES = Dataset(
@@ -153,6 +183,13 @@ SANEANTES = Dataset(
     timestamp_formats=("%m/%d/%Y %H:%M:%S", "%m/%d/%Y"),  # month first, unlike alimentos
     unescape=frozenset({"NO_PRODUTO"}),
     load_time="DT_ATUALIZACAO",
+    notes=(
+        "Uma linha por processo de saneante (produto de limpeza e afins) registrado ou "
+        "notificado; is_registrado distingue os dois. Não há arquivo de detalhe.",
+        "dt_vencimento_produto está vazio em parte das linhas e a ANVISA publica datas até o ano "
+        "3033; não trate uma data distante como erro de leitura.",
+        "nu_expediente é único por linha; nu_processo tem 17, 15 ou 13 dígitos.",
+    ),
 )
 
 # The petition files: one row per stage (fila, análise, exigência, finalização...) of each
@@ -195,6 +232,14 @@ PETICOES_ALIMENTO = Dataset(
     sort=_PETICOES_SORT,
     timestamp_formats=("%m/%d/%Y %H:%M:%S",),  # month first; never also day first, see README
     load_time=None,
+    notes=(
+        "Uma linha por etapa (fila, análise, exigência, finalização…) de cada petição de "
+        "alimentos finalizada ao menos uma vez; as linhas de um processo são contíguas.",
+        "O arquivo não traz a empresa: junte num_processo_peticao com alimentos.nu_processo, "
+        "que encontra o produto de cerca de 72% dos processos.",
+        "As petições nunca finalizadas estão em peticoes_alimento_andamento; nenhuma petição "
+        "aparece nos dois arquivos.",
+    ),
 )
 
 PETICOES_ALIMENTO_ANDAMENTO = Dataset(
@@ -228,6 +273,14 @@ PETICOES_ALIMENTO_ANDAMENTO = Dataset(
     # 0/0, no end date) spanning the whole cycle: leave it out when adding up stage durations.
     timestamp_formats=("%d/%m/%Y %H:%M:%S",),
     load_time=None,
+    notes=(
+        "Uma linha por etapa de cada petição de alimentos ainda em análise (nunca finalizada); "
+        "mesmas colunas de peticoes_alimento menos as duas datas de finalização.",
+        'Cada petição tem também uma linha "Todos" (ordem 0, sem data de fim) que cobre o ciclo '
+        "inteiro: deixe-a de fora ao somar durações.",
+        'As petições do tipo "Processo" são pedidos novos, de produtos que ainda não existem em '
+        "alimentos.",
+    ),
 )
 
 PRODUTOS_IRREGULARES = Dataset(
@@ -275,6 +328,16 @@ PRODUTOS_IRREGULARES = Dataset(
     sort=("CO_TIPO_PRODUTO", "NU_CNPJ_EMPRESA_INVESTIGADA", "CO_SEQ_DOSSIE_INVESTIG_MED"),
     timestamp_formats=("%m/%d/%Y %H:%M:%S",),  # month first, like saneantes
     unescape=frozenset({"PRODUTO", "PRODUTOS_CONCATENADOS", "NO_EMPRESA_INVESTIGADA"}),
+    notes=(
+        "Medidas de fiscalização (suspensão, proibição, recolhimento, apreensão, interdição, "
+        "inutilização) de todas as áreas da ANVISA, uma linha por dossiê × ação × atividade × "
+        "produto; co_tipo_produto 6 é alimento.",
+        "nu_cnpj é quem abriu o dossiê (muitas vezes a própria ANVISA), não a empresa "
+        "fiscalizada: essa está em nu_cnpj_empresa_investigada, que nem sempre é um CNPJ.",
+        "A maioria das medidas de alimentos atinge produtos e empresas sem regularização: poucas "
+        "linhas juntam com alimentos por CNPJ ou nome.",
+        "produtos_concatenados é cortado em 4.000 caracteres; use produto.",
+    ),
 )
 
 COSMETICOS = Dataset(
@@ -324,6 +387,16 @@ COSMETICOS = Dataset(
     # 24 MB of Parquet is too much for a browser that downloads whole files: the search files
     # (about 3,200 of them, 45-75 KB each) answer a query with one or two downloads
     busca=True,
+    notes=(
+        "Uma linha por processo de cosmético, perfume ou produto de higiene notificado, isento "
+        "de registro ou registrado, exceto 11.144 processos listados duas vezes (st_registrado "
+        "falso e depois verdadeiro, mesmo nu_registro): conte produtos com DISTINCT nu_processo.",
+        "O Parquet tem 24 MB; para consultas no navegador use os arquivos de busca (chave busca "
+        "do manifest), partidos por palavra, CNPJ e número.",
+        "dt_vencimento está vazio em 15% das linhas, e há produtos ativos com data já passada.",
+        "Nomes com caracteres de controle no início e com acentos trocados (LOÃ‡ÃƒO) vêm assim "
+        "da ANVISA e são mantidos.",
+    ),
 )
 
 CATALOG: tuple[Dataset, ...] = (
