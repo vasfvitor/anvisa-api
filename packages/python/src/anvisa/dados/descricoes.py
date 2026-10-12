@@ -342,4 +342,16 @@ DESCRICOES: dict[str, dict[str, str]] = {
         ),
         "autor": "Razão social de quem abriu o dossiê.",
     },
+    "cosmeticos_por_empresa": {
+        "cnpj": _CNPJ,
+        "ordem": "Posição do produto na lista da empresa, de 1 a 100: ativos antes, depois nome.",
+        "id": "Nº do processo (o identificador do cosmético); único com cnpj.",
+        "nome": _NOME_PRODUTO,
+        "empresa": _RAZAO,
+        "processo": _PROCESSO,
+        "registro": "Nº de registro, quando há; vazio nos notificados e isentos.",
+        "ativo": "Regularização ativa na ANVISA no dia do build (st_situacao_produto).",
+        "tipo": '"Registrado", "Notificado", "Isento de registro" ou "Descartável".',
+        "vencimento": "Vencimento da regularização (data); nulo quando a ANVISA não informa.",
+    },
 }

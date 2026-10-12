@@ -8,6 +8,12 @@ consumer must change to keep reading it; everything below has been additive, so 
 
 ## 2026-10-12
 
+- **`cosmeticos_por_empresa`**, the fourth derived table: the first 100 cosmetics of each
+  CNPJ (`ordem`: active first, then name, then processo), one row per processo with the
+  unregistered row of a pair, `tipo` normalized (Registrado, Notificado, Isento de registro,
+  Descartável) and `vencimento` as published. 5,246 companies, 1,963 of them capped;
+  281,220 rows, 7.6 MB. A company page no longer needs the 24 MB table; its totals are in
+  `empresas`, and the whole list is in the search files.
 - **One row per saneante in `produtos`.** Six expedientes come twice in `saneantes`, as a
   Registrado and a Notificado row equal in everything else (found by the site against build
   `20261012T012351Z`); `produtos` now keeps the registered row, so `(area, id)` is unique

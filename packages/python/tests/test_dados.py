@@ -1337,13 +1337,100 @@ def test_medidas_on_the_fixtures(fake_dados, tmp_path):
 
 
 @needs_duckdb
+def test_cosmeticos_por_empresa_on_the_fixtures(fake_dados, tmp_path):
+    """One row per processo per company, numbered; the unregistered row of a pair is the one
+    kept, the tipo labels are the site's."""
+    import duckdb
+
+    out = tmp_path / "dist"
+    with fake_dados.client() as http:
+        manifest = build(out, http=http, now=NOW, commit="abc123")
+    entry = manifest["tables"]["cosmeticos_por_empresa"]
+    assert entry["fontes"] == ["cosmeticos"] and entry["sort"] == ["cnpj", "ordem"]
+    assert [c["name"] for c in entry["columns"]] == list(
+        derivar.COSMETICOS_POR_EMPRESA_TABELA.descriptions
+    )
+    path = out / entry["path"]
+    con = duckdb.connect()
+    q = lambda sql: con.execute(sql.replace("FROM C", f"FROM '{path}'")).fetchall()  # noqa: E731
+    # 34 records, 29 companies, two processos listed twice: 32 rows
+    assert entry["rows"] == 32
+    assert q("SELECT count(DISTINCT cnpj), count(*) = count(DISTINCT (cnpj, id)) FROM C") == [
+        (29, True)
+    ]
+    assert q(
+        "SELECT bool_and(ok) FROM (SELECT list_sort(list(ordem)) = range(1, count(*) + 1) AS ok "
+        "FROM C GROUP BY cnpj)"
+    ) == [(True,)]
+    # the pairs: the st_registrado = false row stays, which carries ds_tipo_peticao
+    assert q(
+        "SELECT id, ordem, tipo, ativo, vencimento FROM C "
+        "WHERE id IN ('250000004209949', '250000018199711') ORDER BY id"
+    ) == [
+        ("250000004209949", 1, "Isento de registro", True, date(2029, 5, 5)),
+        ("250000018199711", 1, "Isento de registro", False, None),
+    ]
+    assert q("SELECT tipo, count(*) FROM C GROUP BY 1 ORDER BY 2 DESC, 1") == [
+        ("Notificado", 17),
+        ("Isento de registro", 7),
+        ("Registrado", 7),
+        ("Descartável", 1),
+    ]
+    types = {c["name"]: c["type"] for c in entry["columns"]}
+    assert types["ordem"] == "INTEGER" and types["ativo"] == "BOOLEAN"
+    assert types["vencimento"] == "DATE"
+
+
+@needs_duckdb
+def test_cosmeticos_por_empresa_order_and_cap(tmp_path, monkeypatch):
+    """What the fixtures cannot show: active products come first, then name, then processo,
+    and the list stops at the cap. Synthetic cosmeticos file, one company, cap lowered to 3."""
+    import duckdb
+
+    monkeypatch.setattr(derivar, "COSMETICOS_POR_EMPRESA", 3)
+    con = duckdb.connect()
+    con.execute(
+        "CREATE TABLE c AS SELECT * FROM (VALUES "
+        "('1', 'B', false, 'Notificado'), ('2', 'A', false, 'Notificado'), "
+        "('3', 'Z', true, 'REGISTRO'), ('4', 'Y', true, 'DESCARTAVEL'), ('5', 'Y', true, NULL)) "
+        "t(nu_processo, no_produto, st_situacao_produto, ds_tipo_peticao)"
+    )
+    con.execute(
+        "ALTER TABLE c ADD COLUMN nu_cnpj_empresa VARCHAR DEFAULT '11111111000191'; "
+        "ALTER TABLE c ADD COLUMN no_razao_social_empresa VARCHAR DEFAULT 'E'; "
+        "ALTER TABLE c ADD COLUMN nu_registro VARCHAR; "
+        "ALTER TABLE c ADD COLUMN st_registrado BOOLEAN DEFAULT false; "
+        "ALTER TABLE c ADD COLUMN dt_vencimento TIMESTAMP"
+    )
+    src = tmp_path / "cosmeticos.parquet"
+    con.execute(f"COPY c TO '{src}' (FORMAT parquet)")
+    rows, _ = derivar.write(
+        derivar.COSMETICOS_POR_EMPRESA_TABELA,
+        {"cosmeticos": src},
+        tmp_path / "cpe.parquet",
+        tmp_path / "spill",
+    )
+    assert rows == 3
+    got = con.execute(
+        f"SELECT ordem, id, nome, ativo, tipo FROM '{tmp_path / 'cpe.parquet'}' ORDER BY ordem"
+    ).fetchall()
+    # active first (Y before Z by name, processo 4 before 5 on the same name), then the cap
+    assert got == [
+        (1, "4", "Y", True, "Descartável"),
+        (2, "5", "Y", True, None),
+        (3, "3", "Z", True, "Registrado"),
+    ]
+
+
+@needs_duckdb
 def test_derived_table_with_a_missing_source(fake_dados, tmp_path, monkeypatch):
     """`-d cosmeticos` with no published site has nothing to derive produtos from: skipped,
     said so. A full build that lacks a source is a bug, not a skip."""
     log: list[str] = []
     with fake_dados.client() as http:
         result = build(tmp_path / "one", http=http, datasets=(COSMETICOS,), now=NOW, log=log.append)
-    assert list(result["tables"]) == ["cosmeticos"]
+    # the derived table whose only fonte is cosmeticos is built even in this partial build
+    assert list(result["tables"]) == ["cosmeticos", "cosmeticos_por_empresa"]
     assert any(
         m.startswith("skipping produtos: alimentos, alimentos_resultado, saneantes not in")
         for m in log

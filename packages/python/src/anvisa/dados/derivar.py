@@ -342,7 +342,59 @@ MEDIDAS = Derivada(
     sql=_medidas,
 )
 
-DERIVADAS: tuple[Derivada, ...] = (PRODUTOS, EMPRESAS, MEDIDAS)
+COSMETICOS_POR_EMPRESA = 100
+
+
+def _cosmeticos_por_empresa(t: dict[str, str]) -> str:
+    # The first COSMETICOS_POR_EMPRESA cosmetics of each CNPJ, active first, then by name, then by
+    # processo: what a company page lists, without the 24 MB table. One row per processo, the
+    # unregistered row of a duplicate pair (the one carrying ds_tipo_peticao and, where only
+    # one has it, the later expiry), as in empresas and the site's sqlCos. The tipo labels are
+    # the site's; st_registrado is always false on the kept row, so ds_tipo_peticao decides.
+    return f"""
+        SELECT nu_cnpj_empresa AS cnpj,
+          CAST(row_number() OVER (PARTITION BY nu_cnpj_empresa
+            ORDER BY st_situacao_produto DESC, no_produto, nu_processo) AS INTEGER) AS ordem,
+          nu_processo AS id,
+          no_produto AS nome,
+          no_razao_social_empresa AS empresa,
+          nu_processo AS processo,
+          nu_registro AS registro,
+          st_situacao_produto AS ativo,
+          CASE WHEN st_registrado OR ds_tipo_peticao = 'REGISTRO' THEN 'Registrado'
+               WHEN ds_tipo_peticao = 'Notificado' THEN 'Notificado'
+               WHEN ds_tipo_peticao = 'ISENTO DE REGISTRO' THEN 'Isento de registro'
+               WHEN ds_tipo_peticao = 'DESCARTAVEL' THEN 'Descartável'
+               ELSE ds_tipo_peticao END AS tipo,
+          CAST(dt_vencimento AS DATE) AS vencimento
+        FROM (SELECT * FROM {t["cosmeticos"]}
+              QUALIFY row_number() OVER (PARTITION BY nu_cnpj_empresa, nu_processo
+                ORDER BY st_registrado, no_produto, nu_registro NULLS LAST) = 1)
+        QUALIFY ordem <= {COSMETICOS_POR_EMPRESA}"""
+
+
+COSMETICOS_POR_EMPRESA_TABELA = Derivada(
+    name="cosmeticos_por_empresa",
+    group="cosmeticos",
+    title=f"Cosméticos: os {COSMETICOS_POR_EMPRESA} primeiros de cada empresa",
+    fontes=("cosmeticos",),
+    sort=("cnpj", "ordem"),
+    notes=(
+        f"Os {COSMETICOS_POR_EMPRESA} primeiros cosméticos de cada CNPJ, ativos antes, depois por "
+        "nome e processo (ordem diz a posição); os totais da empresa estão em empresas.cosmeticos "
+        "e cosmeticos_ativos. Para todos os produtos de uma empresa, use os arquivos de busca "
+        "da tabela cosmeticos. Derivada a cada build.",
+        "Uma linha por processo: dos 11.144 processos que cosmeticos lista duas vezes "
+        "(st_registrado falso e verdadeiro), fica a linha sem registro, a que traz "
+        "ds_tipo_peticao.",
+        "tipo normaliza ds_tipo_peticao: Registrado, Notificado, Isento de registro, Descartável.",
+        "vencimento vem como a ANVISA publica, inclusive anos depois de 2100; sem data em parte "
+        "das linhas.",
+    ),
+    sql=_cosmeticos_por_empresa,
+)
+
+DERIVADAS: tuple[Derivada, ...] = (PRODUTOS, EMPRESAS, MEDIDAS, COSMETICOS_POR_EMPRESA_TABELA)
 
 
 def write(
