@@ -21,7 +21,8 @@ is in `ROADMAP.md`. An untracked `NOTES.local.md` holds the running to-do list w
   Never push or tag from a session.
 - **Before every commit** run `git status --short` and `git add` any `??` file the change
   needs: `git commit -a` never stages new files (0.5.0 shipped without `tests/test_spec.py`).
-- Commits only when asked, no attribution trailers. Pushing is the user's.
+- Commit on your own when a unit of work is complete (one subject per commit, no attribution
+  trailers); do not ask first. Pushing is the user's.
 
 ## Sibling repos
 
