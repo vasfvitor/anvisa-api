@@ -60,6 +60,57 @@ _PETICAO = {
     "ORDEM_OCORRE_GRUPO_ETAPA_DESC": "Ordem inversa da etapa: 1 é a mais recente.",
 }
 
+_PRODUTOS_COLS = {
+    "area": '"alimentos" ou "saneantes": a tabela de origem.',
+    "id": (
+        "Identificador na origem: co_seq_produto nos alimentos, nu_expediente nos saneantes. "
+        "Único com area."
+    ),
+    "nome": _NOME_PRODUTO,
+    "marcas": 'Marcas do alimento, separadas por " ; "; nulo nos saneantes.',
+    "empresa": _RAZAO,
+    "cnpj": _CNPJ,
+    "processo": _PROCESSO,
+    "registro": (
+        "Nº de registro do produto (9 dígitos); nas notificações de alimentos, o nº do "
+        "processo; vazio nas de saneantes."
+    ),
+    "ativo": "Regularização ativa na ANVISA no dia do build.",
+    "tipo": _TIPO,
+    "categoria": "Categoria do alimento (ex.: Suplementos alimentares); nulo nos saneantes.",
+    "desde": "Primeira regularização do alimento (data); nulo nos saneantes.",
+    "vencimento": (
+        "Vencimento da regularização (data). Nos alimentos tem precisão de mês e vale "
+        "2029-12-01 em toda notificação; nos saneantes pode faltar ou ir até o ano 3033."
+    ),
+    "apresentacoes": "Quantas apresentações o alimento tem em alimentos; 1 nos saneantes.",
+    "registros": (
+        "Os nº de registro das apresentações do alimento (13 dígitos cada), em ordem; lista "
+        "vazia nas notificações e nos saneantes."
+    ),
+    "gluten": (
+        '"Sim", "Não" ou "Varia" (apresentações divergem), pelo rótulo; nulo quando o '
+        "alimento não declara e nos saneantes."
+    ),
+    "lactose": '"Sim", "Não" ou "Varia", pelo rótulo; nulo quando não declara e nos saneantes.',
+    "contem": (
+        'Alergênicos que o rótulo declara conter ("Contém" ou "Contém derivado de"), nomes '
+        "legais em ordem, juntando todas as apresentações; nulo quando não declara."
+    ),
+    "pode_conter": (
+        'Alergênicos que o rótulo diz "Pode conter" e nenhuma apresentação declara conter; '
+        "nulo quando não declara."
+    ),
+    "nao_contem": (
+        'Alergênicos que o rótulo diz "Não contém" e nenhuma apresentação contém ou pode '
+        "conter; nulo quando não declara."
+    ),
+    "alergia_varia": (
+        "Verdadeiro quando as apresentações do alimento declaram alergênicos ou "
+        "intolerâncias diferentes entre si; nulo quando não declara."
+    ),
+}
+
 DESCRICOES: dict[str, dict[str, str]] = {
     "alimentos": {
         "NO_PRODUTO": (
@@ -240,56 +291,7 @@ DESCRICOES: dict[str, dict[str, str]] = {
         "DT_ATUALIZACAO": _ATUALIZACAO,
     },
     # derived tables (derivar.py): keyed by output column
-    "produtos": {
-        "area": '"alimentos" ou "saneantes": a tabela de origem.',
-        "id": (
-            "Identificador na origem: co_seq_produto nos alimentos, nu_expediente nos saneantes. "
-            "Único com area."
-        ),
-        "nome": _NOME_PRODUTO,
-        "marcas": 'Marcas do alimento, separadas por " ; "; nulo nos saneantes.',
-        "empresa": _RAZAO,
-        "cnpj": _CNPJ,
-        "processo": _PROCESSO,
-        "registro": (
-            "Nº de registro do produto (9 dígitos); nas notificações de alimentos, o nº do "
-            "processo; vazio nas de saneantes."
-        ),
-        "ativo": "Regularização ativa na ANVISA no dia do build.",
-        "tipo": _TIPO,
-        "categoria": "Categoria do alimento (ex.: Suplementos alimentares); nulo nos saneantes.",
-        "desde": "Primeira regularização do alimento (data); nulo nos saneantes.",
-        "vencimento": (
-            "Vencimento da regularização (data). Nos alimentos tem precisão de mês e vale "
-            "2029-12-01 em toda notificação; nos saneantes pode faltar ou ir até o ano 3033."
-        ),
-        "apresentacoes": "Quantas apresentações o alimento tem em alimentos; 1 nos saneantes.",
-        "registros": (
-            "Os nº de registro das apresentações do alimento (13 dígitos cada), em ordem; lista "
-            "vazia nas notificações e nos saneantes."
-        ),
-        "gluten": (
-            '"Sim", "Não" ou "Varia" (apresentações divergem), pelo rótulo; nulo quando o '
-            "alimento não declara e nos saneantes."
-        ),
-        "lactose": '"Sim", "Não" ou "Varia", pelo rótulo; nulo quando não declara e nos saneantes.',
-        "contem": (
-            'Alergênicos que o rótulo declara conter ("Contém" ou "Contém derivado de"), nomes '
-            "legais em ordem, juntando todas as apresentações; nulo quando não declara."
-        ),
-        "pode_conter": (
-            'Alergênicos que o rótulo diz "Pode conter" e nenhuma apresentação declara conter; '
-            "nulo quando não declara."
-        ),
-        "nao_contem": (
-            'Alergênicos que o rótulo diz "Não contém" e nenhuma apresentação contém ou pode '
-            "conter; nulo quando não declara."
-        ),
-        "alergia_varia": (
-            "Verdadeiro quando as apresentações do alimento declaram alergênicos ou "
-            "intolerâncias diferentes entre si; nulo quando não declara."
-        ),
-    },
+    "produtos": _PRODUTOS_COLS,
     "empresas": {
         "cnpj": "CNPJ, 14 dígitos com zeros à esquerda. Texto, nunca número.",
         "nome": (
@@ -341,6 +343,23 @@ DESCRICOES: dict[str, dict[str, str]] = {
             "a própria empresa (recolhimento voluntário)."
         ),
         "autor": "Razão social de quem abriu o dossiê.",
+    },
+    "alimentos_por_produto": {
+        **_PRODUTOS_COLS,
+        "situacao_assunto": (
+            'Situação da petição na ANVISA: "Publicado deferimento", "Anuído", "Publicado '
+            'indeferimento"…; igual em todas as apresentações.'
+        ),
+        "alegacao": 'Alegações funcionais autorizadas, separadas por ";"; nulo quando não há.',
+        "publicacao": (
+            "Publicação mais recente da regularização" + _BRASILIA + "; nulo em quase metade."
+        ),
+        "situacao_em": "Data mais recente da situação atual" + _BRASILIA + "; nulo em parte.",
+        "inicio_analise": (
+            "Início mais antigo de análise entre as apresentações"
+            + _BRASILIA
+            + "; nulo na maioria."
+        ),
     },
     "cosmeticos_por_empresa": {
         "cnpj": _CNPJ,

@@ -90,7 +90,8 @@ throttling, but the same rule holds: profile the real file before writing its ca
 ## Adding a derived table
 
 A derived table (`anvisa/dados/derivar.py`) is Parquet built from the converted tables, not
-from an ANVISA file: `produtos`, `empresas`, `medidas` and `cosmeticos_por_empresa` are the first four. Add a `Derivada` and put it in
+from an ANVISA file: `produtos`, `empresas`, `medidas`, `cosmeticos_por_empresa` and
+`alimentos_por_produto` are the first five. Add a `Derivada` and put it in
 `DERIVADAS`; its `sql` gets a map fonte name → `read_parquet('…')` and returns a SELECT. Rules:
 
 1. Every aggregate is order-stable (`min`, `arg_min`, `list(x ORDER BY x)`,

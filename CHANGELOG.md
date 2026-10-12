@@ -19,7 +19,8 @@
   (`gluten`, `lactose`, `contem`, `pode_conter`, `nao_contem`, `alergia_varia`) from
   `alimentos_resultado`. Saneantes listed twice (Registrado and Notificado) are one row in
   `produtos` and count once in `empresas`. `cosmeticos_por_empresa` (the first 100 cosmetics of
-  each CNPJ, 281,220 rows, 7.6 MB, 1.8 s) is the fourth derived table. Manifest entries carry `fontes` and a `source.url` pointing at `derivar.py` at the
+  each CNPJ, 281,220 rows, 7.6 MB, 1.8 s) is the fourth derived table, `alimentos_por_produto` (the alimentos rows of
+  `produtos` plus the petição's status, claim and dates; 50,522 rows, 2.8 MB) the fifth. Manifest entries carry `fontes` and a `source.url` pointing at `derivar.py` at the
   build's commit; `anvisa dados list` lists them with their sources; `-d` cannot select them,
   and a full build that lacks a source fails instead of publishing without it. Sums were
   checked against the raw tables and the cosméticos pair rule against a hand count.

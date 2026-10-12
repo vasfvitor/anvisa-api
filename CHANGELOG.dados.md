@@ -8,6 +8,10 @@ consumer must change to keep reading it; everything below has been additive, so 
 
 ## 2026-10-12
 
+- **`alimentos_por_produto`**, the fifth derived table, asked by the site: the alimentos rows
+  of `produtos` (same columns, same values) plus `situacao_assunto`, `alegacao`, `publicacao`
+  and `situacao_em` (latest among the apresentações) and `inicio_analise` (earliest). A food
+  list no longer needs the per-apresentação tables. 50,522 rows, 2.8 MB.
 - **`cosmeticos_por_empresa`**, the fourth derived table: the first 100 cosmetics of each
   CNPJ (`ordem`: active first, then name, then processo), one row per processo with the
   unregistered row of a pair, `tipo` normalized (Registrado, Notificado, Isento de registro,

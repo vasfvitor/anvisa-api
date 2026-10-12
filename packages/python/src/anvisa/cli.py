@@ -510,8 +510,8 @@ def dados_build(
         help="a table name or group; repeat for more (default: all). With --skip-unchanged the "
         "other published tables are carried over, so the manifest stays complete; without it "
         "the manifest lists only these. Derived tables (produtos, empresas, medidas, "
-        "cosmeticos_por_empresa) cannot be selected: they are rebuilt on every build from the "
-        "tables present",
+        "cosmeticos_por_empresa, alimentos_por_produto) cannot be selected: they are rebuilt "
+        "on every build from the tables present",
     ),
     skip_unchanged: str | None = typer.Option(
         None,

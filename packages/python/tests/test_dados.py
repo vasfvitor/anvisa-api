@@ -1423,6 +1423,51 @@ def test_cosmeticos_por_empresa_order_and_cap(tmp_path, monkeypatch):
 
 
 @needs_duckdb
+def test_alimentos_por_produto_on_the_fixtures(fake_dados, tmp_path):
+    """The alimentos rows of produtos, column for column, plus the petição's status, claim
+    and three dates; nothing a consumer of produtos would see differently."""
+    import duckdb
+
+    out = tmp_path / "dist"
+    with fake_dados.client() as http:
+        manifest = build(out, http=http, now=NOW, commit="abc123")
+    entry = manifest["tables"]["alimentos_por_produto"]
+    assert entry["fontes"] == ["alimentos", "alimentos_resultado"]
+    assert entry["sort"] == ["cnpj", "id"] and entry["rows"] == 36
+    names = [c["name"] for c in entry["columns"]]
+    assert names == list(derivar.ALIMENTOS_POR_PRODUTO.descriptions)
+    produtos = [c["name"] for c in manifest["tables"]["produtos"]["columns"]]
+    assert names[: len(produtos)] == produtos  # the produtos columns first, in their order
+    extras = names[len(produtos) :]
+    assert extras == ["situacao_assunto", "alegacao", "publicacao", "situacao_em", "inicio_analise"]
+    a = out / entry["path"]
+    p = out / manifest["tables"]["produtos"]["path"]
+    con = duckdb.connect()
+    shared = ", ".join(produtos)
+    for left, right in ((a, f"{p}' WHERE area = 'alimentos"), (f"{p}' WHERE area = 'alimentos", a)):
+        gone = con.execute(
+            f"SELECT count(*) FROM (SELECT {shared} FROM '{left}' "
+            f"EXCEPT ALL SELECT {shared} FROM '{right}')"
+        ).fetchone()
+        assert gone == (0,)
+    types = {c["name"]: c["type"] for c in entry["columns"]}
+    assert types["publicacao"] == "TIMESTAMP" and types["inicio_analise"] == "TIMESTAMP"
+    # the status is always there; the dates are not (publicacao is NULL on half the real file)
+    assert con.execute(f"SELECT count(*) FROM '{a}' WHERE situacao_assunto IS NULL").fetchone() == (
+        0,
+    )
+    # a product with two apresentações: publication is the latest, analysis start the earliest
+    src = out / manifest["tables"]["alimentos"]["path"]
+    (row,) = con.execute(
+        f"SELECT CAST(co_seq_produto AS VARCHAR), max(dt_publicacao), min(dt_inicio_analise) "
+        f"FROM '{src}' GROUP BY 1 HAVING count(*) > 1 ORDER BY 1 LIMIT 1"
+    ).fetchall()
+    assert con.execute(
+        f"SELECT publicacao, inicio_analise FROM '{a}' WHERE id = '{row[0]}'"
+    ).fetchone() == (row[1], row[2])
+
+
+@needs_duckdb
 def test_derived_table_with_a_missing_source(fake_dados, tmp_path, monkeypatch):
     """`-d cosmeticos` with no published site has nothing to derive produtos from: skipped,
     said so. A full build that lacks a source is a bug, not a skip."""

@@ -113,13 +113,17 @@ def _saneantes_unicos(saneantes: str) -> str:
                    nu_registro_produto NULLS LAST, no_produto, nu_processo) = 1"""
 
 
-def _produtos(t: dict[str, str]) -> str:
-    # alimentos: one row per apresentação, grouped into the product (co_seq_produto). Name,
-    # brands, company, processo and situação are constant within a product (README,
-    # "Products"), so min() reads the one value; the dates take the earliest. The label's
-    # allergen declaration joins from alimentos_resultado, per product (_alergia).
-    alimentos = f"""
-        SELECT base.* EXCLUDE (co), gluten, lactose, contem, pode_conter, nao_contem, alergia_varia
+def _alimentos(t: dict[str, str], extras: dict[str, str] | None = None) -> str:
+    """alimentos as one row per product (co_seq_produto) with the produtos columns, plus the
+    `extras` (output name -> aggregate over the product's apresentações) after them. Name,
+    brands, company, processo and situação are constant within a product (README,
+    "Products"), so min() reads the one value; the dates take the earliest. The label's
+    allergen declaration joins from alimentos_resultado, per product (_alergia)."""
+    names = "".join(f", {name}" for name in extras or ())
+    more = "".join(f",\n          {expr} AS {name}" for name, expr in (extras or {}).items())
+    return f"""
+        SELECT base.* EXCLUDE (co{names}),
+          gluten, lactose, contem, pode_conter, nao_contem, alergia_varia{names}
         FROM (
         SELECT 'alimentos' AS area,
           co_seq_produto AS co,
@@ -137,10 +141,14 @@ def _produtos(t: dict[str, str]) -> str:
           min(dt_vencimento_registro) AS vencimento,
           CAST(count(*) AS INTEGER) AS apresentacoes,
           coalesce(list(nu_registro ORDER BY nu_registro) FILTER (WHERE nu_registro IS NOT NULL),
-            []) AS registros
+            []) AS registros{more}
         FROM {t["alimentos"]}
         GROUP BY co_seq_produto) base
         LEFT JOIN ({_alergia(t["alimentos_resultado"])}) alergia ON alergia.co_produto = base.co"""
+
+
+def _produtos(t: dict[str, str]) -> str:
+    alimentos = _alimentos(t)
     # saneantes: one row per nu_expediente, no detail file. Six expedientes come twice, as a
     # Registrado and a Notificado row equal in everything else (found by the site, 2026-10-11):
     # the registered row stays, the registro being what exists.
@@ -394,7 +402,51 @@ COSMETICOS_POR_EMPRESA_TABELA = Derivada(
     sql=_cosmeticos_por_empresa,
 )
 
-DERIVADAS: tuple[Derivada, ...] = (PRODUTOS, EMPRESAS, MEDIDAS, COSMETICOS_POR_EMPRESA_TABELA)
+
+def _alimentos_por_produto(t: dict[str, str]) -> str:
+    # The produtos row of every alimento plus what a list of foods still needed from the raw
+    # table (asked by the site, 2026-10-12): the petição's status and claim, constant within a
+    # product, and three dates, of which only dt_publicacao and dt_situacao differ within a
+    # product (2 of 50,522): the latest publication and status, the earliest analysis start.
+    return _alimentos(
+        t,
+        {
+            "situacao_assunto": "min(ds_situacao_assunto_doc)",
+            "alegacao": "min(ds_alegacao_funcional)",
+            "publicacao": "max(dt_publicacao)",
+            "situacao_em": "max(dt_situacao)",
+            "inicio_analise": "min(dt_inicio_analise)",
+        },
+    )
+
+
+ALIMENTOS_POR_PRODUTO = Derivada(
+    name="alimentos_por_produto",
+    group="alimentos",
+    title="Alimentos: uma linha por produto, com o status da petição",
+    fontes=("alimentos", "alimentos_resultado"),
+    sort=("cnpj", "id"),
+    notes=(
+        "As linhas de alimentos da tabela produtos (mesmas colunas, mesmos valores, inclusive "
+        "os alergênicos) mais o status e a alegação da petição e três datas, para listar "
+        "alimentos sem ler a tabela alimentos (uma linha por apresentação). Derivada a cada "
+        "build.",
+        "situacao_assunto e alegacao são iguais em todas as apresentações de um produto; "
+        "publicacao e situacao_em são as mais recentes entre elas, inicio_analise a mais "
+        "antiga. Horários de Brasília, sem fuso.",
+        "Para as apresentações de um produto, leia alimentos (co_seq_produto = id) e "
+        "alimentos_resultado (co_produto = id).",
+    ),
+    sql=_alimentos_por_produto,
+)
+
+DERIVADAS: tuple[Derivada, ...] = (
+    PRODUTOS,
+    EMPRESAS,
+    MEDIDAS,
+    COSMETICOS_POR_EMPRESA_TABELA,
+    ALIMENTOS_POR_PRODUTO,
+)
 
 
 def write(
