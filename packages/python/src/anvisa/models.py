@@ -342,7 +342,9 @@ class EmissaoCertificadoDTO(BaseModel):
 
 
 class FilaCalculadaDTO(BaseModel):
-    nuOrdem: Annotated[int | None, Field(description="Position in the queue (1 = next).")] = None
+    nuOrdem: Annotated[
+        int | None, Field(description="Position in the queue (1 = next).")
+    ] = None
     dtEntrada: Annotated[
         AwareDatetime | None,
         Field(

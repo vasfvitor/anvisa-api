@@ -21,11 +21,6 @@
   is the conditional GET `download` always was, now callable by URL. Recorded on 2026-10-22
   (2 files, 2 fixtures of 22 records each). The xlsx gov.br advertises is the same cut, but
   for two rows corrected there two hours later.
-- **`medicamentos` and `produtos_saude` tables**, the registries behind "está liberado?" for
-  medicines and medical devices (`DADOS_ABERTOS_MEDICAMENTOS.csv`, `TA_PRODUTO_SAUDE_SITE.csv`),
-  folded into `produtos` and `empresas`, plus the derived `medicamentos_por_produto` and
-  `produtos_saude_por_produto`. `Dataset` gained `quoted` for the one file that quotes nothing.
-  Row counts, keys and quirks in `CHANGELOG.dados.md`.
 - `models.py` regenerated as `make models` writes it (one line wrapped), so the `spec-drift`
   CI job is green again.
 
