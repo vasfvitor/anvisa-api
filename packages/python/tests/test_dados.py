@@ -9,6 +9,7 @@ import importlib.util
 import json
 import re
 import sys
+from collections import Counter
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
@@ -1136,6 +1137,12 @@ def test_busca_layout_on_the_cosmeticos_fixture(tmp_path):
     listed = dict(busca.listed(index))
     assert {p.relative_to(folder).as_posix() for p in folder.rglob("*.parquet")} == set(listed)
     assert all((folder / name).stat().st_size == size for name, size in listed.items())
+    assert listed["palavras.parquet"] == index["palavras_parquet"]
+    # an index from before palavras.parquet lists one file less, and nothing else changes
+    assert (
+        len(busca.listed({k: v for k, v in index.items() if k != "palavras_parquet"}))
+        == len(listed) - 1
+    )
     firsts = [e[0] for e in index["palavras"]]
     assert firsts == sorted(firsts) and len(index["palavras"]) > 1  # target=20 forces a split
     assert all(len(e[0]) == 14 for e in index["empresas"])
@@ -1171,6 +1178,12 @@ def test_busca_layout_on_the_cosmeticos_fixture(tmp_path):
     # a word file's rows are (word, source row) pairs with the row columns, in word order
     described = con.execute(f"DESCRIBE SELECT * FROM '{folder}/palavras/0000.parquet'").fetchall()
     assert [c for c, *_ in described] == ["palavra", *busca.ROW_COLUMNS]
+    # palavras.parquet: every distinct word once, with how many (word, row) pairs it has
+    vocab = con.execute(
+        f"SELECT palavra, linhas FROM '{folder}/palavras.parquet' ORDER BY 1"
+    ).fetchall()
+    expected = Counter(w for *_, name, _, _ in rows for w in busca.words(name))
+    assert vocab == sorted(expected.items())
     companies = con.execute(f"SELECT * FROM '{folder}/empresas.parquet'").fetchall()
     assert len(companies) == len({cnpj for *_, cnpj, _ in rows})
     assert "\x17\x10\x16\x18VITORIA FACE COMERCIO DE COSMETICOS LTDA" in {n for _, n in companies}
@@ -1860,7 +1873,7 @@ def test_medicamentos_por_produto_on_the_fixtures(fake_dados, tmp_path):
     with fake_dados.client() as http:
         manifest = build(out, http=http, now=NOW, commit="abc123")
     entry = manifest["tables"]["medicamentos_por_produto"]
-    assert entry["fontes"] == ["medicamentos"] and entry["sort"] == ["cnpj", "id"]
+    assert entry["fontes"] == ["medicamentos", "cmed"] and entry["sort"] == ["cnpj", "id"]
     assert [c["name"] for c in entry["columns"]] == list(
         derivar.MEDICAMENTOS_POR_PRODUTO.descriptions
     )
@@ -1896,6 +1909,9 @@ def test_medicamentos_por_produto_on_the_fixtures(fake_dados, tmp_path):
     # entities decoded, the source's spelling kept
     assert q("SELECT count(*) FROM M WHERE nome LIKE 'SOLUçãO%'") == [(1,)]
     assert q("SELECT count(*) FROM M WHERE categoria_regulatoria = 'FITOTER?PICO'") == [(1,)]
+    # the CMED sample shares no registro with the medicamentos sample: every list is empty
+    assert q("SELECT count(*) FROM M WHERE len(eans) > 0") == [(0,)]
+    assert q("SELECT typeof(eans) FROM M LIMIT 1") == [("VARCHAR[]",)]
     # the same rows in produtos, with the shared columns
     prod = out / manifest["tables"]["produtos"]["path"]
     assert con.execute(
@@ -2072,6 +2088,41 @@ def test_cli_list_and_build(fake_dados, monkeypatch, tmp_path):
 
     result = runner.invoke(cli.app, ["dados", "build", "-o", str(out), "-d", "nope"])
     assert result.exit_code == 1 and "unknown dataset" in result.stderr
+
+
+def test_medicamentos_eans_come_from_cmed(tmp_path):
+    """eans is the sorted distinct EAN 1 of the CMED presentations with the product's registro;
+    a product outside the CMED gets an empty list, and a CMED row without registro is ignored."""
+    import duckdb
+
+    con = duckdb.connect()
+    con.execute(
+        "COPY (SELECT * FROM (VALUES "
+        "('186200018', '25351000000000001', 'NOVALGINA', '02685377000157 - SANOFI', 'Ativo', "
+        "'Novo', 'ANALGESICOS', 'dipirona', DATE '2000-01-01', DATE '2030-01-01'), "
+        "('186200018', '25351000000000002', 'NOVALGINA', '02685377000157 - SANOFI', 'Inativo', "
+        "'Novo', 'ANALGESICOS', 'dipirona', DATE '2001-01-01', DATE '2029-01-01'), "
+        "('101810583', NULL, 'NORFLOXACINO', '00000000000191 - LAB', 'Ativo', "
+        "'Genérico', NULL, 'norfloxacino', NULL, NULL)"
+        ") t(numero_registro_produto, numero_processo, nome_produto, empresa_detentora_registro, "
+        "situacao_registro, categoria_regulatoria, classe_terapeutica, principio_ativo, "
+        "data_finalizacao_processo, data_vencimento_registro)) "
+        f"TO '{tmp_path / 'medicamentos.parquet'}' (FORMAT PARQUET)"
+    )
+    con.execute(
+        "COPY (SELECT * FROM (VALUES ('186200018', '7891058001407'), "
+        "('186200018', '7891058001308'), ('186200018', '7891058001308'), "
+        "(NULL, '7890000000000'), ('186200018', NULL)"
+        ") t(registro_produto, ean_1)) "
+        f"TO '{tmp_path / 'cmed.parquet'}' (FORMAT PARQUET)"
+    )
+    paths = {"medicamentos": tmp_path / "medicamentos.parquet", "cmed": tmp_path / "cmed.parquet"}
+    rows, columns = derivar.write(
+        derivar.MEDICAMENTOS_POR_PRODUTO, paths, tmp_path / "out.parquet", tmp_path / "spill"
+    )
+    assert rows == 2 and columns[-1] == ("eans", "VARCHAR[]")
+    got = con.execute(f"SELECT id, eans FROM '{tmp_path / 'out.parquet'}' ORDER BY id").fetchall()
+    assert got == [("101810583", []), ("186200018", ["7891058001308", "7891058001407"])]
 
 
 def test_missing_duckdb_is_a_clear_error(monkeypatch, tmp_path):

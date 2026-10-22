@@ -9,6 +9,8 @@ Under `data/<build_id>/<name>/`:
     numeros/DDD.parquet     `num` + the row columns, where `num` is the processo and, when it
                             is all digits, the registro; DDD is the last three digits of `num`
     empresas.parquet        one row per CNPJ with its razão social
+    palavras.parquet        every distinct word with its row count (the site's "você quis
+                            dizer" picks the closest word to a token that found nothing)
     indice.json             which file holds which range, with sizes
 
 A search downloads `indice.json` once and then one or two files: a 14-digit query is a CNPJ,
@@ -99,6 +101,8 @@ def listed(index: dict[str, Any]) -> list[tuple[str, int]]:
     files = [(e[2], e[3]) for e in index["palavras"] + index["empresas"]]
     files += [(f"numeros/{suffix}.parquet", size) for suffix, size in index["numeros"].items()]
     files.append(("empresas.parquet", index["empresas_parquet"]))
+    if "palavras_parquet" in index:  # since 2026-10-22; older indexes carried over lack it
+        files.append(("palavras.parquet", index["palavras_parquet"]))
     return files
 
 
@@ -165,6 +169,11 @@ def write(ds: Dataset, parquet: Path, folder: Path, *, target: int = TARGET) -> 
             counts = con.execute(
                 "SELECT palavra, count(*) FROM w GROUP BY 1 ORDER BY palavra"
             ).fetchall()
+            words_size = _copy(
+                con,
+                "SELECT palavra, CAST(count(*) AS INTEGER) AS linhas FROM w GROUP BY 1 ORDER BY 1",
+                folder / "palavras.parquet",
+            )
             word_groups = pack(counts, target)
             _groups_table(con, "g", "palavra", word_groups, tmp)
             r_columns = ", ".join(f"r.{c}" for c in ROW_COLUMNS)
@@ -222,6 +231,7 @@ def write(ds: Dataset, parquet: Path, folder: Path, *, target: int = TARGET) -> 
         "empresas": index_companies,
         "numeros": index_numbers,
         "empresas_parquet": companies_size,
+        "palavras_parquet": words_size,
     }
     raw = json.dumps(index, ensure_ascii=False, separators=(",", ":")).encode()
     (folder / "indice.json").write_bytes(raw)

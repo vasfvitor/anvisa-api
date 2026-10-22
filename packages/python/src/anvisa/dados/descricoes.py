@@ -598,6 +598,10 @@ DESCRICOES: dict[str, dict[str, str]] = {
         ),
         "processos": "Quantos processos distintos a origem traz para o produto.",
         "linhas": "Quantas linhas a origem traz para o produto (repetições incluídas).",
+        "eans": (
+            "Códigos de barras (EAN 1) das apresentações do produto na lista da CMED, "
+            "distintos e em ordem; lista vazia quando o produto não está na CMED."
+        ),
     },
     "produtos_saude_por_produto": {
         "id": "O registro ou cadastro (10 ou 11 dígitos); o mesmo id da tabela produtos.",

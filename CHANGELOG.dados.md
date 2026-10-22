@@ -8,6 +8,14 @@ consumer must change to keep reading it; everything below has been additive, so 
 
 ## 2026-10-22
 
+- **`medicamentos_por_produto.eans`**: the distinct EAN 1 of the product's presentations in the
+  CMED list (`cmed.registro_produto`), sorted; empty when the product is not in the CMED. The
+  table now derives from `medicamentos` and `cmed`. For the site's search by the barcode on
+  the box without downloading the 5.6 MB `cmed` table.
+- **`palavras.parquet`** in the cosméticos search folder (`busca`): every distinct word of a
+  product name with its row count (121k rows), listed in `indice.json` as `palavras_parquet`.
+  For the site's "você quis dizer" on a token that found nothing. Format version stays 1: the
+  key is additive, and an index carried over from an older build may lack it.
 - **`404.html`** beside the manifest: GitHub Pages serves it for any missing path, which is
   mostly a `data/<old build>/` URL after a deploy; it points at the current manifest, the
   listing and the dictionary, and is `noindex`.

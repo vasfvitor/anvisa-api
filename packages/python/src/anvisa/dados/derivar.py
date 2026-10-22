@@ -563,13 +563,14 @@ ALIMENTOS_POR_PRODUTO = Derivada(
 MEDICAMENTOS_POR_PRODUTO = Derivada(
     name="medicamentos_por_produto",
     group="medicamentos",
-    title="Medicamentos: uma linha por produto, com princípio ativo e classe terapêutica",
-    fontes=("medicamentos",),
+    title="Medicamentos: uma linha por produto, com princípio ativo, classe terapêutica e EANs",
+    fontes=("medicamentos", "cmed"),
     sort=("cnpj", "id"),
     notes=(
         "Uma linha por medicamento: as linhas de medicamentos da tabela produtos (mesmo id) "
-        "mais o princípio ativo, a classe terapêutica, a categoria regulatória e quantas "
-        "linhas e processos a origem traz. Derivada de medicamentos a cada build.",
+        "mais o princípio ativo, a classe terapêutica, a categoria regulatória, quantas "
+        "linhas e processos a origem traz e os códigos de barras das apresentações na CMED. "
+        "Derivada de medicamentos e cmed a cada build.",
         "id é o registro de 9 dígitos (registro_produto); quando a origem não dá registro "
         "(dinamizados e produtos de baixo risco notificados, sem processo na maioria), id "
         "começa com sem-registro- seguido de um hash de empresa, nome e processo, estável "
@@ -577,14 +578,22 @@ MEDICAMENTOS_POR_PRODUTO = Derivada(
         "ativo é verdadeiro quando alguma linha da origem está Ativo: 2.429 registros vêm "
         "com linhas Ativo e Inativo ao mesmo tempo. vencimento é o mais tardio, com precisão "
         "de mês; desde é a concessão mais antiga.",
-        "Preços por apresentação na tabela cmed: cmed.registro_produto = registro_produto.",
+        "eans são os EAN 1 das apresentações do produto na lista da CMED (cmed.registro_produto "
+        "= registro_produto), distintos e em ordem; lista vazia quando o produto não está na "
+        "CMED. Preços por apresentação na tabela cmed.",
     ),
     sql=lambda t: (
         f"""
-        SELECT id, registro_produto, processo, nome, cnpj, empresa, ativo,
-          categoria_regulatoria, classe_terapeutica, principio_ativo, desde, vencimento,
-          processos, linhas
-        FROM ({_medicamentos_unicos(t)})"""
+        SELECT m.id, m.registro_produto, m.processo, m.nome, m.cnpj, m.empresa, m.ativo,
+          m.categoria_regulatoria, m.classe_terapeutica, m.principio_ativo, m.desde,
+          m.vencimento, m.processos, m.linhas,
+          coalesce(e.eans, CAST([] AS VARCHAR[])) AS eans
+        FROM ({_medicamentos_unicos(t)}) m
+        LEFT JOIN (
+          SELECT registro_produto, list_sort(list(DISTINCT ean_1)) AS eans
+          FROM {t["cmed"]} WHERE registro_produto IS NOT NULL AND ean_1 IS NOT NULL
+          GROUP BY registro_produto
+        ) e USING (registro_produto)"""
     ),
 )
 

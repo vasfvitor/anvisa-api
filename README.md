@@ -172,7 +172,7 @@ ordered):
 | `medidas` | `produtos_irregulares` | dossiê × produto (the source has one row per dossiê × ação × atividade × produto): `area`/`area_codigo`, `risco`, `processo` (the measure's), `cnpj` only when the target is a 14-digit CNPJ, `empresa`, `pessoa` (target is a CPF: no number, no name), sorted lists `registros`, `acoes`, `atividades`, `primeira`/`ultima` publication, `autor_cnpj`/`autor` (who filed); sorted by `area_codigo`, `dossie`, `produto`. 14,092 rows, 0.4 MB on 2026-10-12. |
 | `cosmeticos_por_empresa` | `cosmeticos` | the first 100 cosmetics of each CNPJ (`ordem` 1 to 100: active first, then name, then processo), one row per processo (the unregistered row of a duplicate pair, as `empresas` counts them), with `produtos`-like columns (`id`, `nome`, `empresa`, `processo`, `registro`, `ativo`, `tipo` normalized to Registrado, Notificado, Isento de registro, Descartável, `vencimento`); totals per company are in `empresas`. 281,220 rows, 7.6 MB on 2026-10-12; sorted by `cnpj`, `ordem`. |
 | `alimentos_por_produto` | `alimentos`, `alimentos_resultado` | the alimentos rows of `produtos`, same columns and values, plus the petição's `situacao_assunto` and `alegacao` (constant within a product) and three timestamps: `publicacao` and `situacao_em` (latest among the apresentações), `inicio_analise` (earliest). A list of foods without the per-apresentação table. 50,522 rows, 2.8 MB on 2026-10-12; sorted by `cnpj`, `id`. |
-| `medicamentos_por_produto` | `medicamentos` | one row per medicine (the 9-digit `registro_produto`, or a stable `sem-registro-<hash>` id when the source gives none): the `produtos` columns plus `principio_ativo`, `classe_terapeutica`, `categoria_regulatoria`, `processos` and `linhas` (how many the source repeats); `ativo` when any source row is Ativo; joins `cmed` on `registro_produto`. 36,427 rows, 1.0 MB on 2026-10-13; sorted by `cnpj`, `id`. |
+| `medicamentos_por_produto` | `medicamentos`, `cmed` | one row per medicine (the 9-digit `registro_produto`, or a stable `sem-registro-<hash>` id when the source gives none): the `produtos` columns plus `principio_ativo`, `classe_terapeutica`, `categoria_regulatoria`, `processos` and `linhas` (how many the source repeats) and `eans`, the distinct EAN 1 of its CMED presentations (empty when it is not in the CMED); `ativo` when any source row is Ativo; joins `cmed` on `registro_produto`. 36,427 rows, 1.0 MB on 2026-10-13; sorted by `cnpj`, `id`. |
 | `produtos_saude_por_produto` | `produtos_saude` | one row per registro or cadastro of a medical device: `nome_tecnico`, `classe_risco`, `tipo` (Registrado or Cadastrado), `ativo` (VIGENTE, or a validity not past on the file's own date), `publicacao`, `vencimento`, the sorted `fabricantes` list as "nome (país)". 100,681 rows, 3.5 MB; sorted by `cnpj`, `id`. |
 
 Column names are ANVISA's, lowercased, so the
@@ -218,8 +218,9 @@ A table too big to download whole (`cosmeticos`) also carries a `busca` key: the
 published once more under `data/<build_id>/<name>/`, re-partitioned into about 3,200 small
 Parquet files (most 45 to 75 KB, the largest 2.5 MB) by word of the product name
 (`palavras/`), by CNPJ (`empresas/`) and by processo or registro number (`numeros/`), plus
-`empresas.parquet` (CNPJ → razão social) and `indice.json`, which says which file holds which
-range. A search downloads the index once and then one or two files. The key gives the
+`empresas.parquet` (CNPJ → razão social), `palavras.parquet` (every distinct word with its row
+count, for the site's "você quis dizer"; since 2026-10-22) and `indice.json`, which says which file holds
+which range. A search downloads the index once and then one or two files. The key gives the
 index's path, size and sha256, the file count and the folder's total bytes:
 
 ```json

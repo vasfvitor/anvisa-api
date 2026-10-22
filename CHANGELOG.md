@@ -3,6 +3,9 @@
 ## Unreleased
 
 - The data build writes a `404.html` beside the manifest (see `CHANGELOG.dados.md`).
+- `medicamentos_por_produto` gains `eans` (from `cmed`, now one of its fontes) and the
+  cosméticos search folder a `palavras.parquet` listed as `palavras_parquet` in `indice.json`
+  (`busca.listed` includes it when present). See `CHANGELOG.dados.md`.
 
 ## 0.7.0 (2026-10-22)
 
