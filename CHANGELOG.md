@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.6.0 (2026-10-22)
 
 - **The four domains ANVISA added on 2026-10-01 are wrapped**: `saude` (produtos para saúde:
   `search`, `iter_search`, `get`, `download`, `download_pdf`), `certificado` and
