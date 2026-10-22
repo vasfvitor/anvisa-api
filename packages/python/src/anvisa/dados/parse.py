@@ -165,6 +165,22 @@ def _records(
             merged = False
 
 
+def unquoted(chunks: Iterable[str]) -> Iterator[list[str]]:
+    """Records of a file that quotes nothing (`Dataset.quoted` false): one record per line,
+    split on `;`, a `"` being an ordinary character. TA_PRODUTO_SAUDE_SITE.csv is that dialect
+    (`Sistema "Holter"` in 105 of 116,008 lines; no value holds `;` or a line break), and the
+    quoted-field patterns above read its first inner quote as an opening one and fail."""
+    rest = ""
+    for chunk in chunks:
+        text = rest + chunk
+        lines = text.split("\n")
+        rest = lines.pop()
+        for line in lines:
+            yield line.rstrip("\r").split(";")
+    if rest:
+        yield rest.rstrip("\r").split(";")
+
+
 def _names(header: list[str]) -> list[str]:
     return [header[0].removeprefix("#"), *header[1:]] if header else header
 
@@ -217,7 +233,8 @@ def normalize(ds: Dataset, source: Path, target: Path, *, chunk_size: int = CHUN
     rows, rejected = 0, []
     with Path(source).open("rb") as f:
         # Windows-1252 is a single-byte encoding, so chunks can be decoded one by one.
-        it = stream(map(decode, iter(lambda: f.read(chunk_size), b"")), width)
+        chunks = map(decode, iter(lambda: f.read(chunk_size), b""))
+        it = stream(chunks, width) if ds.quoted else unquoted(chunks)
         check_header(ds, _names(next(it, [])))
         with Path(target).open("w", encoding="utf-8", newline="") as out:
             writer = csv.writer(out, lineterminator="\n")

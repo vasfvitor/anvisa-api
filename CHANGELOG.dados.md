@@ -8,6 +8,20 @@ consumer must change to keep reading it; everything below has been additive, so 
 
 ## 2026-10-22
 
+- **`medicamentos` and `produtos_saude`**, the registries behind "está liberado?" for medicines
+  and medical devices, converted from `DADOS_ABERTOS_MEDICAMENTOS.csv` and
+  `TA_PRODUTO_SAUDE_SITE.csv` at the root of dados.anvisa.gov.br. `medicamentos` keeps the
+  file as published: 228,869 rows of which only 42,661 are distinct (ANVISA repeats product ×
+  processo rows), `numero_registro_produto` 9 digits (the product; `cmed.registro_produto`
+  joins it), dd/mm/yyyy dates, month-precision `data_vencimento_registro`, the CNPJ and name
+  joined in `empresa_detentora_registro`, and the source's own spelling of categories. The
+  file has no load-time column: `loaded_at` is null and the manifest keeps the Last-Modified.
+  `produtos_saude` is one row per registro × fabricante (116,008 rows, 100,681 registros),
+  `validade_registro_cadastro` a date or the word `VIGENTE`, `dt_atualizacao_dado` the load
+  time (month first, unlike its publication date). It is the first open-data file that quotes
+  nothing, so the catalog gained `Dataset.quoted` (false: one record per line, `"` an ordinary
+  character). Groups `medicamentos` (shared with `cmed`) and `produtos_saude`. Derived tables
+  follow in the next entry.
 - **`cmed`, the CMED price list**, the first table from a source other than ANVISA's
   Windows-1252 product files: CMED's monthly maximum prices per medicine presentation, from the
   two CSVs at the root of dados.anvisa.gov.br (`TA_PRECO_MEDICAMENTO.csv` and

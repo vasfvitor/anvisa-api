@@ -1,0 +1,9 @@
+HTTP/2 200
+Content-Type: application/octet-stream
+Content-Length: 45920138
+Last-Modified: Tue, 13 Oct 2026 19:10:26 GMT
+ETag: "2bcaf8a-65dbd91320198"
+Accept-Ranges: bytes
+Cache-Control: public
+
+body: 45,920,138 bytes, Windows-1252, 228,869 records of 11 fields (not kept); medicamentos_head.csv is the header plus 30 of those records, cut byte for byte: three identical LYSUGI rows (the file repeats product × processo rows: 42,661 distinct records in 228,869), FITOTER?PICO and "Gases Medici" categories, numeric entities in names, a mm/yyyy vencimento among the mmyyyy ones, Ativo rows without registro, an odd-length registro, a 13-digit processo, "N?O DECLARADO". Dates are dd/mm/yyyy; the registro is 9 digits (the product); EMPRESA_DETENTORA_REGISTRO is "<CNPJ> - <name>". No DT_CARGA_ETL. Dictionary: /dados/Documentacao_e_Dicionario_de_Dados_Registros_Validos_Medicamento_V1.pdf (2020-12: monthly, DATAVISA).

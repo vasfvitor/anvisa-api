@@ -52,6 +52,9 @@ class Dataset:
     kind: str = "csv"
     # output column -> the name it had in the source, when not the column key itself (cmed)
     source_names: dict[str, str] = field(default_factory=dict)
+    # False for a "csv" file that quotes nothing: one record per line, `"` an ordinary
+    # character (parse.unquoted); True is ANVISA's usual dialect (every text field quoted)
+    quoted: bool = True
 
     def __post_init__(self) -> None:
         if self.kind not in ("csv", "cmed"):
@@ -418,6 +421,104 @@ COSMETICOS = Dataset(
     ),
 )
 
+MEDICAMENTOS = Dataset(
+    name="medicamentos",
+    group="medicamentos",
+    file="DADOS_ABERTOS_MEDICAMENTOS.csv",
+    directory="",
+    title="Medicamentos: registros, ativos e inativos",
+    # Profiled 2026-10-22 on the 2026-10-13 file (45.9 MB): 228,869 records, 11 fields each,
+    # Windows-1252, the usual quoted dialect. Only 42,661 records are distinct: ANVISA writes
+    # the same product × processo row up to dozens of times (the derived tables count once).
+    columns={
+        "TIPO_PRODUTO": "VARCHAR",  # always MEDICAMENTO
+        "NOME_PRODUTO": "VARCHAR",  # 440 with numeric entities (&#231;); "N?O DECLARADO" (sic)
+        "DATA_FINALIZACAO_PROCESSO": "DATE",  # dd/mm/yyyy; when the registro was granted
+        # Similar, Genérico, Novo, Específico, Biológico, Fitoterápico, Dinamizado,
+        # Radiofármaco, BAIXO RISCO...; the source also writes DINAMIZADO, FITOTER?PICO (184,
+        # a literal ?), and truncates to 12 chars ("Gases Medici", "Produto de T"); 9,381 empty
+        "CATEGORIA_REGULATORIA": "VARCHAR",
+        # 9 digits on 207,316 rows (the product; the 13-digit apresentação never appears),
+        # empty on 21,495 (dinamizados and BAIXO RISCO notified products), 58 shorter or longer
+        "NUMERO_REGISTRO_PRODUTO": "VARCHAR",
+        "DATA_VENCIMENTO_REGISTRO": "DATE",  # mmyyyy (213,396), mm/yyyy (51); see `formats`
+        "NUMERO_PROCESSO": "VARCHAR",  # digits only: 17 (142k), 15 (44k), 13 (21k); 21k empty
+        "CLASSE_TERAPEUTICA": "VARCHAR",  # 505 values, upper case; 26k empty
+        "EMPRESA_DETENTORA_REGISTRO": "VARCHAR",  # always "<14-digit CNPJ> - <razão social>"
+        "SITUACAO_REGISTRO": "VARCHAR",  # Ativo (85,092 rows) or Inativo (143,777)
+        "PRINCIPIO_ATIVO": "VARCHAR",  # lower case; 371 list several with "+" or ","
+    },
+    sort=("NUMERO_REGISTRO_PRODUTO", "NUMERO_PROCESSO"),
+    timestamp_formats=("%d/%m/%Y",),  # day first (141,658 rows prove it, none the reverse)
+    # month and year only, like alimentos' DT_VENCIMENTO_REGISTRO; 23 rows of 4 or 5 digits
+    # become NULL
+    formats={"DATA_VENCIMENTO_REGISTRO": ("%m%Y", "%m/%Y")},
+    unescape=frozenset({"NOME_PRODUTO", "PRINCIPIO_ATIVO"}),
+    load_time=None,  # no load-time column; the manifest keeps the file's Last-Modified
+    notes=(
+        "Uma linha por medicamento registrado na ANVISA, ativo ou inativo, repetida: o "
+        "arquivo traz a mesma linha (produto e processo) até dezenas de vezes, e 228.869 "
+        "linhas são 42.661 distintas. Conte produtos por numero_registro_produto, ou leia "
+        "medicamentos_por_produto, que tem uma linha por registro.",
+        "numero_registro_produto tem 9 dígitos e identifica o produto; as apresentações (13 "
+        "dígitos, os 9 do produto mais 4) não estão aqui, estão na tabela cmed "
+        "(registro_produto liga as duas). Vazio em 21 mil linhas, quase todas de dinamizados "
+        "e de produtos de baixo risco notificados.",
+        "empresa_detentora_registro junta o CNPJ (14 dígitos) e a razão social com ' - '.",
+        "data_vencimento_registro tem precisão de mês; situacao_registro é a situação no dia do "
+        "build, e há registros ativos com vencimento passado.",
+        "categoria_regulatoria vem como a ANVISA escreve, com grafias duplas (Dinamizado e "
+        "DINAMIZADO), um ? no lugar do Á de Fitoterápico em 184 linhas e nomes truncados em "
+        "12 caracteres.",
+        "A ANVISA atualiza o arquivo mensalmente, com dados até o último dia do mês anterior.",
+    ),
+)
+
+PRODUTOS_SAUDE = Dataset(
+    name="produtos_saude",
+    group="produtos_saude",
+    file="TA_PRODUTO_SAUDE_SITE.csv",
+    directory="",
+    title="Produtos para saúde: registros e cadastros",
+    # Profiled 2026-10-22 on the 2026-10-13 file (27.7 MB): 116,008 records of 12 fields,
+    # Windows-1252 with undefined bytes (0x8F), LF line ends, and NO quoting at all: 105 lines
+    # carry a literal `"` inside a value (`Sistema "Holter"`) and no value holds `;` or a line
+    # break, hence `quoted=False`. No data dictionary on the server (the two PDFs named
+    # PRODUTO_SAUDE are the petition-lifecycle one, mislabeled).
+    columns={
+        "NUMERO_REGISTRO_CADASTRO": "VARCHAR",  # 11 digits (115,841) or 10 (167); 8... cadastro
+        "NUMERO_PROCESSO": "VARCHAR",  # digits only, 17 on 114,437 rows
+        "NOME_TECNICO": "VARCHAR",  # 2,816 values; 1,845 end in a space (stripped)
+        "CLASSE_RISCO": "VARCHAR",  # I (37,679), II (48,291), III (19,313), IV (10,725)
+        "NOME_COMERCIAL": "VARCHAR",
+        "CNPJ_DETENTOR_REGISTRO_CADASTRO": "VARCHAR",  # always 14 digits
+        "DETENTOR_REGISTRO_CADASTRO": "VARCHAR",
+        "NOME_FABRICANTE": "VARCHAR",  # 12,733 empty
+        "NOME_PAIS_FABRIC": "VARCHAR",  # empty with the fabricante
+        "DT_PUB_REGISTRO_CADASTRO": "DATE",  # dd/mm/yyyy; 22 empty
+        # dd/mm/yyyy, or the word VIGENTE on 85,970 rows (the cadastros): kept as text
+        "VALIDADE_REGISTRO_CADASTRO": "VARCHAR",
+        "DT_ATUALIZACAO_DADO": "TIMESTAMP",  # one value per file, month first; see `formats`
+    },
+    sort=("CNPJ_DETENTOR_REGISTRO_CADASTRO", "NUMERO_REGISTRO_CADASTRO"),
+    timestamp_formats=("%d/%m/%Y",),  # 72,852 rows prove day first on DT_PUB, none the reverse
+    formats={"DT_ATUALIZACAO_DADO": ("%m/%d/%Y %H:%M:%S",)},  # 10/12/2026 19:00:00 = 12 Oct
+    load_time="DT_ATUALIZACAO_DADO",
+    quoted=False,
+    notes=(
+        "Uma linha por registro ou cadastro de produto para saúde (dispositivo médico) e por "
+        "fabricante: 100.681 registros em 116.008 linhas, e 14.348 registros com mais de um "
+        "fabricante repetem tudo menos nome_fabricante e nome_pais_fabric. Leia "
+        "produtos_saude_por_produto para uma linha por registro.",
+        "numero_registro_cadastro tem 10 ou 11 dígitos: os que começam com 8 são cadastros "
+        "(notificação, classes I e II), os que começam com 1 são registros.",
+        "Não há coluna de situação. validade_registro_cadastro é a palavra VIGENTE nos "
+        "cadastros (sem prazo) e uma data nos registros; compare com a data do dia na "
+        "consulta.",
+        "nome_fabricante e nome_pais_fabric ficam vazios em 12.733 linhas.",
+    ),
+)
+
 CMED = Dataset(
     name="cmed",
     group="medicamentos",
@@ -454,6 +555,8 @@ CATALOG: tuple[Dataset, ...] = (
     PETICOES_ALIMENTO_ANDAMENTO,
     PRODUTOS_IRREGULARES,
     COSMETICOS,
+    MEDICAMENTOS,
+    PRODUTOS_SAUDE,
     CMED,
 )
 

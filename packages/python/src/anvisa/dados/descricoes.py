@@ -479,5 +479,65 @@ DESCRICOES: dict[str, dict[str, str]] = {
         "tipo": '"Registrado", "Notificado", "Isento de registro" ou "Descartável".',
         "vencimento": "Vencimento da regularização (data); nulo quando a ANVISA não informa.",
     },
+    "medicamentos": {
+        "TIPO_PRODUTO": 'Sempre "MEDICAMENTO".',
+        "NOME_PRODUTO": _NOME_PRODUTO,
+        "DATA_FINALIZACAO_PROCESSO": "Quando o registro foi concedido (data).",
+        "CATEGORIA_REGULATORIA": (
+            "Categoria do medicamento: Similar, Genérico, Novo, Específico, Biológico, "
+            "Fitoterápico, Dinamizado, Radiofármaco, Produto de Terapia Avançada, Gases "
+            "Medicinais, BAIXO RISCO; vem como a ANVISA escreve, com grafias duplas, um ? no "
+            "lugar de Á e nomes truncados; vazio em 9 mil linhas."
+        ),
+        "NUMERO_REGISTRO_PRODUTO": (
+            "Nº de registro do produto, 9 dígitos (os 4 da apresentação não estão aqui); "
+            "vazio em 21 mil linhas. Texto, nunca número."
+        ),
+        "DATA_VENCIMENTO_REGISTRO": (
+            "Vencimento do registro, com precisão de mês (dia 1); vazio em parte das linhas."
+        ),
+        "NUMERO_PROCESSO": _PROCESSO,
+        "CLASSE_TERAPEUTICA": (
+            "Classe terapêutica, em maiúsculas (ex.: ANTIDIABETICOS); vazia em 26 mil linhas."
+        ),
+        "EMPRESA_DETENTORA_REGISTRO": (
+            "CNPJ (14 dígitos) e razão social da empresa detentora, juntos com ' - '."
+        ),
+        "SITUACAO_REGISTRO": '"Ativo" ou "Inativo": a situação do registro no dia do build.',
+        "PRINCIPIO_ATIVO": (
+            "Princípio ativo em minúsculas; associações listam vários, separados por vírgula "
+            "ou +; vazio em 32 mil linhas."
+        ),
+    },
+    "produtos_saude": {
+        "NUMERO_REGISTRO_CADASTRO": (
+            "Nº de registro ou cadastro do produto, 10 ou 11 dígitos; começa com 8 nos "
+            "cadastros (classes I e II) e com 1 nos registros. Texto, nunca número."
+        ),
+        "NUMERO_PROCESSO": _PROCESSO,
+        "NOME_TECNICO": (
+            "Nome técnico do produto na nomenclatura da ANVISA (ex.: Luvas Descartaveis), "
+            "o mesmo da consulta nomeTecnico da API."
+        ),
+        "CLASSE_RISCO": "Classe de risco do dispositivo: I (menor), II, III ou IV (maior).",
+        "NOME_COMERCIAL": "Nome comercial do produto como regularizado.",
+        "CNPJ_DETENTOR_REGISTRO_CADASTRO": _CNPJ,
+        "DETENTOR_REGISTRO_CADASTRO": _RAZAO,
+        "NOME_FABRICANTE": (
+            "Fabricante; um produto com vários fabricantes tem uma linha por fabricante. "
+            "Vazio em 12,7 mil linhas."
+        ),
+        "NOME_PAIS_FABRIC": (
+            "País do fabricante, como a ANVISA escreve (ex.: CHINA, REPÚBLICA POPULAR)."
+        ),
+        "DT_PUB_REGISTRO_CADASTRO": (
+            "Publicação do registro ou cadastro (data); vazia em 22 linhas."
+        ),
+        "VALIDADE_REGISTRO_CADASTRO": (
+            'Validade: a palavra "VIGENTE" nos cadastros (sem prazo) ou uma data dd/mm/aaaa '
+            "nos registros, como texto; há registros com a data já passada."
+        ),
+        "DT_ATUALIZACAO_DADO": _ATUALIZACAO,
+    },
     "cmed": _CMED,
 }

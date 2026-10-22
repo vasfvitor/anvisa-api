@@ -1,0 +1,9 @@
+HTTP/2 200
+Content-Type: application/octet-stream
+Content-Length: 27684590
+Last-Modified: Tue, 13 Oct 2026 19:09:34 GMT
+ETag: "1a66eee-65dbd8e205f68"
+Accept-Ranges: bytes
+Cache-Control: public
+
+body: 27,684,590 bytes, Windows-1252 (with undefined bytes such as 0x8F), 116,008 records of 12 fields, LF line ends, no quoting at all (not kept); produtos_saude_head.csv is the header plus 29 of those records, cut by line, byte for byte: three with a literal `"` inside NOME_TECNICO or NOME_COMERCIAL (`Sistema "Holter"`), VIGENTE and dated validades, 10-digit registros, rows without fabricante, one registro repeated per fabricante, 0x96/0x99 bytes, trailing spaces in NOME_TECNICO. DT_PUB_REGISTRO_CADASTRO and VALIDADE_REGISTRO_CADASTRO are dd/mm/yyyy; DT_ATUALIZACAO_DADO is mm/dd/yyyy HH:MM:SS (10/12/2026 19:00:00 on this cut). No dictionary on the server.

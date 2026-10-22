@@ -24,9 +24,11 @@ from anvisa.dados.catalog import (
     ALIMENTOS_RESULTADO,
     CMED,
     COSMETICOS,
+    MEDICAMENTOS,
     PETICOES_ALIMENTO,
     PETICOES_ALIMENTO_ANDAMENTO,
     PRODUTOS_IRREGULARES,
+    PRODUTOS_SAUDE,
     SANEANTES,
     TYPES,
 )
@@ -52,6 +54,8 @@ SAMPLES = {
     PETICOES_ALIMENTO_ANDAMENTO.name: "peticoes_alimento_andamento_head.csv",
     PRODUTOS_IRREGULARES.name: "produtos_irregulares_head.csv",
     COSMETICOS.name: "cosmeticos_head.csv",
+    MEDICAMENTOS.name: "medicamentos_head.csv",
+    PRODUTOS_SAUDE.name: "produtos_saude_head.csv",
 }
 HEADERS = {
     ALIMENTOS.name: "headers_alimentos.txt",
@@ -61,6 +65,8 @@ HEADERS = {
     PETICOES_ALIMENTO_ANDAMENTO.name: "headers_peticoes_alimento_andamento.txt",
     PRODUTOS_IRREGULARES.name: "headers_produtos_irregulares.txt",
     COSMETICOS.name: "headers_cosmeticos.txt",
+    MEDICAMENTOS.name: "headers_medicamentos.txt",
+    PRODUTOS_SAUDE.name: "headers_produtos_saude.txt",
 }
 # the CMED pair is read by cmed.py, not the Windows-1252 parser: its samples are separate
 CMED_SAMPLES = {"pmc": "cmed_pmc_head.csv", "pmvg": "cmed_pmvg_head.csv"}
@@ -81,7 +87,10 @@ def catalog_url(file: str) -> str:
 
 
 def sample_records(ds) -> list[list[str]]:
-    return list(records(decode(sample(ds).read_bytes()), len(ds.columns)))
+    text = decode(sample(ds).read_bytes())
+    if not ds.quoted:
+        return list(parse.unquoted([text]))
+    return list(records(text, len(ds.columns)))
 
 
 def write_dialect(path: Path, rows: list[list[str]]) -> Path:
@@ -173,7 +182,10 @@ def test_catalog_is_consistent():
     )
     with pytest.raises(DadosError, match="unknown dataset"):
         select(["cannabis"])
-    assert select(["medicamentos"]) == (CMED,) and select(["cmed"]) == (CMED,)
+    # the group `medicamentos` is the registry and the price list, in catalog order
+    assert select(["medicamentos"]) == (MEDICAMENTOS, CMED) and select(["cmed"]) == (CMED,)
+    assert select(["produtos_saude"]) == (PRODUTOS_SAUDE,)
+    assert MEDICAMENTOS.quoted and not PRODUTOS_SAUDE.quoted
     assert CMED.url == catalog_url("TA_PRECO_MEDICAMENTO.csv") and CMED.local_file == "cmed.csv"
     assert (
         CMED.source_name("pf_17_5_alc") == "PF 17,5 % ALC" and CMED.source_name("tarja") == "TARJA"
@@ -289,6 +301,11 @@ def test_stream_matches_records_at_every_chunk_size():
         raw = sample(ds).read_bytes()
         width = len(ds.columns)
         text = decode(raw)
+        if not ds.quoted:  # the line reader: a chunk may cut a line anywhere
+            for n in (1, 2, 3, 7, 64, 4096, len(text) + 1):
+                assert list(parse.unquoted(chunked(text, n))) == sample_records(ds), (ds.name, n)
+            assert list(parse.unquoted(map(decode, chunked(raw, 7)))) == sample_records(ds)
+            continue
         for n in (1, 2, 3, 7, 64, 4096, len(text) + 1):
             assert list(stream(chunked(text, n), width)) == sample_records(ds), (ds.name, n)
         # the way `normalize` feeds it: bytes cut anywhere, decoded piece by piece
@@ -784,6 +801,106 @@ def test_parquet_is_sorted_in_small_row_groups(tmp_path):
     assert len(groups) == 3
     assert all(lo is not None and hi is not None for _, lo, hi in groups)
     assert all(groups[i][2] <= groups[i + 1][1] for i in range(len(groups) - 1))
+
+
+@needs_duckdb
+def test_convert_medicamentos(tmp_path):
+    """The registry as published: repeated rows kept, dd/mm/yyyy dates, month-precision
+    vencimento in both spellings, entities decoded, the CNPJ still inside the company column,
+    no load time."""
+    import duckdb
+
+    from anvisa.dados.convert import convert
+
+    csv = tmp_path / MEDICAMENTOS.file
+    csv.write_bytes(sample(MEDICAMENTOS).read_bytes())
+    stats = convert(MEDICAMENTOS, csv, tmp_path / "m.parquet")
+    assert stats.rows == 30 and stats.rejected == () and stats.loaded_at is None
+    assert all(v == 0 for v in stats.nulls_added.values())
+    con = duckdb.connect()
+    q = lambda sql: con.execute(re.sub(r"\bTBL\b", f"'{tmp_path}/m.parquet'", sql)).fetchall()  # noqa: E731
+    # the three LYSUGI rows are identical, as in the file: the converted table does not dedupe
+    assert q(
+        "SELECT count(*), count(DISTINCT numero_processo) FROM TBL WHERE nome_produto = 'LYSUGI'"
+    ) == [(3, 1)]
+    lysugi = q(
+        "SELECT numero_registro_produto, data_finalizacao_processo, data_vencimento_registro, "
+        "empresa_detentora_registro, situacao_registro "
+        "FROM TBL WHERE nome_produto = 'LYSUGI' LIMIT 1"
+    )[0]
+    assert lysugi == (
+        "151430058",
+        date(2020, 9, 8),
+        date(2030, 9, 1),
+        "03978166000175 - DR. REDDYS FARMACÊUTICA DO BRASIL LTDA",
+        "Ativo",
+    )
+    # mm/yyyy, the rarer spelling of the month-precision vencimento
+    assert q("SELECT data_vencimento_registro FROM TBL WHERE nome_produto = 'ANDOLBA'") == [
+        (date(2020, 12, 1),)
+    ]
+    # numeric entities decoded in the name; the source's own spelling of categories kept
+    assert q("SELECT nome_produto FROM TBL WHERE nome_produto LIKE 'SOLU%'") == [
+        ("SOLUçãO FISIOLóGICA DE CLORETO DE SóDIO 0,9%",)
+    ]
+    assert q(
+        "SELECT count(*) FROM TBL WHERE categoria_regulatoria IN ('FITOTER?PICO', 'Gases Medici')"
+    ) == [(2,)]
+    # registro empty on the notified low-risk products, 9 digits otherwise (one 8-digit oddity)
+    assert q("SELECT count(*) FROM TBL WHERE numero_registro_produto IS NULL") == [(8,)]
+    assert q("SELECT numero_registro_produto FROM TBL WHERE nome_produto = 'DALACIN T'") == [
+        ("12389000",)
+    ]
+    assert q("SELECT count(*) FROM TBL WHERE data_finalizacao_processo IS NULL") == [
+        (1,)
+    ]  # the gas
+
+
+@needs_duckdb
+def test_convert_produtos_saude(tmp_path):
+    """The unquoted dialect: inner quotes kept, every line one record; VIGENTE kept as text
+    beside the dates; the load time read month first while the publication date is day
+    first; one row per fabricante."""
+    import duckdb
+
+    from anvisa.dados.convert import convert
+
+    csv = tmp_path / PRODUTOS_SAUDE.file
+    csv.write_bytes(sample(PRODUTOS_SAUDE).read_bytes())
+    stats = convert(PRODUTOS_SAUDE, csv, tmp_path / "p.parquet")
+    assert stats.rows == 29 and stats.rejected == ()
+    assert stats.loaded_at == "2026-10-12T19:00:00"  # 10/12/2026 19:00:00 is 12 October
+    assert all(v == 0 for v in stats.nulls_added.values())
+    con = duckdb.connect()
+    q = lambda sql: con.execute(re.sub(r"\bTBL\b", f"'{tmp_path}/p.parquet'", sql)).fetchall()  # noqa: E731
+    assert q("SELECT nome_tecnico FROM TBL WHERE numero_registro_cadastro = '10361050002'") == [
+        ('Sistema "Holter"',)
+    ]
+    assert q("SELECT nome_comercial FROM TBL WHERE numero_registro_cadastro = '80020550060'") == [
+        ('PONTEIRA DE SILICONE "CAP" DE PROTEÇÃO PARA ENDOSCOPIA DIGESTIVA',)
+    ]
+    assert q(
+        "SELECT validade_registro_cadastro, count(*) FROM TBL GROUP BY 1 ORDER BY 2 DESC LIMIT 1"
+    ) == [("VIGENTE", 19)]
+    assert q(
+        "SELECT dt_pub_registro_cadastro, validade_registro_cadastro, dt_atualizacao_dado "
+        "FROM TBL WHERE numero_registro_cadastro = '10163770014' "
+        "AND nome_fabricante = 'SURETEX LIMITED'"
+    ) == [(date(2000, 5, 26), "26/05/2035", datetime(2026, 10, 12, 19, 0))]
+    # one row per fabricante: the registro repeats, everything else equal
+    assert q(
+        "SELECT count(*), count(DISTINCT nome_comercial), "
+        "list(nome_pais_fabric ORDER BY nome_pais_fabric) "
+        "FROM TBL WHERE numero_registro_cadastro = '10150470123'"
+    ) == [(3, 1, ["ALEMANHA", "ESTADOS UNIDOS DA AMÉRICA", "MALÁSIA"])]
+    assert q("SELECT count(*) FROM TBL WHERE nome_fabricante IS NULL") == [(3,)]
+    assert q("SELECT count(*) FROM TBL WHERE length(numero_registro_cadastro) = 10") == [(2,)]
+    # the source writes trailing spaces on 1,845 nomes técnicos: stripped, like every value
+    assert q("SELECT count(*) FROM TBL WHERE nome_tecnico <> trim(nome_tecnico)") == [(0,)]
+    assert q(
+        "SELECT nome_tecnico FROM TBL WHERE numero_registro_cadastro = '10008530286' LIMIT 1"
+    ) == [("CABO/ELETRODO ELETROCIRÚRGICO (Potência maior que 50W)",)]
+    assert q("SELECT count(*) FROM TBL WHERE dt_pub_registro_cadastro IS NULL") == [(1,)]
 
 
 # --- cmed: the price list (two UTF-8 files merged by GGREM) -------------------------------
