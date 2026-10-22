@@ -1229,6 +1229,9 @@ def test_build_end_to_end(fake_dados, tmp_path):
     page = (out / "index.html").read_text(encoding="utf-8")
     assert "alimentos_resultado.parquet" in page and 'href="manifest.json"' in page
     assert 'href="dicionario.html"' in page
+    missing = (out / "404.html").read_text(encoding="utf-8")
+    assert '<meta name="robots" content="noindex">' in missing
+    assert 'href="https://vasfvitor.github.io/anvisa-api/manifest.json"' in missing
     # the dictionary describes the files beside it: every table, its notes, every column
     docs = (out / "dicionario.html").read_text(encoding="utf-8")
     assert all(f'<section id="{ds.name}">' in docs for ds in CATALOG)

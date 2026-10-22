@@ -8,6 +8,9 @@ consumer must change to keep reading it; everything below has been additive, so 
 
 ## 2026-10-22
 
+- **`404.html`** beside the manifest: GitHub Pages serves it for any missing path, which is
+  mostly a `data/<old build>/` URL after a deploy; it points at the current manifest, the
+  listing and the dictionary, and is `noindex`.
 - **`medicamentos` and `produtos_saude`**, the registries behind "está liberado?" for medicines
   and medical devices, converted from `DADOS_ABERTOS_MEDICAMENTOS.csv` and
   `TA_PRODUTO_SAUDE_SITE.csv` at the root of dados.anvisa.gov.br. `medicamentos` keeps the

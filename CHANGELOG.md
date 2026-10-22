@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- The data build writes a `404.html` beside the manifest (see `CHANGELOG.dados.md`).
+
 ## 0.7.0 (2026-10-22)
 
 - **`medicamentos` and `produtos_saude` datasets** (`DADOS_ABERTOS_MEDICAMENTOS.csv`,
