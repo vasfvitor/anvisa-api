@@ -112,6 +112,111 @@ _PRODUTOS_COLS = {
     ),
 }
 
+_PRECO = "em centavos de real, por alíquota de ICMS do estado de venda; nulo onde a lista traz '-'."
+
+
+def _cmed_precos() -> dict[str, str]:
+    """pf_*, pmc_* and pmvg_*: one sentence each, generated from the rate in the name."""
+    blocos = {
+        "pf": (
+            "Preço fábrica (PF), o máximo do fabricante ou distribuidor para farmácias e "
+            "entes públicos,"
+        ),
+        "pmc": "Preço máximo ao consumidor (PMC), o teto da farmácia,",
+        "pmvg": "Preço máximo de venda ao governo (PMVG), o teto em compras públicas,",
+    }
+    out = {}
+    for bloco, texto in blocos.items():
+        out[f"{bloco}_sem_impostos"] = f"{texto} sem impostos; nulo onde a lista traz '-'."
+        for rate in (
+            "0",
+            "12",
+            "17",
+            "17_5",
+            "18",
+            "19",
+            "19_5",
+            "20",
+            "20_5",
+            "21",
+            "22",
+            "22_5",
+            "23",
+        ):
+            pct = rate.replace("_", ",") + " %"
+            if rate == "0":
+                out[f"{bloco}_0"] = f"{texto} com ICMS 0 % (isentos) " + _PRECO
+                continue
+            out[f"{bloco}_{rate}"] = f"{texto} com ICMS de {pct} " + _PRECO
+            out[f"{bloco}_{rate}_alc"] = (
+                f"{texto} com ICMS de {pct} em Área de Livre Comércio (ALC) " + _PRECO
+            )
+    return out
+
+
+_CMED: dict[str, str] = {
+    "ggrem": (
+        "Código GGREM da apresentação, 15 dígitos: a chave da lista da CMED, estável entre meses."
+    ),
+    "registro": (
+        "Nº de registro da apresentação na ANVISA, 13 dígitos; texto. Nulo numa linha ('-')."
+    ),
+    "registro_produto": (
+        "Os 9 primeiros dígitos do registro, o produto: o que produtos_irregulares e o "
+        "cadastro de medicamentos da ANVISA usam."
+    ),
+    "substancia": 'Princípio(s) ativo(s), em maiúsculas; vários separados por ";".',
+    "cnpj": "CNPJ do laboratório detentor, 14 dígitos; texto.",
+    "laboratorio": "Razão social do laboratório detentor.",
+    "produto": "Nome comercial do medicamento.",
+    "apresentacao": "Apresentação (concentração, forma, embalagem), como a CMED escreve.",
+    "classe_terapeutica": "Classe terapêutica (código e nome), ex. 'D7B2 - CORTICOESTERÓIDES…'.",
+    "tipo_produto": (
+        'Status do produto: "Genérico", "Similar", "Novo", "Específico", "Biológico", '
+        '"Fitoterápico", "Produto de Terapia Avançada", "Radiofármaco"; nulo em 50 linhas.'
+    ),
+    "regime_preco": (
+        '"Regulado" ou "Liberado" (só o preço fábrica é liberado; o PMC segue a margem).'
+    ),
+    "ean_1": "Código EAN (13 dígitos) principal; texto. Pode repetir entre apresentações.",
+    "ean_2": "Segundo EAN, quando há; nulo na maioria.",
+    "ean_3": "Terceiro EAN, quando há; nulo em quase todas.",
+    **_cmed_precos(),
+    "pmc_asterisco": (
+        "O arquivo PMC marca com * os preços desta apresentação acima de ICMS 0 % (os "
+        "isentos de ICMS): alíquotas exibidas, mas não aplicáveis. Os valores vêm sem o *."
+    ),
+    "pmvg_asterisco": (
+        "O arquivo PMVG marca com * os preços desta apresentação acima de ICMS 0 % (isentos e "
+        "produtos com CAP): alíquotas exibidas, mas não aplicáveis. Os valores vêm sem o *."
+    ),
+    "restricao_hospitalar": (
+        "Uso restrito a hospitais: nessas apresentações não há PMC (pmc_* nulo)."
+    ),
+    "cap": (
+        "Sujeito ao Coeficiente de Adequação de Preços (CAP) nas vendas ao governo: o PMVG "
+        "é o PF com o desconto do CAP."
+    ),
+    "confaz_87": "Isenção de ICMS pelo Convênio CONFAZ 87/02 (compras públicas).",
+    "icms_0": "Princípio ativo isento de ICMS por convênio do CONFAZ ou lei estadual.",
+    "analise_recursal": (
+        'Marca de preço em análise recursal: "(AR)" ou o nº da nota; nulo na maioria.'
+    ),
+    "lista_pis_cofins": (
+        'Lista de concessão de crédito tributário PIS/COFINS: "Positiva", "Negativa" ou "Neutra".'
+    ),
+    "comercializacao_periodo": "O ano a que comercializacao se refere (o do cabeçalho da lista).",
+    "comercializacao": "A apresentação foi comercializada no ano em comercializacao_periodo.",
+    "tarja": (
+        '"Tarja Vermelha", "Tarja Vermelha sob restrição", "Tarja Preta", "Tarja Sem Tarja" ou '
+        '"- (*)" (sem informação).'
+    ),
+    "publicado_em": (
+        "Data dos arquivos da CMED (Last-Modified em dados.anvisa.gov.br)" + _BRASILIA + "; a "
+        "mesma em todas as linhas de um build."
+    ),
+}
+
 DESCRICOES: dict[str, dict[str, str]] = {
     "alimentos": {
         "NO_PRODUTO": (
@@ -374,4 +479,5 @@ DESCRICOES: dict[str, dict[str, str]] = {
         "tipo": '"Registrado", "Notificado", "Isento de registro" ou "Descartável".',
         "vencimento": "Vencimento da regularização (data); nulo quando a ANVISA não informa.",
     },
+    "cmed": _CMED,
 }

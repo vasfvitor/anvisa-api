@@ -1,0 +1,11 @@
+HTTP/2 200
+Date: Thu, 22 Oct 2026 18:25:17 GMT
+Content-Type: application/octet-stream
+Content-Length: 17148070
+Last-Modified: Fri, 09 Oct 2026 15:43:03 GMT
+ETag: "105a8a6-65d6a342ad836"
+Accept-Ranges: bytes
+X-Content-Type-Options: nosniff
+Cache-Control: public
+
+body: 17,148,070 bytes (sha256 e843e1ba8cbe781692101282ac4e7dee10ae66ad262a620aa03abc781918c7cf), UTF-8 with BOM, `;`, no quoting, CRLF, 26,635 records of 74 fields (not kept); cmed_pmc_head.csv is the header plus 22 of those records, cut byte for byte: two hospital-only products (PMC `    -     `), a `-` tipo de produto, two Liberado, ANÁLISE RECURSAL (AR) and (2), EAN 2 and EAN 3 filled, ICMS 0% Sim, CONFAZ 87 Sim, CAP Sim, Tarja Preta and Tarja Sem Tarja, the registro 1018600330018 listed twice (SANTIPLEX B), the one `-` registro (EVRYSDI), the biggest price (ZOLGENSMA, 8759884,12), COLUMVI (529226100029707, one of the two rows whose PF the gov.br xlsx of 17h30 corrected after this file of 15h43), LISTA PIS/COFINS Neutra, and 522718110082501 which cmed_pmvg_head.csv lacks (the merge's only-in-PMC path). 1,174 rows (the ICMS 0% Sim ones) carry a `*` after every price above 0 % (`9337,16*`; ACETATO DE ABIRATERONA 507525080028406 in the sample). Prices are `27,44`, placeholders `    -     ` or empty. Same cut as the xlsx on gov.br (lista_pmc__20261009_115232671.xlsx, 73 columns: no CAP) but for the two corrected rows.

@@ -1,0 +1,11 @@
+HTTP/2 200
+Date: Thu, 22 Oct 2026 18:25:24 GMT
+Content-Type: application/octet-stream
+Content-Length: 17809482
+Last-Modified: Fri, 09 Oct 2026 15:43:26 GMT
+ETag: "10fc04a-65d6a358b7d85"
+Accept-Ranges: bytes
+X-Content-Type-Options: nosniff
+Cache-Control: public
+
+body: 17,809,482 bytes (sha256 5702701bdb1e78621945f7b232e90c377f23cba88a6bf35e16b9fab5b069affe), UTF-8 with BOM, `;`, no quoting, CRLF, 26,635 records of 74 fields (not kept): the same 26,635 GGREMs and descriptive columns as TA_PRECO_MEDICAMENTO.csv, PMVG prices instead of PMC, and a last column named `DESTINAÇÃO COMERCIAL 9` (nbsp-suffixed in the PMC file), empty on every row. cmed_pmvg_head.csv is the header plus 22 records: the 21 GGREMs of cmed_pmc_head.csv minus 522718110082501, plus 524820010008207 which the PMC sample lacks (the only-in-PMVG path). 3,728 rows (ICMS 0% Sim or CAP Sim) carry a `*` after every price above 0 % (ORENCIA 505113100020505 in the sample). The gov.br xlsx (lista_pmvg__20261009_115232671.xlsx) has four CAP detail columns instead (CAP Antigo, CAP Novo, Item no Anexo da Resolução CTE-CMED n° 1/2026, Critério da correspondência).

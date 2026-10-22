@@ -33,7 +33,11 @@ the certificado exports, and `sorting` everywhere.
 | `tabaco` | 10 | `POST /tabaco/tabacos` paginated, detail, `embalagem/{rotulo}`, six lookup lists, Excel and PDF downloads |
 
 The portal also gained two API families, SAMMED (preços CMED) and SNCR (receitas), saved under
-`spec/portal/` and out of scope.
+`spec/portal/`. The CMED list itself is in the open data (`cmed` table, `anvisa.dados.cmed`,
+2026-10-22); the SAMMED API (the same list at rate 0 %, plus a rate calculator, same gateway
+and token) is not wrapped: it would need its own spec snapshot
+(`anvs-listacmed-service/v3/api-docs`), overlay and models, and `test_spec` learning a second
+spec. SNCR stays out of scope.
 
 ## 0.5.0: verify, harden, convenience
 

@@ -18,10 +18,11 @@ from conftest import headers_only
 from typer.testing import CliRunner
 
 from anvisa import cli
-from anvisa.dados import CATALOG, DERIVADAS, Unchanged, build, busca, derivar, parse, select
+from anvisa.dados import CATALOG, DERIVADAS, Unchanged, build, busca, cmed, derivar, parse, select
 from anvisa.dados.catalog import (
     ALIMENTOS,
     ALIMENTOS_RESULTADO,
+    CMED,
     COSMETICOS,
     PETICOES_ALIMENTO,
     PETICOES_ALIMENTO_ANDAMENTO,
@@ -61,6 +62,10 @@ HEADERS = {
     PRODUTOS_IRREGULARES.name: "headers_produtos_irregulares.txt",
     COSMETICOS.name: "headers_cosmeticos.txt",
 }
+# the CMED pair is read by cmed.py, not the Windows-1252 parser: its samples are separate
+CMED_SAMPLES = {"pmc": "cmed_pmc_head.csv", "pmvg": "cmed_pmvg_head.csv"}
+CMED_HEADERS = {"pmc": "headers_cmed_pmc.txt", "pmvg": "headers_cmed_pmvg.txt"}
+CSV_DATASETS = tuple(ds for ds in CATALOG if ds.kind == "csv")
 NOW = datetime(2026, 10, 6, 21, 3, 12, tzinfo=timezone.utc)
 needs_duckdb = pytest.mark.skipif(
     importlib.util.find_spec("duckdb") is None, reason="needs the anvisa[dados] extra"
@@ -69,6 +74,10 @@ needs_duckdb = pytest.mark.skipif(
 
 def sample(ds) -> Path:
     return DADOS / SAMPLES[ds.name]
+
+
+def catalog_url(file: str) -> str:
+    return f"https://dados.anvisa.gov.br/dados/{file}"
 
 
 def sample_records(ds) -> list[list[str]]:
@@ -96,10 +105,14 @@ class FakeDados:
         self.manifest_status = 200
         self.site: Path | None = None  # a previous build's `out`, served under SITE_URL
         self.files = {}
-        for ds in CATALOG:
+        for ds in CSV_DATASETS:
             headers, _ = headers_only(DADOS / HEADERS[ds.name])
             headers.pop("Content-Length")  # recorded for the full file; httpx sets the sample's
             self.files[ds.url] = (headers, sample(ds).read_bytes())
+        for kind, file in cmed.FILES.items():
+            headers, _ = headers_only(DADOS / CMED_HEADERS[kind])
+            headers.pop("Content-Length")
+            self.files[catalog_url(file)] = (headers, (DADOS / CMED_SAMPLES[kind]).read_bytes())
 
     def handler(self, request: httpx.Request) -> httpx.Response:
         self.requests.append(request)
@@ -143,7 +156,8 @@ def test_catalog_is_consistent():
         assert set(ds.sort) <= set(ds.columns)
         assert all(ds.columns[c] == "VARCHAR" for c in ds.unescape)
         assert all(ds.columns[c] in ("DATE", "TIMESTAMP") for c in ds.formats)
-        assert ds.url.startswith("https://dados.anvisa.gov.br/") and ds.url.endswith(ds.file)
+        assert ds.url.startswith("https://dados.anvisa.gov.br/")
+        assert ds.kind == "cmed" or ds.url.endswith(ds.file)
         assert ds.directory == "" or ds.directory.endswith("/")
         assert not ds.directory.startswith("/") and "//" not in ds.url.split("://", 1)[1]
     # ANVISA reuses file names across folders, so the work directory is keyed by dataset
@@ -158,14 +172,28 @@ def test_catalog_is_consistent():
         "https://dados.anvisa.gov.br/dados/CICLO_ANALISE_PETICOES_ALIMENTO.CSV"
     )
     with pytest.raises(DadosError, match="unknown dataset"):
-        select(["medicamentos"])
+        select(["cannabis"])
+    assert select(["medicamentos"]) == (CMED,) and select(["cmed"]) == (CMED,)
+    assert CMED.url == catalog_url("TA_PRECO_MEDICAMENTO.csv") and CMED.local_file == "cmed.csv"
+    assert (
+        CMED.source_name("pf_17_5_alc") == "PF 17,5 % ALC" and CMED.source_name("tarja") == "TARJA"
+    )
+    with pytest.raises(ValueError, match="unknown kind"):
+        dataclasses.replace(ALIMENTOS, kind="xlsx")
     assert select(["cosmeticos"]) == (COSMETICOS,)
 
 
 def test_fixture_header_matches_catalog():
-    for ds in CATALOG:
+    for ds in CSV_DATASETS:
         assert read_header(sample(ds)) == list(ds.columns)
         check_header(ds, read_header(sample(ds)))
+    # the CMED pair: every source column maps to an output column (or is ignored on purpose)
+    for kind, file in CMED_SAMPLES.items():
+        header = cmed.read_header(DADOS / file)
+        assert len(header) == 74 and header[0] == "SUBSTÂNCIA"  # the BOM is stripped
+        mapped = [cmed.column_for(h, kind) for h in header]
+        assert mapped.count(None) == 1  # DESTINAÇÃO COMERCIAL
+        assert set(mapped) - {None} <= set(cmed.COLUMNS)
     # the `#` comment marker on the finalized-petitions header is dropped, not a schema change
     assert sample(PETICOES_ALIMENTO).read_bytes().startswith(b"#NUM_EXPEDIENTE_PETICAO;")
 
@@ -200,7 +228,7 @@ def test_header_drift_is_loud():
 
 def test_dialect_keeps_every_record_whole():
     """The fixtures hold the cases that break stock CSV readers (see parse.py)."""
-    for ds in CATALOG:
+    for ds in CSV_DATASETS:
         rows = sample_records(ds)
         assert {len(r) for r in rows} == {len(ds.columns)}
     main = sample_records(ALIMENTOS)
@@ -257,7 +285,7 @@ def chunked(text, n: int):
 def test_stream_matches_records_at_every_chunk_size():
     """Chunk boundaries cannot change a reading: the end-of-text rule only applies to the last
     chunk, and a field cut short by the buffer is parsed again with the next one."""
-    for ds in CATALOG:
+    for ds in CSV_DATASETS:
         raw = sample(ds).read_bytes()
         width = len(ds.columns)
         text = decode(raw)
@@ -758,6 +786,193 @@ def test_parquet_is_sorted_in_small_row_groups(tmp_path):
     assert all(groups[i][2] <= groups[i + 1][1] for i in range(len(groups) - 1))
 
 
+# --- cmed: the price list (two UTF-8 files merged by GGREM) -------------------------------
+
+PUBLICADO = "09/10/2026 12:43:03"  # the files' Last-Modified, Fri 09 Oct 2026 15:43:03 GMT
+
+
+def cmed_rows(kind: str) -> dict[str, dict]:
+    return {r["ggrem"]: r for r in cmed.read_source(DADOS / CMED_SAMPLES[kind], kind)}
+
+
+def test_cmed_reads_prices_flags_and_placeholders():
+    """BOM stripped, `;` split, `27,44` -> 2744, `Sim`/`Não` -> S/N, `-` -> None, CNPJ digits
+    only, registro_produto derived, the `*` moved from the prices to a flag."""
+    pmc = cmed_rows("pmc")
+    assert len(pmc) == 22 and list(pmc) != sorted(pmc)  # file order, not sorted yet
+    first = pmc["538912020009303"]  # BAYCUTEN N, two actives
+    assert first["substancia"] == "21-ACETATO DE DEXAMETASONA;CLOTRIMAZOL"
+    assert first["cnpj"] == "18459628000115" and first["laboratorio"] == "BAYER S.A."
+    assert first["registro"] == "1705600230032" and first["registro_produto"] == "170560023"
+    assert first["ean_1"] == "7891106000956" and first["ean_2"] is None
+    assert first["pf_sem_impostos"] == 2744 and first["pf_0"] == 3073 and first["pmc_0"] == 4122
+    assert first["pf_17_5_alc"] == 3326 and first["pmc_23_alc"] == 4926
+    assert first["restricao_hospitalar"] == "N" and first["cap"] == "N"
+    assert first["comercializacao"] == "S" and first["comercializacao_periodo"] == "2025"
+    assert first["tarja"] == "- (*)" and first["analise_recursal"] is None
+    assert first["pmc_asterisco"] == "N" and "pmvg_asterisco" not in first
+    assert "pmvg_0" not in first  # the PMC file has no PMVG block
+    hospital = pmc["520925100017204"]  # NUTRIFLEX LIPID: restricted, no PMC
+    assert hospital["restricao_hospitalar"] == "S" and hospital["pf_0"] == 183913
+    assert all(hospital[c] is None for c in cmed.price_columns("pmc"))
+    assert hospital["analise_recursal"] == "(AR)"
+    marked = pmc["507525080028406"]  # ACETATO DE ABIRATERONA: ICMS 0% Sim, prices starred
+    assert marked["icms_0"] == "S" and marked["pmc_asterisco"] == "S"
+    assert marked["pf_12"] == 933716 and marked["pf_0"] == 821670
+    assert pmc["529226090029607"]["registro"] is None  # EVRYSDI, the `-` registro
+    assert pmc["529226090029607"]["registro_produto"] is None
+    assert pmc["526520120096607"]["pf_0"] == 875988412  # ZOLGENSMA, the biggest price
+    assert pmc["525425110054703"]["tipo_produto"] is None  # the `-` tipo
+    assert pmc["520729802163114"]["tarja"] == "Tarja Sem Tarja"
+    assert pmc["538921030033407"]["regime_preco"] == "Liberado"
+    pmvg = cmed_rows("pmvg")
+    assert len(pmvg) == 22 and "pmc_0" not in pmvg["538912020009303"]
+    assert pmvg["538912020009303"]["pmvg_0"] == 2465  # below the PF even without CAP
+    assert pmvg["505113100020505"]["pmvg_asterisco"] == "S"  # ORENCIA, CAP Sim
+    assert pmvg["505113100020505"]["cap"] == "S" and pmvg["505113100020505"]["pmvg_0"] < 674391
+
+
+def test_cmed_header_drift_and_bad_values_fail(tmp_path):
+    assert cmed.column_for("PF 17,5 %  ALC", "pmc") == "pf_17_5_alc"
+    assert cmed.column_for("PMVG 0 %", "pmvg") == "pmvg_0"
+    assert cmed.column_for("DESTINAÇÃO COMERCIAL 9", "pmvg") is None
+    assert cmed.column_for("COMERCIALIZAÇÃO 2026", "pmc") == "comercializacao"
+    with pytest.raises(SchemaDriftError, match="unknown column 'PREÇO 18 %'"):
+        cmed.column_for("PREÇO 18 %", "pmc")
+    data = (DADOS / CMED_SAMPLES["pmc"]).read_bytes()
+    drifted = tmp_path / "a.csv"
+    drifted.write_bytes(data.replace("CÓDIGO GGREM".encode(), b"GGREM", 1))
+    with pytest.raises(SchemaDriftError, match="unknown column 'GGREM'"):
+        list(cmed.read_source(drifted, "pmc"))
+    assert cmed.centavos("1.234,56*") == (123456, True)
+    assert cmed.centavos("    -     ") == (None, False)
+    with pytest.raises(DadosError, match="not a price"):
+        cmed.centavos("R$ 1")
+    assert cmed.flag("Não") == "N" and cmed.flag("sim") == "S" and cmed.flag("") is None
+    with pytest.raises(DadosError, match="not Sim/Não"):
+        cmed.flag("Talvez")
+
+
+def test_cmed_merge_is_one_row_per_ggrem():
+    rows, stats = cmed.read_merged(
+        DADOS / CMED_SAMPLES["pmc"], DADOS / CMED_SAMPLES["pmvg"], publicado_em=PUBLICADO
+    )
+    assert stats == cmed.MergeStats(rows=23, only_pmc=1, only_pmvg=1)
+    ggrems = [r["ggrem"] for r in rows]
+    assert ggrems == sorted(ggrems) and len(dict.fromkeys(ggrems)) == 23
+    by = {r["ggrem"]: r for r in rows}
+    assert all(list(r) == list(cmed.COLUMNS) for r in rows)
+    assert all(r["publicado_em"] == PUBLICADO for r in rows)
+    both = by["538912020009303"]
+    assert both["pf_0"] == 3073 and both["pmc_0"] == 4122 and both["pmvg_0"] == 2465
+    assert both["pmc_asterisco"] == "N" and both["pmvg_asterisco"] == "N"
+    only_pmc = by["522718110082501"]
+    assert only_pmc["pf_0"] and only_pmc["pmc_0"] is not None
+    assert all(only_pmc[c] is None for c in cmed.price_columns("pmvg"))
+    assert only_pmc["pmvg_asterisco"] is None
+    only_pmvg = by["524820010008207"]
+    assert only_pmvg["pf_0"] and only_pmvg["pmvg_0"] is not None and only_pmvg["substancia"]
+    assert all(only_pmvg[c] is None for c in cmed.price_columns("pmc"))
+    assert only_pmvg["pmc_asterisco"] is None and only_pmvg["pmvg_asterisco"] == "N"
+    with pytest.raises(DadosError, match="listed twice"):
+        cmed.merge([both, both], [], publicado_em=None)
+
+
+@needs_duckdb
+def test_convert_cmed(tmp_path):
+    import duckdb
+
+    from anvisa.dados.convert import convert
+
+    rows, _ = cmed.read_merged(
+        DADOS / CMED_SAMPLES["pmc"], DADOS / CMED_SAMPLES["pmvg"], publicado_em=PUBLICADO
+    )
+    csv_path = tmp_path / CMED.local_file
+    assert cmed.write_csv(rows, csv_path) == 23
+    assert cmed.read_csv_header(csv_path) == list(CMED.columns)
+    check_header(CMED, cmed.read_csv_header(csv_path))
+    parquet = tmp_path / "cmed.parquet"
+    stats = convert(CMED, csv_path, parquet)
+    assert stats.rows == 23 and stats.rejected == ()
+    assert stats.loaded_at == "2026-10-09T12:43:03"
+    assert all(v == 0 for v in stats.nulls_added.values())
+    assert csv_path.exists()  # the pre-normalized file is the caller's, not deleted
+    con = duckdb.connect()
+    described = con.execute(f"DESCRIBE SELECT * FROM '{parquet}'").fetchall()
+    cols = {name: kind for name, kind, *_ in described}
+    assert cols["pf_0"] == "INTEGER" and cols["cap"] == "BOOLEAN"
+    assert cols["publicado_em"] == "TIMESTAMP" and cols["ggrem"] == "VARCHAR"
+    assert list(cols) == list(CMED.columns)
+    rows_db = con.execute(
+        f"SELECT ggrem, pf_0, pmc_0, pmvg_0, cap, pmc_asterisco, registro_produto FROM '{parquet}' "
+        "ORDER BY ggrem"
+    ).fetchall()
+    assert [r[0] for r in rows_db] == sorted(r[0] for r in rows_db)
+    bayer = next(r for r in rows_db if r[0] == "538912020009303")
+    assert bayer[1:] == (3073, 4122, 2465, False, False, "170560023")
+    orencia = next(r for r in rows_db if r[0] == "505113100020505")
+    assert orencia[4] is True and orencia[3] < orencia[1]
+    assert con.execute(f"SELECT count(*) FROM '{parquet}' WHERE pmc_0 IS NULL").fetchone()[0] >= 5
+
+
+@needs_duckdb
+def test_build_cmed_conditional_on_both_files(fake_dados, tmp_path):
+    """The two files are one table: 304 on both skips it; a change in either refetches both."""
+    with fake_dados.client() as http:
+        first = build(tmp_path / "first", http=http, now=NOW, commit="c1", datasets=(CMED,))
+    assert list(first["tables"]) == ["cmed"]
+    entry = first["tables"]["cmed"]
+    assert entry["rows"] == 23 and entry["group"] == "medicamentos"
+    source = entry["source"]
+    assert source["stamp"] == "20261009" and source["loaded_at"] == "2026-10-09T12:43:03"
+    assert [f["name"] for f in source["files"]] == list(cmed.FILES.values())
+    assert source["etag"] == source["files"][0]["etag"] == '"105a8a6-65d6a342ad836"'
+    assert source["files"][1]["etag"] == '"10fc04a-65d6a358b7d85"'
+    assert source["bytes"] == sum(f["bytes"] for f in source["files"])
+    assert entry["columns"][0] == {
+        "name": "ggrem",
+        "type": "VARCHAR",
+        "source": "CÓDIGO GGREM",
+        "description": CMED.descriptions["ggrem"],
+    }
+    assert next(c for c in entry["columns"] if c["name"] == "pmvg_18")["source"] == (
+        "PMVG 18 % (TA_PRECO_MEDICAMENTO_GOV.csv)"
+    )
+    docs = (tmp_path / "first" / "dicionario.html").read_text(encoding="utf-8")
+    assert "pmvg_17_5_alc" in docs and "CÓDIGO GGREM" in docs
+
+    fake_dados.manifest, fake_dados.site = first, tmp_path / "first"
+    fake_dados.requests.clear()
+    with fake_dados.client() as http:
+        again = build(
+            tmp_path / "second",
+            http=http,
+            skip_unchanged=FakeDados.MANIFEST_URL,
+            commit="c1",
+            datasets=(CMED,),
+        )
+    assert again == Unchanged(first["build_id"])
+    sent = [r.headers.get("If-None-Match") for r in fake_dados.data_requests()]
+    assert sent == [f["etag"] for f in source["files"]]
+
+    pmvg_url = catalog_url(cmed.FILES["pmvg"])
+    headers, body = fake_dados.files[pmvg_url]
+    fake_dados.files[pmvg_url] = ({**headers, "ETag": '"new"'}, body)
+    fake_dados.requests.clear()
+    with fake_dados.client() as http:
+        third = build(
+            tmp_path / "third",
+            http=http,
+            skip_unchanged=FakeDados.MANIFEST_URL,
+            commit="c1",
+            datasets=(CMED,),
+        )
+    assert third["tables"]["cmed"]["source"]["files"][1]["etag"] == '"new"'
+    urls = [str(r.url) for r in fake_dados.data_requests()]
+    # PMC answered 304, PMVG changed, then PMC was fetched again so the pair is one cut
+    assert urls == [catalog_url(cmed.FILES["pmc"]), pmvg_url, catalog_url(cmed.FILES["pmc"])]
+
+
 # --- busca: the search files --------------------------------------------------
 
 
@@ -942,7 +1157,12 @@ def test_build_skips_when_published_matches(fake_dados, tmp_path):
     assert result == Unchanged(first["build_id"])
     assert not (tmp_path / "second").exists()
     sent = [r.headers.get("If-None-Match") for r in fake_dados.data_requests()]
-    assert sent == [t["source"]["etag"] for t in first["tables"].values() if "fontes" not in t]
+    expected = []
+    for t in first["tables"].values():
+        if "fontes" in t:
+            continue
+        expected += [f["etag"] for f in t["source"]["files"]] or [t["source"]["etag"]]
+    assert sent == expected
     manifest_request = fake_dados.requests[0]
     assert manifest_request.headers["Cache-Control"] == "no-cache"
 
@@ -960,8 +1180,9 @@ def test_build_rebuilds_when_one_file_changed(fake_dados, tmp_path):
     assert result["tables"]["alimentos"]["source"]["etag"] == '"new"'
     # the unchanged files answered 304 first, then were fetched again for a complete build
     statuses = [r.headers.get("If-None-Match") for r in fake_dados.data_requests()]
-    unchanged = len(CATALOG) - 1
-    assert statuses.count(None) == unchanged and len(statuses) == len(CATALOG) + unchanged
+    files = sum(len(cmed.FILES) if ds.kind == "cmed" else 1 for ds in CATALOG)
+    unchanged = files - 1
+    assert statuses.count(None) == unchanged and len(statuses) == files + unchanged
 
 
 @needs_duckdb

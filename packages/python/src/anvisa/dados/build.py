@@ -34,10 +34,10 @@ import httpx
 
 from .. import __version__
 from ..errors import DadosError
-from . import busca, derivar
+from . import busca, cmed, derivar
 from .catalog import CATALOG, Dataset
 from .convert import ROW_GROUP_SIZE, Stats, convert
-from .fetch import Source, download, fetch_file, http_client
+from .fetch import Source, fetch_file, fetch_source, http_client
 from .parse import check_header, read_header
 
 SCHEMA_VERSION = 1
@@ -219,12 +219,13 @@ def table_entry(
             {
                 "name": name.lower(),
                 "type": kind,
-                "source": name,
+                "source": ds.source_name(name),
                 "description": ds.descriptions[name],
             }
             for name, kind in ds.columns.items()
         ],
-        source={**asdict(source), "loaded_at": stats.loaded_at},
+        # `files` as a list, so the entry equals its JSON round trip (the tests compare them)
+        source={**asdict(source), "files": list(source.files), "loaded_at": stats.loaded_at},
         nulls_added=stats.nulls_added,
         rejected_records=len(stats.rejected),
     )
@@ -316,13 +317,7 @@ def build(
             for ds in datasets:
                 previous = (known.get(ds.name) or {}).get("source") or {}
                 log(f"download {ds.url}")
-                sources[ds.name] = download(
-                    http,
-                    ds,
-                    work,
-                    etag=previous.get("etag"),
-                    last_modified=previous.get("last_modified"),
-                )
+                sources[ds.name] = fetch_source(http, ds, work, previous)
                 if sources[ds.name] is None:
                     log(f"  not modified since build {published.get('build_id')}")
 
@@ -333,10 +328,12 @@ def build(
                 log(f"code changed ({published.get('commit')} -> {commit}): rebuilding")
             for ds in datasets:  # a partial update still publishes a complete, consistent set
                 if sources[ds.name] is None:
-                    sources[ds.name] = download(http, ds, work)
+                    sources[ds.name] = fetch_source(http, ds, work)
 
             for ds in datasets:  # every header first, so a drift fails before any Parquet
-                check_header(ds, read_header(work / ds.local_file))
+                path = work / ds.local_file
+                header = read_header(path) if ds.kind == "csv" else cmed.read_csv_header(path)
+                check_header(ds, header)
 
             tables = {}
             for ds in datasets:

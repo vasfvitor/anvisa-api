@@ -6,6 +6,22 @@ when known. The package's own `CHANGELOG.md` records the Python API; a data chan
 no package release still appears here. `schema_version` in the manifest only changes when a
 consumer must change to keep reading it; everything below has been additive, so it is still 1.
 
+## 2026-10-22
+
+- **`cmed`, the CMED price list**, the first table from a source other than ANVISA's
+  Windows-1252 product files: CMED's monthly maximum prices per medicine presentation, from the
+  two CSVs at the root of dados.anvisa.gov.br (`TA_PRECO_MEDICAMENTO.csv` and
+  `TA_PRECO_MEDICAMENTO_GOV.csv`, UTF-8 with BOM, `;`) merged by `ggrem` (15 digits) into one
+  wide row: `registro` (13 digits) and `registro_produto` (its 9-digit root, which joins
+  `produtos_irregulares`), substância, laboratório (`cnpj` digits only), produto, apresentação,
+  classe terapêutica, tipo and regime de preço, three EANs, the 26 PF, 26 PMC and 26 PMVG
+  prices as **integer centavos** per ICMS rate (`pf_18`, `pmc_17_5_alc`, `pmvg_0`), the flags
+  `restricao_hospitalar`, `cap`, `confaz_87`, `icms_0`, `comercializacao` (with the year it
+  refers to in `comercializacao_periodo`), `analise_recursal`, `lista_pis_cofins`, `tarja`,
+  and `publicado_em`, the files' Last-Modified (Brasília). 26,635 rows on the files of
+  2026-10-09; `source.files` in the manifest lists both files with their ETag, size and hash,
+  and `source.stamp` the day. Group `medicamentos`. Not in any derived table yet.
+
 ## 2026-10-12
 
 - **`vencimento` in `produtos` and `alimentos_por_produto` is the latest expiry** among a

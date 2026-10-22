@@ -12,6 +12,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 
 from ..errors import DadosError
+from . import cmed
 from .descricoes import DESCRICOES
 
 BASE_URL = "https://dados.anvisa.gov.br/dados/"
@@ -45,8 +46,16 @@ class Dataset:
     # placeholders, how to count. Published in the manifest and the Pages dictionary; the
     # parser-level quirks (encoding, quoting, date order) stay in the README
     notes: tuple[str, ...] = ()
+    # "csv": one of ANVISA's Windows-1252 `;` files at `url`, normalized by parse.py.
+    # "cmed": the two monthly CMED spreadsheets, found on the page at `url` and written as an
+    # already-normalized CSV by cmed.py; `columns` are then the output names, not a source header
+    kind: str = "csv"
+    # output column -> the name it had in the source, when not the column key itself (cmed)
+    source_names: dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        if self.kind not in ("csv", "cmed"):
+            raise ValueError(f"{self.name}: unknown kind {self.kind!r}")
         if self.directory and not self.directory.endswith("/") or self.directory.startswith("/"):
             raise ValueError(f"{self.name}: directory must be '' or end in '/': {self.directory!r}")
 
@@ -57,7 +66,13 @@ class Dataset:
 
     @property
     def url(self) -> str:
+        """Where the file is; for `cmed`, the first of its two files (cmed.FILES)."""
+        if self.kind == "cmed":
+            return BASE_URL + cmed.FILES["pmc"]
         return BASE_URL + self.directory + self.file
+
+    def source_name(self, column: str) -> str:
+        return self.source_names.get(column, column)
 
     @property
     def local_file(self) -> str:
@@ -403,6 +418,34 @@ COSMETICOS = Dataset(
     ),
 )
 
+CMED = Dataset(
+    name="cmed",
+    group="medicamentos",
+    kind="cmed",
+    file=" + ".join(cmed.FILES.values()),  # the pair, at the root of BASE_URL (cmed.FILES)
+    directory="",
+    title="CMED: preços máximos de medicamentos por apresentação",
+    columns=cmed.COLUMNS,  # 26,635 rows on 2026-10-09; GGREM unique in both files
+    source_names=cmed.SOURCE_NAMES,
+    sort=("ggrem",),
+    load_time="publicado_em",  # the files' Last-Modified, stamped on every row by cmed.py
+    notes=(
+        "Uma linha por apresentação de medicamento com preço regulado ou liberado pela CMED, "
+        "identificada pelo ggrem (15 dígitos); registro é a apresentação na ANVISA (13 "
+        "dígitos) e registro_produto os 9 primeiros, o produto.",
+        "Preços em centavos de real: pf_* é o preço fábrica, pmc_* o máximo ao consumidor e "
+        "pmvg_* o máximo de venda ao governo, cada um por alíquota de ICMS (pf_18 = 18 %; "
+        "pf_17_5 = 17,5 %; _alc = Área de Livre Comércio; _0 = isento). Nulo onde a lista traz "
+        "'-': pmc_* nos 3.961 produtos de uso restrito a hospitais. A lista marca com * as "
+        "alíquotas exibidas mas não aplicáveis (isentos de ICMS; no PMVG também os com CAP): "
+        "o * sai do valor e vai para pmc_asterisco e pmvg_asterisco.",
+        "Os dois arquivos mensais (PMC e PMVG) são juntados pelo ggrem; publicado_em é a data "
+        "dos arquivos, que a CMED publica uma vez por mês e reajusta em março ou abril.",
+        "comercializacao diz se a apresentação foi comercializada no ano em "
+        "comercializacao_periodo; a CMED troca o ano do cabeçalho todo ano.",
+    ),
+)
+
 CATALOG: tuple[Dataset, ...] = (
     ALIMENTOS,
     ALIMENTOS_RESULTADO,
@@ -411,6 +454,7 @@ CATALOG: tuple[Dataset, ...] = (
     PETICOES_ALIMENTO_ANDAMENTO,
     PRODUTOS_IRREGULARES,
     COSMETICOS,
+    CMED,
 )
 
 

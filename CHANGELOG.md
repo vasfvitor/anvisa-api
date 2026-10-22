@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.7.0 (2026-10-22)
+
+- **`anvisa.dados.cmed`, the CMED price list**: ANVISA republishes CMED's monthly list of
+  maximum medicine prices as two CSVs on the open-data server (`TA_PRECO_MEDICAMENTO.csv`,
+  PF + PMC; `TA_PRECO_MEDICAMENTO_GOV.csv`, PF + PMVG; UTF-8 with BOM, `;`, no quoting, one
+  row per presentation keyed by the 15-digit GGREM). The module reads both, merges them by
+  GGREM, turns prices into integer centavos and flags into booleans, and writes one normalized
+  CSV; it has no DuckDB dependency, so `anvisa-feeds` can snapshot the list with it. In the
+  pipeline this is the new `cmed` table (group `medicamentos`, 102 columns, 26,635 rows on
+  2026-10-09; see `CHANGELOG.dados.md`). `Dataset` gained `kind` (`csv` or `cmed`) and
+  `source_names` (the source column behind each output column, for the dictionary); `Source`
+  gained `stamp` and `files` for a table built from more than one file; `fetch.download_url`
+  is the conditional GET `download` always was, now callable by URL. Recorded on 2026-10-22
+  (2 files, 2 fixtures of 22 records each). The xlsx gov.br advertises is the same cut, but
+  for two rows corrected there two hours later.
+
 ## 0.6.0 (2026-10-22)
 
 - **The four domains ANVISA added on 2026-10-01 are wrapped**: `saude` (produtos para saúde:

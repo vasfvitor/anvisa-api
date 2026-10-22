@@ -8,8 +8,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from ..errors import DadosError
+from . import cmed
 from .catalog import Dataset
-from .parse import normalize
+from .parse import Normalized, normalize
 
 # ~9 row groups for alimentos' 66k rows. Sorted by CNPJ, a point lookup with native DuckDB over
 # HTTP (`read_parquet('https://...')`, not the browser: see the README) reads the footer and one
@@ -89,7 +90,11 @@ def convert(
     spill = Path(csv_path).with_name(".duckdb_tmp")
     con = connect(spill)  # before the parse, so a missing DuckDB fails fast
     try:
-        normalized = normalize(ds, Path(csv_path), clean)
+        if ds.kind == "cmed":  # cmed.py already wrote the normalized form
+            clean = Path(csv_path)
+            normalized = Normalized(cmed.count_csv_rows(clean), ())
+        else:
+            normalized = normalize(ds, Path(csv_path), clean)
         total = normalized.rows + len(normalized.rejected)
         if len(normalized.rejected) > REJECT_LIMIT * total:
             raise DadosError(
@@ -131,7 +136,8 @@ def convert(
             copy_parquet(con, select_sql(ds), parquet, row_group_size)
     finally:
         con.close()  # a no-op after `with con`; needed when the parse failed first
-        clean.unlink(missing_ok=True)
+        if clean != Path(csv_path):
+            clean.unlink(missing_ok=True)
         shutil.rmtree(spill, ignore_errors=True)
     return Stats(
         rows=rows,
