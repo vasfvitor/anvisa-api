@@ -2,12 +2,12 @@
   "openapi": "3.0.1",
   "info": {
     "title": "ANVISA Consultas Externas API",
-    "description": "Consultas públicas da ANVISA: UDI de dispositivos médicos, nomes técnicos, fila de análise, listas e assuntos de peticionamento (observadas ao vivo em 2026-09) e, desde 2026-10-01, produtos para saúde, certificados de boas práticas e tabaco (ainda sem correções nem respostas gravadas). Esta descrição foi corrigida por overlay a partir do comportamento observado: veja `x-anvisa-client-requirements`.",
+    "description": "Consultas públicas da ANVISA: UDI de dispositivos médicos, nomes técnicos, fila de análise, listas e assuntos de peticionamento (observadas ao vivo em 2026-09) e, desde 2026-10-01, produtos para saúde, certificados de boas práticas (genéricos e de medicamentos) e tabaco (observados ao vivo em 2026-10-22). Esta descrição foi corrigida por overlay a partir do comportamento observado: veja `x-anvisa-client-requirements`.",
     "contact": {
       "name": "Contato",
       "email": "arquitetura@anvisa.gov.br"
     },
-    "version": "2026-10-08"
+    "version": "2026-10-22"
   },
   "servers": [
     {
@@ -428,7 +428,7 @@
           "Consulta Tabaco"
         ],
         "summary": "Tabaco - Certificados",
-        "description": "Retorna consulta de certificados'",
+        "description": "Paginated produtos derivados do tabaco (3,578 rows on 2026-10-22). Works with an empty `filter`. Verified live: `nomeProduto` (1 row for \"7 PONTAS\"); `cnpjEmpresa` and `cnpj` are silently ignored (the whole table comes back). The list view leaves `embalagens`, `rotulos`, `idProduto`, `origem` and `categoriaAditivos` empty; the detail fills them.",
         "operationId": "findCertificado",
         "requestBody": {
           "content": {
@@ -567,7 +567,17 @@
               }
             }
           }
-        }
+        },
+        "x-required-filters": {
+          "anyOf": []
+        },
+        "x-verified-filters": [
+          "nomeProduto"
+        ],
+        "x-ignored-filters": [
+          "cnpjEmpresa",
+          "cnpj"
+        ]
       }
     },
     "/api/v1/saude": {
@@ -576,7 +586,7 @@
           "Consulta Produtos Saúde"
         ],
         "summary": "Retorna produtos saúde paginados",
-        "description": "Recebe JSON com column, count, order, page e filtros em filter[...]. Use os filtros específicos como nomeProduto, numeroRegistro, numeroProcesso, nomeTecnico, cnpj, etc.",
+        "description": "Paginated produtos para saúde (193,109 rows on 2026-10-22). Works with an empty `filter`. Verified live: `nomeProduto` (prefix/substring: \"1000VINYL\" matched 3 rows) and `cnpj` (31 rows for 05993698000107); the other keys of the example are untested.",
         "operationId": "buscaProdutosSaude",
         "requestBody": {
           "description": "Payload completo de PaginationBuilder",
@@ -592,11 +602,9 @@
                     "sorting": {
                       "nomeProduto": "ASC"
                     },
-                    "count": 10,
-                    "order": "ASC",
-                    "page": "1",
+                    "page": 1,
                     "filter": {
-                      "nomeProduto": "1000MEDIC PROBE COVER",
+                      "nomeProduto": "1000VINYL",
                       "razaoSocial": "1000MEDIC DISTRIBUIDORA IMPORTADORA EXPORTADORA DE MEDICAMENTOS LTDA",
                       "nomeTecnico": "",
                       "tipoAssunto": "true",
@@ -605,7 +613,8 @@
                       "numeroProcesso": "25351255616201719",
                       "registro": "80207450001",
                       "numeroRegistro": "80207459001"
-                    }
+                    },
+                    "size": 10
                   }
                 }
               }
@@ -740,7 +749,14 @@
               }
             }
           }
-        }
+        },
+        "x-required-filters": {
+          "anyOf": []
+        },
+        "x-verified-filters": [
+          "nomeProduto",
+          "cnpj"
+        ]
       }
     },
     "/api/v1/saude/{numeroProcesso}": {
@@ -749,7 +765,7 @@
           "Consulta Produtos Saúde"
         ],
         "summary": "Retorna detalhe de produtos saúde",
-        "description": "Recebe JSON com column, count, order, page e filtros em filter[...]. Use os filtros específicos como nomeProduto, numeroRegistro, numeroProcesso, nomeTecnico, cnpj, etc.",
+        "description": "One produto para saúde by processo number (17 digits, no punctuation), with its apresentações, fabricantes and risk class. The request body is ignored as far as observed: `{}` returned the product on 2026-10-22. `apresentacoes` came empty and `apresentacoesPage.content` carried the models.",
         "operationId": "detailProdutoSaude",
         "parameters": [
           {
@@ -767,30 +783,6 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/DetalheProdutoSaude"
-              },
-              "examples": {
-                "Filtro completo de consulta produtos de saúde e número de Processo": {
-                  "description": "Filtro completo de consulta produtos de saúde e número de Processo",
-                  "value": {
-                    "sorting": {
-                      "nomeProduto": "ASC"
-                    },
-                    "count": 10,
-                    "order": "ASC",
-                    "page": "1",
-                    "filter": {
-                      "nomeProduto": "1000MEDIC PROBE COVER",
-                      "razaoSocial": "1000MEDIC DISTRIBUIDORA IMPORTADORA EXPORTADORA DE MEDICAMENTOS LTDA",
-                      "nomeTecnico": "",
-                      "tipoAssunto": "true",
-                      "cnpj": "05993698000107",
-                      "situacaoNotificacaoRegistro": "1",
-                      "numeroProcesso": "25351255616201719",
-                      "registro": "80207450001",
-                      "numeroRegistro": "80207459001"
-                    }
-                  }
-                }
               }
             }
           },
@@ -1952,7 +1944,7 @@
           "Consulta Certificado de Boas Práticas de Medicamentos"
         ],
         "summary": "Faz o download do relatório de certificados",
-        "description": "Recebe JSON com page, order, sorting e filtros em filter[...] e gera um arquivo para download.",
+        "description": "The matching certificados as `consulta_certificado.xls`, which is OOXML (magic `PK`), 4,212 bytes for 3 rows. Takes the filter keys of the search; `size` was 10 and the file held every match. Requires `Accept: */*`.",
         "operationId": "download_1",
         "requestBody": {
           "description": "Payload completo de PaginationBuilder",
@@ -2019,7 +2011,7 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "OOXML bytes named `consulta_certificado.xls` with `Content-Type: application/vnd.ms-excel`. Requires `Accept: */*`.",
             "headers": {
               "X-RateLimit-Remaining": {
                 "$ref": "#/components/headers/X-RateLimit-Remaining"
@@ -2029,6 +2021,14 @@
               },
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            },
+            "content": {
+              "application/vnd.ms-excel": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
               }
             }
           },
@@ -2137,7 +2137,8 @@
               }
             }
           }
-        }
+        },
+        "x-accept": "*/*"
       }
     },
     "/api/v1/certificadoMedicamento/": {
@@ -2146,7 +2147,7 @@
           "Consulta Certificado de Boas Práticas de Medicamentos"
         ],
         "summary": "Retorna certificados paginados",
-        "description": "Recebe JSON com page, order, sorting e filtros em filter[...]. Para certificados medicamentos, use contexto = \"certificadoMedicamento\" e inclua filtros específicos; para certificados genéricos, use contexto = \"certificado\" e não inclua classesCertificacao, formasFarmaceuticas ou linhasCertificacao.",
+        "description": "Paginated certificados de boas práticas de medicamentos (2,774 rows with nacional + internacional + status 0 on 2026-10-22). At least one filter key besides `contexto` is required, otherwise HTTP 500 `mensagens.MSG-013`. Verified live: `nacional` + `internacional`, `status` and `cnpjSolicitante` (7 rows for 39809660000153; international certificates carry no cnpjCertificada). The lookup-backed keys (classesCertificacao, formasFarmaceuticas, linhasCertificacao, certificacaoConcedidaPor) are untested.",
         "operationId": "findCertificado_1",
         "requestBody": {
           "description": "Payload completo de PaginationBuilder",
@@ -2338,6 +2339,32 @@
               }
             }
           }
+        },
+        "x-required-filters": {
+          "anyOf": [
+            "nacional",
+            "internacional",
+            "status",
+            "cnpjCertificada",
+            "cnpjSolicitante",
+            "codigoUnico",
+            "pais",
+            "certificacaoConcedidaPor",
+            "classesCertificacao",
+            "formasFarmaceuticas",
+            "linhasCertificacao",
+            "ufs",
+            "dataPublicacaoInicial",
+            "dataPublicacaoFinal",
+            "dataValidadeInicial",
+            "dataValidadeFinal"
+          ],
+          "verified": [
+            "nacional",
+            "internacional",
+            "status",
+            "cnpjSolicitante"
+          ]
         }
       }
     },
@@ -2347,7 +2374,7 @@
           "Consulta Certificado de Boas Práticas"
         ],
         "summary": "Faz o download do relatório de certificados",
-        "description": "Recebe JSON com page, order, sorting e filtros em filter[...] e gera um arquivo para download.",
+        "description": "The matching certificados as `consulta_certificado.xls`, which is OOXML (magic `PK`), 4,212 bytes for 3 rows. Takes the filter keys of the search; `size` was 10 and the file held every match. Requires `Accept: */*`.",
         "operationId": "download_2",
         "requestBody": {
           "description": "Payload completo de PaginationBuilder",
@@ -2386,7 +2413,7 @@
         },
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "OOXML bytes named `consulta_certificado.xls` with `Content-Type: application/vnd.ms-excel`. Requires `Accept: */*`.",
             "headers": {
               "X-RateLimit-Remaining": {
                 "$ref": "#/components/headers/X-RateLimit-Remaining"
@@ -2396,6 +2423,14 @@
               },
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            },
+            "content": {
+              "application/vnd.ms-excel": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
               }
             }
           },
@@ -2504,7 +2539,8 @@
               }
             }
           }
-        }
+        },
+        "x-accept": "*/*"
       }
     },
     "/api/v1/certificado/": {
@@ -2513,7 +2549,7 @@
           "Consulta Certificado de Boas Práticas"
         ],
         "summary": "Retorna certificados paginados",
-        "description": "Recebe JSON com page, order, sorting e filtros em filter[...]. Para certificados medicamentos, use contexto = \"certificadoMedicamento\" e inclua filtros específicos; para certificados genéricos, use contexto = \"certificado\" e não inclua classesCertificacao, formasFarmaceuticas ou linhasCertificacao.",
+        "description": "Paginated certificados de boas práticas (6,886 rows with nacional + internacional on 2026-10-22). At least one filter key besides `contexto` is required, otherwise HTTP 500 `mensagens.MSG-013`; a filter that matches nothing is an empty-bodied 404. Verified live: `nacional` + `internacional` (booleans), `status` (ids from /certificado/status, comma-separated) and `cnpjCertificada` (3 rows for 05993698000450); the date and UF keys of the example are untested.",
         "operationId": "findCertificado_2",
         "requestBody": {
           "description": "Payload completo de PaginationBuilder",
@@ -2678,6 +2714,29 @@
               }
             }
           }
+        },
+        "x-required-filters": {
+          "anyOf": [
+            "nacional",
+            "internacional",
+            "status",
+            "cnpjCertificada",
+            "certificacaoConcedidaPor",
+            "ufs",
+            "tipoCertificado",
+            "dataPublicacaoInicial",
+            "dataPublicacaoFinal",
+            "dataValidadeInicial",
+            "dataValidadeFinal",
+            "liberacaoSim",
+            "liberacaoNao"
+          ],
+          "verified": [
+            "nacional",
+            "internacional",
+            "status",
+            "cnpjCertificada"
+          ]
         }
       }
     },
@@ -4672,7 +4731,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "The PDF, `Content-Type: application/force-download`.",
             "headers": {
               "X-RateLimit-Remaining": {
                 "$ref": "#/components/headers/X-RateLimit-Remaining"
@@ -4682,6 +4741,14 @@
               },
               "X-RateLimit-Replenish-Rate": {
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
+              }
+            },
+            "content": {
+              "application/force-download": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
               }
             }
           },
@@ -4790,7 +4857,10 @@
               }
             }
           }
-        }
+        },
+        "summary": "Download do rótulo (PDF)",
+        "description": "The label file: a PDF/A (`%PDF-1.7`, 387,531 bytes for rótulo 3631632) with `Content-Type: application/force-download` and a quoted file name (`rotulo_3631632.PDF`). `rotulo` is `rotulos[].id` from the detail. Requires `Accept: */*`.",
+        "x-accept": "*/*"
       }
     },
     "/api/v1/tabaco/download": {
@@ -4818,20 +4888,6 @@
           }
         ],
         "responses": {
-          "201": {
-            "description": "Created",
-            "headers": {
-              "X-RateLimit-Remaining": {
-                "$ref": "#/components/headers/X-RateLimit-Remaining"
-              },
-              "X-RateLimit-Burst-Capacity": {
-                "$ref": "#/components/headers/X-RateLimit-Burst-Capacity"
-              },
-              "X-RateLimit-Replenish-Rate": {
-                "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
-              }
-            }
-          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -4936,8 +4992,22 @@
                 "$ref": "#/components/headers/X-RateLimit-Replenish-Rate"
               }
             }
+          },
+          "200": {
+            "description": "The spreadsheet, `Content-Disposition: attachment; filename=consulta_fumigenos.xls`.",
+            "content": {
+              "application/vnd.ms-excel": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
           }
-        }
+        },
+        "description": "The whole table as `consulta_fumigenos.xls` (BIFF .xls, 897,024 bytes, 3,578 rows on 2026-10-22). `filtro` is the JSON text of a `PaginationBuilder` in the query string; the filter and `size` sent were ignored. Answers 200, not the declared 201. Requires `Accept: */*`.",
+        "x-paginated": false,
+        "x-accept": "*/*"
       }
     },
     "/api/v1/tabaco/downloadPDF/{codDocumento}": {
@@ -4966,7 +5036,7 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "The PDF, inline, named consulta_tabaco.pdf. Requires `Accept: */*`.",
             "content": {
               "application/pdf": {
                 "schema": {
@@ -5092,7 +5162,9 @@
               }
             }
           }
-        }
+        },
+        "description": "The product detail as a PDF (2,328 bytes for 33007111), sent `inline` as `consulta_tabaco.pdf`. Requires `Accept: */*`.",
+        "x-accept": "*/*"
       }
     },
     "/api/v1/tabaco/detailTabaco/{id}": {
@@ -5246,7 +5318,8 @@
               }
             }
           }
-        }
+        },
+        "description": "One product with its embalagens, rótulos and medidas cautelares. `id` is `codDocumento` from the list (33007111 on 2026-10-22); the processo number and `idProduto` answer HTTP 500 \"javax.persistence.NoResultException\"."
       }
     },
     "/api/v1/tabaco/destinoTabaco": {
@@ -5533,7 +5606,7 @@
           "Consulta Produtos Saúde"
         ],
         "summary": "Exporta detalhes do produto de saúde em PDF",
-        "description": "Gera o arquivo PDF contendo os detalhes do produto de saúde.",
+        "description": "The product detail as a PDF (2,507 bytes for 25351279419201172). Sent `Content-Disposition: inline; filename=consulta_alimento.pdf` (sic). Requires `Accept: */*`.",
         "operationId": "downloadPDF_1",
         "parameters": [
           {
@@ -5547,7 +5620,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Arquivo PDF gerado com sucesso",
+            "description": "The PDF, inline, named consulta_alimento.pdf. Requires `Accept: */*`.",
             "content": {
               "application/pdf": {
                 "schema": {
@@ -5666,7 +5739,8 @@
               }
             }
           }
-        }
+        },
+        "x-accept": "*/*"
       }
     },
     "/api/v1/saude/downloadExcel/{numeroProcesso}": {
@@ -5675,7 +5749,7 @@
           "Consulta Produtos Saúde"
         ],
         "summary": "Exporta detalhes do produto de saúde em Excel",
-        "description": "Gera o arquivo Excel contendo os detalhes do produto de saúde.",
+        "description": "The product detail as `DetalheProdutoSaude.xls` (BIFF .xls, magic `D0 CF 11 E0`, 14,336 bytes for one product). Requires `Accept: */*`.",
         "operationId": "downloadExcel",
         "parameters": [
           {
@@ -5689,7 +5763,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Arquivo Excel gerado com sucesso",
+            "description": "The spreadsheet, `Content-Disposition: attachment; filename=DetalheProdutoSaude.xls`.",
             "content": {
               "application/vnd.ms-excel": {
                 "schema": {
@@ -5808,7 +5882,8 @@
               }
             }
           }
-        }
+        },
+        "x-accept": "*/*"
       }
     },
     "/api/v1/nomeTecnico/categorias": {
@@ -9456,7 +9531,9 @@
             "type": "string"
           },
           "id": {
-            "type": "object"
+            "type": "string",
+            "nullable": true,
+            "description": "Observed: \"S\"/\"N\" on /tabaco/situacoes, null on every entry of /tabaco/origemTabaco and /tabaco/destinoTabaco (filter those by `descricao`)."
           }
         }
       },

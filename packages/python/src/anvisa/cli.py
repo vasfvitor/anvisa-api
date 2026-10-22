@@ -1,4 +1,5 @@
-"""`anvisa` command line: fila, lista, UDI, nome técnico and assunto lookups, and `dados`."""
+"""`anvisa` command line: fila, lista, UDI, nome técnico, assunto, produtos para saúde,
+certificados de boas práticas and tabaco lookups, and `dados`."""
 
 from __future__ import annotations
 
@@ -37,7 +38,8 @@ class Format(str, Enum):
 
 
 app = typer.Typer(
-    help="ANVISA Consultas Externas: filas, listas, UDI, nomes técnicos e assuntos.",
+    help="ANVISA Consultas Externas: filas, listas, UDI, nomes técnicos, assuntos, produtos para "
+    "saúde, certificados de boas práticas e tabaco.",
     no_args_is_help=True,
 )
 fila_app = typer.Typer(
@@ -52,6 +54,14 @@ lista_app = typer.Typer(
     no_args_is_help=True,
 )
 nome_tecnico_app = typer.Typer(help="Nomes técnicos de produtos para saúde.", no_args_is_help=True)
+saude_app = typer.Typer(help="Produtos para saúde regularizados.", no_args_is_help=True)
+certificado_app = typer.Typer(
+    help="Certificados de boas práticas (exceto medicamentos).", no_args_is_help=True
+)
+certificado_medicamento_app = typer.Typer(
+    help="Certificados de boas práticas de fabricação de medicamentos.", no_args_is_help=True
+)
+tabaco_app = typer.Typer(help="Produtos derivados do tabaco.", no_args_is_help=True)
 dados_app = typer.Typer(
     help="Dados abertos (dados.anvisa.gov.br): CSV → Parquet.", no_args_is_help=True
 )
@@ -60,6 +70,10 @@ app.add_typer(lista_app, name="lista")
 app.add_typer(udi_app, name="udi")
 app.add_typer(nome_tecnico_app, name="nome-tecnico")
 app.add_typer(assunto_app, name="assunto")
+app.add_typer(saude_app, name="saude")
+app.add_typer(certificado_app, name="certificado")
+app.add_typer(certificado_medicamento_app, name="certificado-medicamento")
+app.add_typer(tabaco_app, name="tabaco")
 app.add_typer(dados_app, name="dados")
 
 
@@ -556,3 +570,340 @@ def dados_build(
             },
         }
     typer.echo(json.dumps(summary, ensure_ascii=False, indent=2))
+
+
+# --- saude ------------------------------------------------------------------
+
+
+def paginated(
+    ctx: typer.Context,
+    domain: Any,
+    page: int,
+    size: int,
+    all_pages: bool,
+    title: str,
+    **filters: Any,
+) -> None:
+    """Emit one page of a paginated search, or every page with `--all`."""
+    with handle_errors(), make_client() as client:
+        target = getattr(client, domain)
+        if all_pages:
+            emit(ctx, list(target.iter_search(size=size, **filters)), title)
+        else:
+            result = target.search(page=page, size=size, **filters)
+            total = f" (página {page} de {result.totalPages}, {result.totalElements} no total)"
+            emit(ctx, result.content or [], title + total)
+
+
+PAGE = typer.Option(1, "--page", min=1)
+SIZE = typer.Option(20, "--size", min=1)
+ALL = typer.Option(False, "--all", help="iterate every page (respects the rate limit)")
+
+
+@saude_app.command("search")
+def saude_search(
+    ctx: typer.Context,
+    nome: str | None = typer.Option(None, "--nome", "-n", help="nomeProduto, prefix/substring"),
+    cnpj: str | None = typer.Option(None, "--cnpj", help="cnpj of the company"),
+    registro: str | None = typer.Option(None, "--registro", help="registro (untested filter)"),
+    processo: str | None = typer.Option(None, "--processo", help="numeroProcesso (untested)"),
+    page: int = PAGE,
+    size: int = SIZE,
+    all_pages: bool = ALL,
+) -> None:
+    """Busca de produtos para saúde regularizados. Sem filtro lista todos (193 mil)."""
+    filters = {
+        k: v
+        for k, v in {
+            "nomeProduto": nome,
+            "cnpj": cnpj,
+            "registro": registro,
+            "numeroProcesso": processo,
+        }.items()
+        if v
+    }
+    paginated(ctx, "saude", page, size, all_pages, "Produtos para saúde", **filters)
+
+
+@saude_app.command("get")
+def saude_get(
+    ctx: typer.Context, numero_processo: str = typer.Argument(help="processo, 17 digits")
+) -> None:
+    """Detalhe de um produto para saúde: apresentações, fabricantes, risco."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.saude.get(numero_processo), f"Produto {numero_processo}")
+
+
+@saude_app.command("download")
+def saude_download(
+    numero_processo: str = typer.Argument(help="processo, 17 digits"), out: str = OUT
+) -> None:
+    """Exporta o detalhe do produto como planilha (DetalheProdutoSaude.xls)."""
+    with handle_errors(), make_client() as client:
+        write(client.saude.download(numero_processo), out, f"saude_{numero_processo}.xls")
+
+
+@saude_app.command("download-pdf")
+def saude_download_pdf(
+    numero_processo: str = typer.Argument(help="processo, 17 digits"), out: str = OUT
+) -> None:
+    """Exporta o detalhe do produto como PDF."""
+    with handle_errors(), make_client() as client:
+        write(client.saude.download_pdf(numero_processo), out, f"saude_{numero_processo}.pdf")
+
+
+# --- certificado / certificado-medicamento ----------------------------------
+
+
+def certificado_filters_from(
+    nacional: bool,
+    internacional: bool,
+    status: str | None,
+    cnpj: str | None,
+    uf: str | None,
+    **more: Any,
+) -> dict[str, Any]:
+    filters: dict[str, Any] = {}
+    if nacional:
+        filters["nacional"] = True
+    if internacional:
+        filters["internacional"] = True
+    filters.update({k: v for k, v in {"status": status, "ufs": uf, **more}.items() if v})
+    if "cnpjCertificada" not in filters and cnpj:
+        filters["cnpjCertificada"] = cnpj
+    return filters
+
+
+NACIONAL = typer.Option(False, "--nacional", help="include Brazilian companies")
+INTERNACIONAL = typer.Option(False, "--internacional", help="include foreign companies")
+STATUS = typer.Option(None, "--status", help="ids from `status`, comma-separated (0 = válido)")
+CNPJ_CERTIFICADA = typer.Option(None, "--cnpj", help="cnpjCertificada")
+UF = typer.Option(None, "--uf", help="ufs, comma-separated (untested filter)")
+
+
+@certificado_app.command("search")
+def certificado_search(
+    ctx: typer.Context,
+    nacional: bool = NACIONAL,
+    internacional: bool = INTERNACIONAL,
+    status: str | None = STATUS,
+    cnpj: str | None = CNPJ_CERTIFICADA,
+    uf: str | None = UF,
+    page: int = PAGE,
+    size: int = SIZE,
+    all_pages: bool = ALL,
+) -> None:
+    """Certificados de boas práticas (exceto medicamentos). Pelo menos um filtro é obrigatório."""
+    filters = certificado_filters_from(nacional, internacional, status, cnpj, uf)
+    paginated(ctx, "certificado", page, size, all_pages, "Certificados", **filters)
+
+
+@certificado_app.command("get")
+def certificado_get(ctx: typer.Context, certificado_id: int) -> None:
+    """Um certificado por idCertificado, com as linhas de certificação."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.certificado.get(certificado_id), f"Certificado {certificado_id}")
+
+
+@certificado_app.command("status")
+def certificado_status(ctx: typer.Context) -> None:
+    """Status possíveis (Válido=0, Indeferido=1, Cancelado=2, Vencido=3)."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.certificado.status(), "Status")
+
+
+@certificado_app.command("concedida-por")
+def certificado_concedida_por(ctx: typer.Context) -> None:
+    """Formas de concessão da certificação (inspeção, análise de risco, ...)."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.certificado.concedida_por(), "Certificação concedida por")
+
+
+@certificado_app.command("download")
+def certificado_download(
+    nacional: bool = NACIONAL,
+    internacional: bool = INTERNACIONAL,
+    status: str | None = STATUS,
+    cnpj: str | None = CNPJ_CERTIFICADA,
+    uf: str | None = UF,
+    out: str = OUT,
+) -> None:
+    """Exporta os certificados filtrados como planilha (consulta_certificado.xls, OOXML)."""
+    filters = certificado_filters_from(nacional, internacional, status, cnpj, uf)
+    with handle_errors(), make_client() as client:
+        write(client.certificado.download(**filters), out, "consulta_certificado.xls")
+
+
+@certificado_medicamento_app.command("search")
+def certificado_medicamento_search(
+    ctx: typer.Context,
+    nacional: bool = NACIONAL,
+    internacional: bool = INTERNACIONAL,
+    status: str | None = STATUS,
+    cnpj: str | None = CNPJ_CERTIFICADA,
+    solicitante: str | None = typer.Option(None, "--solicitante", help="cnpjSolicitante"),
+    uf: str | None = UF,
+    page: int = PAGE,
+    size: int = SIZE,
+    all_pages: bool = ALL,
+) -> None:
+    """Certificados de boas práticas de medicamentos. Pelo menos um filtro é obrigatório."""
+    filters = certificado_filters_from(
+        nacional, internacional, status, cnpj, uf, cnpjSolicitante=solicitante
+    )
+    paginated(
+        ctx,
+        "certificado_medicamento",
+        page,
+        size,
+        all_pages,
+        "Certificados (medicamentos)",
+        **filters,
+    )
+
+
+@certificado_medicamento_app.command("get")
+def certificado_medicamento_get(ctx: typer.Context, certificado_id: int) -> None:
+    """Um certificado por idCertificado, com linhas, classes e formas farmacêuticas."""
+    with handle_errors(), make_client() as client:
+        emit(
+            ctx, client.certificado_medicamento.get(certificado_id), f"Certificado {certificado_id}"
+        )
+
+
+@certificado_medicamento_app.command("status")
+def certificado_medicamento_status(ctx: typer.Context) -> None:
+    """Status possíveis (Válido=0, Indeferido=1, Cancelado=2, Vencido=3)."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.certificado_medicamento.status(), "Status")
+
+
+@certificado_medicamento_app.command("concedida-por")
+def certificado_medicamento_concedida_por(ctx: typer.Context) -> None:
+    """Formas de concessão da certificação."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.certificado_medicamento.concedida_por(), "Certificação concedida por")
+
+
+@certificado_medicamento_app.command("linhas")
+def certificado_medicamento_linhas(ctx: typer.Context) -> None:
+    """Linhas de certificação (carbapenêmicos, cefalosporínicos, citotóxicos, ...)."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.certificado_medicamento.linhas_certificacao(), "Linhas de certificação")
+
+
+@certificado_medicamento_app.command("formas")
+def certificado_medicamento_formas(ctx: typer.Context) -> None:
+    """Formas farmacêuticas básicas."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.certificado_medicamento.formas_farmaceuticas(), "Formas farmacêuticas")
+
+
+@certificado_medicamento_app.command("classes")
+def certificado_medicamento_classes(ctx: typer.Context) -> None:
+    """Classes de certificação."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.certificado_medicamento.classes_certificacao(), "Classes de certificação")
+
+
+@certificado_medicamento_app.command("download")
+def certificado_medicamento_download(
+    nacional: bool = NACIONAL,
+    internacional: bool = INTERNACIONAL,
+    status: str | None = STATUS,
+    cnpj: str | None = CNPJ_CERTIFICADA,
+    solicitante: str | None = typer.Option(None, "--solicitante", help="cnpjSolicitante"),
+    uf: str | None = UF,
+    out: str = OUT,
+) -> None:
+    """Exporta os certificados filtrados como planilha (consulta_certificado.xls, OOXML)."""
+    filters = certificado_filters_from(
+        nacional, internacional, status, cnpj, uf, cnpjSolicitante=solicitante
+    )
+    with handle_errors(), make_client() as client:
+        write(client.certificado_medicamento.download(**filters), out, "consulta_certificado.xls")
+
+
+# --- tabaco -----------------------------------------------------------------
+
+
+@tabaco_app.command("search")
+def tabaco_search(
+    ctx: typer.Context,
+    nome: str | None = typer.Option(None, "--nome", "-n", help="nomeProduto"),
+    page: int = PAGE,
+    size: int = SIZE,
+    all_pages: bool = ALL,
+) -> None:
+    """Produtos derivados do tabaco. Sem filtro lista todos (3,6 mil); a API ignora o CNPJ."""
+    filters = {"nomeProduto": nome} if nome else {}
+    paginated(ctx, "tabaco", page, size, all_pages, "Produtos de tabaco", **filters)
+
+
+@tabaco_app.command("get")
+def tabaco_get(
+    ctx: typer.Context, cod_documento: int = typer.Argument(help="codDocumento from `search`")
+) -> None:
+    """Um produto com embalagens, rótulos e medidas cautelares."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.tabaco.get(cod_documento), f"Produto {cod_documento}")
+
+
+@tabaco_app.command("tipos")
+def tabaco_tipos(ctx: typer.Context) -> None:
+    """Tipos de produto (bidis, charuto, cigarro, ...)."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.tabaco.tipos(), "Tipos de produto")
+
+
+@tabaco_app.command("situacoes")
+def tabaco_situacoes(ctx: typer.Context) -> None:
+    """Situações (Ativo=S, Inativo=N)."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.tabaco.situacoes(), "Situações")
+
+
+@tabaco_app.command("origens")
+def tabaco_origens(ctx: typer.Context) -> None:
+    """Origens de fabricação."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.tabaco.origens(), "Origens")
+
+
+@tabaco_app.command("destinos")
+def tabaco_destinos(ctx: typer.Context) -> None:
+    """Destinos de comercialização."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.tabaco.destinos(), "Destinos")
+
+
+@tabaco_app.command("categorias-aditivo")
+def tabaco_categorias_aditivo(ctx: typer.Context) -> None:
+    """Categorias de aditivos."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.tabaco.categorias_aditivo(), "Categorias de aditivo")
+
+
+@tabaco_app.command("download")
+def tabaco_download(out: str = OUT) -> None:
+    """Exporta a tabela inteira como planilha (consulta_fumigenos.xls, ~900 KB)."""
+    with handle_errors(), make_client() as client:
+        write(client.tabaco.download(), out, "consulta_fumigenos.xls")
+
+
+@tabaco_app.command("download-pdf")
+def tabaco_download_pdf(
+    cod_documento: int = typer.Argument(help="codDocumento from `search`"), out: str = OUT
+) -> None:
+    """Exporta o detalhe do produto como PDF."""
+    with handle_errors(), make_client() as client:
+        write(client.tabaco.download_pdf(cod_documento), out, f"tabaco_{cod_documento}.pdf")
+
+
+@tabaco_app.command("download-rotulo")
+def tabaco_download_rotulo(
+    rotulo_id: int = typer.Argument(help="rotulos[].id from `get`"), out: str = OUT
+) -> None:
+    """Baixa o rótulo (PDF) de um produto."""
+    with handle_errors(), make_client() as client:
+        write(client.tabaco.download_rotulo(rotulo_id), out, f"rotulo_{rotulo_id}.pdf")

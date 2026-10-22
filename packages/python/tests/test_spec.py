@@ -1,7 +1,7 @@
-"""The resolved spec against the client. Every path the client calls is in the spec, the paths
-it does not call are exactly the domains ANVISA added on 2026-10-01, and the overlay's `x-*`
-corrections are what the client does: `Accept: */*` on the downloads, required filters
-enforced before any request or sent in the body."""
+"""The resolved spec against the client. Every path the client calls is in the spec, every
+operation of the spec is called (the four domains ANVISA added on 2026-10-01 were wrapped on
+2026-10-22), and the overlay's `x-*` corrections are what the client does: `Accept: */*` on
+the downloads, required filters enforced before any request or sent in the body."""
 
 from __future__ import annotations
 
@@ -23,7 +23,6 @@ WRAPPERS = {
     "post_bytes": "POST",
 }
 DOWNLOADERS = {"get_bytes", "post_bytes", "get_stream"}
-NEW_DOMAINS = ("/api/v1/tabaco", "/api/v1/saude", "/api/v1/certificado")  # + certificadoMedicamento
 PARAM = re.compile(r"\{[^}]*\}")
 
 
@@ -67,15 +66,14 @@ def operations() -> dict[tuple[str, str], dict]:
 
 def test_every_wrapped_path_is_in_the_spec():
     wrapped = wrapped_operations()
-    assert len(wrapped) == 32
+    assert len(wrapped) == 59
     assert set(wrapped) <= set(operations())
 
 
-def test_unwrapped_paths_are_exactly_the_new_domains():
-    """Fails when one of them gets wrapped, or when ANVISA adds an operation: update it."""
+def test_every_operation_is_wrapped():
+    """Fails when ANVISA adds an operation (the `drift` workflow goes red first): wrap it."""
     unwrapped = set(operations()) - set(wrapped_operations())
-    assert all(path.startswith(NEW_DOMAINS) for _, path in unwrapped), sorted(unwrapped)
-    assert len(unwrapped) == 27
+    assert unwrapped == set()
 
 
 def test_accept_any_matches_download_methods():
@@ -88,7 +86,11 @@ def test_accept_any_matches_download_methods():
 
 # `x-required-filters` on the overlay, and the call that exercises each rule: `anyOf` means a
 # call with no filter must fail locally, `allOf` means the body sent must carry those keys.
-WITHOUT_FILTERS = {("POST", "/api/v1/udi"): lambda c: c.udi.search()}
+WITHOUT_FILTERS = {
+    ("POST", "/api/v1/udi"): lambda c: c.udi.search(),
+    ("POST", "/api/v1/certificado/"): lambda c: c.certificado.search(),
+    ("POST", "/api/v1/certificadoMedicamento/"): lambda c: c.certificado_medicamento.search(),
+}
 WITH_FILTERS = {
     ("POST", "/api/v1/fila/consulta"): lambda c: c.fila.query(167),
     ("POST", "/api/v1/fila/downloadfila"): lambda c: c.fila.download(167),

@@ -97,7 +97,12 @@ class ChaveValorLong(BaseModel):
 
 class ChaveValorObject(BaseModel):
     descricao: str | None = None
-    id: dict[str, Any] | None = None
+    id: Annotated[
+        str | None,
+        Field(
+            description='Observed: "S"/"N" on /tabaco/situacoes, null on every entry of /tabaco/origemTabaco and /tabaco/destinoTabaco (filter those by `descricao`).'
+        ),
+    ] = None
 
 
 class Ativa(Enum):
@@ -337,9 +342,7 @@ class EmissaoCertificadoDTO(BaseModel):
 
 
 class FilaCalculadaDTO(BaseModel):
-    nuOrdem: Annotated[
-        int | None, Field(description="Position in the queue (1 = next).")
-    ] = None
+    nuOrdem: Annotated[int | None, Field(description="Position in the queue (1 = next).")] = None
     dtEntrada: Annotated[
         AwareDatetime | None,
         Field(

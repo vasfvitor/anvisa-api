@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+- **The four domains ANVISA added on 2026-10-01 are wrapped**: `saude` (produtos para saúde:
+  `search`, `iter_search`, `get`, `download`, `download_pdf`), `certificado` and
+  `certificado_medicamento` (`search`, `iter_search`, `get`, `status`, `concedida_por`,
+  `download`; the medicamentos one also `linhas_certificacao`, `formas_farmaceuticas`,
+  `classes_certificacao`) and `tabaco` (`search`, `iter_search`, `get`, `tipos`, `situacoes`,
+  `origens`, `destinos`, `categorias_aditivo`, `download`, `download_pdf`, `download_rotulo`),
+  with the matching `anvisa saude|certificado|certificado-medicamento|tabaco` commands. Every
+  one of the 59 operations of the spec is now called; `test_spec` asserts it. Recorded on
+  2026-10-22 (47 requests, 38 fixtures). What the spec got wrong, now in overlay actions 29 to
+  39: the certificado searches need one filter key besides `contexto` (HTTP 500
+  `mensagens.MSG-013`, raised locally as `MissingFilterError` and mapped when it comes from
+  the API) and answer an empty 404 when nothing matches; `ChaveValorObject.id` is a string or
+  null, not an object; `GET /tabaco/detailTabaco/{id}` takes `codDocumento`, not the processo
+  number; `POST /tabaco/tabacos` ignores `cnpjEmpresa`; `GET /tabaco/download` takes its
+  `PaginationBuilder` as JSON in the query string (`filtro=`), ignores it, and answers 200 for
+  the declared 201; the certificado exports are OOXML named `.xls`; the tabaco label is a PDF/A
+  sent as `application/force-download`; `POST /saude/{numeroProcesso}` works with an empty
+  body. `Client.get_bytes` takes `params`.
 - **The published data has its own surface.** `CHANGELOG.dados.md` (repo root) logs the data
   product by build; the Pages site gains a generated `dicionario.html` (notes and columns of
   every table, from the manifest alone), and the manifest gains top-level `docs` and `license`

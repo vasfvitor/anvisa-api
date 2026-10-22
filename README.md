@@ -2,13 +2,14 @@
 
 Open source client for ANVISA's official [Portal de APIs](https://api.anvisa.gov.br/),
 specifically the **Consultas Externas** API: fila de análise, UDI de dispositivos médicos, termos GMDN,
-nomes técnicos, listas e assuntos de peticionamento.
+nomes técnicos, listas e assuntos de peticionamento, and since 2026-10-01 produtos para saúde,
+certificados de boas práticas (genéricos e de medicamentos) e produtos derivados do tabaco.
 
 ANVISA publishes an OpenAPI document for this API, but it is wrong or silent about most of
 what you need to call it successfully. This repository records what the API actually does and
 ships a client that encodes it.
 
-## What the spec doesn't tell you (all verified live, 2026-09-06 and 2026-09-08)
+## What the spec doesn't tell you (all verified live, 2026-09-06, 2026-09-08 and 2026-10-22)
 
 | Behavior | Reality |
 |---|---|
@@ -16,13 +17,13 @@ ships a client that encodes it.
 | Auth | OAuth 2.0 client credentials (Keycloak, realm `externo`). Token lasts **1740 s** (the portal tutorial says 300), **no refresh token**, one role `CONSULTASEXTERNAS_LEITURA`. |
 | Rate limit | Token bucket, **burst 25, refill 1/s**, reported only in `X-RateLimit-*` headers. Keyed by **source address**, not client id: the unauthenticated portal endpoints on the same gateway drain the same bucket. |
 | Pagination | Requests are **1-based** (`page: 0` → error); responses are Spring `Page` objects, **0-based**. |
-| Filters | `POST /udi` needs **at least one** `filter` key; `POST /fila/consulta` **and** `POST /lista/consulta` need `filter.subfila` (yes, also for listas). |
+| Filters | `POST /udi` needs **at least one** `filter` key; `POST /fila/consulta` **and** `POST /lista/consulta` need `filter.subfila` (yes, also for listas). `POST /certificado/` and `POST /certificadoMedicamento/` need one key **besides `contexto`** (else 500 `MSG-013`), and answer an empty-bodied **404** when nothing matches. `POST /tabaco/tabacos` silently **ignores** `cnpjEmpresa`/`cnpj`. |
 | Errors | Validation failures come back as **HTTP 500** with `{status, mensagem, data_hora, mensagem_detalhada}`. |
 | `fila/consulta`, `lista/consulta` | Return the **whole** subqueue/sublista as an array (40, 35, 71 and 555 rows observed); `page`/`size` are ignored. A subfila with nothing queued is an empty-bodied **404**, which the client returns as `[]`. |
 | Dates | Integer **epoch milliseconds**. |
-| Downloads | The spec says `200 OK` with no content and nothing about `Accept`. Every download answers **500 "Could not find acceptable representation"** to `Accept: application/json` (all but `GET /udi/{id}/download`); send `Accept: */*`. `Content-Type` is always `application/vnd.ms-excel` even when the bytes are OOXML or a zip. `POST /assunto/downloadAssuntoFormulario` takes a **bare JSON integer** body, not the declared `PaginationBuilder`, and returns the file with **no `Content-Type` and no `Content-Disposition`**. An empty subfila is a **500** here, not the empty 404 `fila/consulta` gives. |
-| Filter keys | Verified live: `udi` accepts `nomeComercial` (substring), `udiDi` (exact), `cnpjDetentora`, `codigoGmdn`, `nuRegistro`; `nomeTecnico` accepts `nomeTecnico` (substring) and `categoriaProduto`; `termoGmdn` accepts `conteudo`. `POST /assunto/` is **broken** (500, body not bound). |
-| Coverage | The spec had 32 endpoints until 2026-10-01, when ANVISA published **27 more** (produtos saúde, certificados de boas práticas, certificados de medicamentos, tabaco; snapshot of 2026-10-06). Unauthenticated probes answer **401** like the wrapped ones, so they are live; the client does not wrap them yet. The empresa nacional/internacional, dossiê and alimentos pages left the portal menu without ever being served. Alimentos and other product families exist as bulk CSV on [`dados.anvisa.gov.br/dados/CONSULTAS/`](https://dados.anvisa.gov.br/dados/CONSULTAS/) (for example `TA_CONSULTA_PRODUTOS_IRREGULARES_RESULTADO.CSV`, refreshed on weekdays); the alimentos files are republished here as Parquet, see [Dados abertos](#dados-abertos-parquet-on-github-pages). |
+| Downloads | The spec says `200 OK` with no content and nothing about `Accept`. Every download answers **500 "Could not find acceptable representation"** to `Accept: application/json` (all but `GET /udi/{id}/download`); send `Accept: */*`. `Content-Type` is `application/vnd.ms-excel` even when the bytes are OOXML or a zip (the certificado exports are OOXML named `.xls`; the tabaco label is a PDF/A sent as `application/force-download`). `GET /tabaco/download` takes its `PaginationBuilder` as JSON **in the query string** (`filtro=`), ignores it, and answers 200 where the spec promises 201. `GET /tabaco/detailTabaco/{id}` wants `codDocumento`, not the processo number. `POST /assunto/downloadAssuntoFormulario` takes a **bare JSON integer** body, not the declared `PaginationBuilder`, and returns the file with **no `Content-Type` and no `Content-Disposition`**. An empty subfila is a **500** here, not the empty 404 `fila/consulta` gives. |
+| Filter keys | Verified live: `udi` accepts `nomeComercial` (substring), `udiDi` (exact), `cnpjDetentora`, `codigoGmdn`, `nuRegistro`; `nomeTecnico` accepts `nomeTecnico` (substring) and `categoriaProduto`; `termoGmdn` accepts `conteudo`; `saude` accepts `nomeProduto` and `cnpj`; `certificado` accepts `nacional`, `internacional`, `status`, `cnpjCertificada` (plus `cnpjSolicitante` on medicamentos); `tabaco` accepts `nomeProduto`. `POST /assunto/` is **broken** (500, body not bound). |
+| Coverage | All **59** endpoints of the spec are wrapped: the 32 it had until 2026-10-01 and the **27** ANVISA published then (produtos saúde, certificados de boas práticas, certificados de medicamentos, tabaco), recorded on 2026-10-22 and wrapped as `saude`, `certificado`, `certificado_medicamento` and `tabaco`. The empresa nacional/internacional, dossiê and alimentos pages left the portal menu without ever being served. Alimentos and other product families exist as bulk CSV on [`dados.anvisa.gov.br/dados/CONSULTAS/`](https://dados.anvisa.gov.br/dados/CONSULTAS/) (for example `TA_CONSULTA_PRODUTOS_IRREGULARES_RESULTADO.CSV`, refreshed on weekdays); the alimentos files are republished here as Parquet, see [Dados abertos](#dados-abertos-parquet-on-github-pages). |
 
 ## Layout
 
@@ -75,6 +76,13 @@ anvisa nome-tecnico categorias
 anvisa assunto list --busca bioequival   # petition subject codes
 anvisa assunto get 10013                  # documents, forms, legal basis, fees by size
 anvisa assunto servicos-associados 13497  # gov.br services behind a serviço code
+anvisa saude search --nome 1000VINYL      # produtos para saúde (193k rows unfiltered)
+anvisa saude get 25351279419201172        # apresentações, fabricantes, risco
+anvisa certificado search --nacional --internacional --status 0
+anvisa certificado-medicamento search --solicitante 39809660000153
+anvisa certificado-medicamento linhas     # also: classes, formas, status, concedida-por
+anvisa tabaco search --nome "7 PONTAS"
+anvisa tabaco get 33007111                # codDocumento from search: embalagens, rótulos
 anvisa --format json fila query 167 | jq length
 ```
 
@@ -89,6 +97,10 @@ anvisa assunto download -c 10013 -c 10014  # no --codigo exports all ~2,600 (≈
 anvisa assunto formulario 8016             # formulários[].id, from `assunto get`
 anvisa udi download 377 -o - > udi.xlsx
 anvisa udi snapshot 173 -o ./exports       # the week's zip, streamed to disk
+anvisa saude download 25351279419201172    # DetalheProdutoSaude.xls; download-pdf for the PDF
+anvisa certificado download --cnpj 05993698000450   # consulta_certificado.xls (OOXML)
+anvisa tabaco download                     # the whole table, consulta_fumigenos.xls
+anvisa tabaco download-rotulo 3631632      # the label PDF, rotulos[].id from `tabaco get`
 ```
 
 ```python
@@ -276,14 +288,14 @@ anvisa dados build --out dist2 --skip-unchanged dist/manifest.json   # 304s → 
 
 ## Scope
 
-Covered: the 32 endpoints the spec had before 2026-10-01, as the `fila`, `lista`, `udi`,
-`nome_tecnico`, and `assunto` domains. That includes the eight file downloads and
-`servicosAssociados`, wrapped on 2026-09-08. From the open data (`anvisa.dados`), seven tables:
+Covered: every endpoint of the spec, 59 as of 2026-10-22: the 32 it had before 2026-10-01 as
+the `fila`, `lista`, `udi`, `nome_tecnico` and `assunto` domains (eight file downloads and
+`servicosAssociados` included, wrapped on 2026-09-08), and the 27 ANVISA added on 2026-10-01 as
+`saude`, `certificado`, `certificado_medicamento` and `tabaco` (recorded and wrapped on
+2026-10-22, 47 requests). From the open data (`anvisa.dados`), seven tables:
 `alimentos`, `alimentos_resultado`, `saneantes`, `peticoes_alimento`,
-`peticoes_alimento_andamento`, `produtos_irregulares` and `cosmeticos`. Not yet covered: the 27 endpoints ANVISA added on 2026-10-01 (`saude`,
-`certificado`, `certificadoMedicamento`, `tabaco`), recorded in `spec/` by the `drift` workflow
-and listed in [ROADMAP.md](ROADMAP.md). The SNGPC, SAMMED and SNCR APIs (separate services) are
-out of scope.
+`peticoes_alimento_andamento`, `produtos_irregulares` and `cosmeticos`. The SNGPC, SAMMED and
+SNCR APIs (separate services) are out of scope.
 
 What comes next, and what was ruled out and why, is in [ROADMAP.md](ROADMAP.md).
 

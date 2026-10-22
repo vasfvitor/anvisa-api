@@ -1,0 +1,1 @@
+{"status":"INTERNAL_SERVER_ERROR","mensagem":"Erro interno no servidor","data_hora":[2026,10,22,13,52,53,705558482],"mensagem_detalhada":"javax.persistence.NoResultException: No entity found for query"}

@@ -1,7 +1,9 @@
-"""The HTTP client and the API domains: `fila`, `lista`, `udi`, `nome_tecnico` and `assunto`."""
+"""The HTTP client and the API domains: `fila`, `lista`, `udi`, `nome_tecnico`, `assunto` and,
+since 2026-10-01 on the gateway, `saude`, `certificado`, `certificado_medicamento` and `tabaco`."""
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Iterator
 from dataclasses import replace
 from pathlib import Path
@@ -52,6 +54,10 @@ class Client:
         self.udi = Udi(self)
         self.nome_tecnico = NomeTecnico(self)
         self.assunto = Assunto(self)
+        self.saude = Saude(self)
+        self.certificado = Certificado(self)
+        self.certificado_medicamento = CertificadoMedicamento(self)
+        self.tabaco = Tabaco(self)
 
     def close(self) -> None:
         self._http.close()
@@ -70,8 +76,8 @@ class Client:
         downloadAssuntoFormulario."""
         return self._send(self._http.build_request("POST", path, json=body)).json()
 
-    def get_bytes(self, path: str) -> Download:
-        return self._download(self._http.build_request("GET", path))
+    def get_bytes(self, path: str, params: dict[str, str] | None = None) -> Download:
+        return self._download(self._http.build_request("GET", path, params=params))
 
     def post_bytes(self, path: str, body: Any) -> Download:
         return self._download(self._http.build_request("POST", path, json=body))
@@ -449,3 +455,256 @@ class Assunto:
         `tiposSolicitacao`. Use `all` and filter locally instead."""
         data = self._client.post("/api/v1/assunto/", page_body(page, size, sort, filters))
         return models.PageConsultaAssunto.model_validate(data)
+
+
+class Saude:
+    """Produtos para saúde (dispositivos médicos regularizados): registry, detail, exports.
+    On the gateway since 2026-10-01, recorded 2026-10-22."""
+
+    def __init__(self, client: Client) -> None:
+        self._client = client
+
+    def search(
+        self,
+        page: int = 1,
+        size: int = 20,
+        sort: dict[str, str] | None = None,
+        **filters: Any,
+    ) -> models.PageConsultaProdutoSaude:
+        """One page of products (193,109 rows on 2026-10-22). No filter is required. Verified
+        filters: `nomeProduto` (prefix/substring) and `cnpj`; `razaoSocial`, `nomeTecnico`,
+        `registro`, `numeroRegistro`, `numeroProcesso`, `tipoAssunto` and
+        `situacaoNotificacaoRegistro` come from ANVISA's example and are untested."""
+        data = self._client.post("/api/v1/saude", page_body(page, size, sort, filters))
+        return models.PageConsultaProdutoSaude.model_validate(data)
+
+    def iter_search(
+        self, size: int = 100, sort: dict[str, str] | None = None, **filters: Any
+    ) -> Iterator[models.ConsultaProdutoSaude]:
+        """Every product matching the filters, across pages."""
+        return iterate_pages(lambda page: self.search(page, size, sort, **filters))
+
+    def get(self, numero_processo: str) -> models.DetalheProdutoSaude:
+        """One product by processo number (17 digits, no punctuation), with apresentações,
+        fabricantes and risk class. A POST whose body is ignored as far as observed: `{}`
+        returned the product on 2026-10-22."""
+        data = self._client.post(f"/api/v1/saude/{numero_processo}", {})
+        return models.DetalheProdutoSaude.model_validate(data)
+
+    def download(self, numero_processo: str) -> Download:
+        """The product detail as `DetalheProdutoSaude.xls` (BIFF .xls)."""
+        return self._client.get_bytes(f"/api/v1/saude/downloadExcel/{numero_processo}")
+
+    def download_pdf(self, numero_processo: str) -> Download:
+        """The product detail as a PDF; the server names it `consulta_alimento.pdf` (sic)."""
+        return self._client.get_bytes(f"/api/v1/saude/downloadPDF/{numero_processo}")
+
+
+def certificado_filters(contexto: str, filters: dict[str, Any]) -> dict[str, Any]:
+    """The certificado searches need one real filter key: an empty filter, and `contexto`
+    alone, answer HTTP 500 `mensagens.MSG-013` (fixture `err_msg013`). Checked here, before
+    any request, and `contexto` is filled in."""
+    if not {k for k in filters if k != "contexto"}:
+        raise MissingFilterError(
+            f"{contexto}.search needs at least one filter, e.g. nacional=True, "
+            "internacional=True or status='0' (mensagens.MSG-013)"
+        )
+    return {"contexto": contexto, **filters}
+
+
+class Certificado:
+    """Certificados de boas práticas (CBPF/CBPD) of produtos para saúde and the other
+    non-medicine families. On the gateway since 2026-10-01, recorded 2026-10-22."""
+
+    def __init__(self, client: Client) -> None:
+        self._client = client
+
+    def search(
+        self,
+        page: int = 1,
+        size: int = 20,
+        sort: dict[str, str] | None = None,
+        **filters: Any,
+    ) -> models.PageCertificadoResultado:
+        """One page of certificates (6,886 with `nacional=True, internacional=True` on
+        2026-10-22). At least one filter is required (`MissingFilterError` locally). Verified:
+        `nacional`, `internacional` (booleans), `status` (ids from `status()`, comma-separated)
+        and `cnpjCertificada`; `certificacaoConcedidaPor`, `ufs`, `tipoCertificado` and the
+        date keys come from ANVISA's example and are untested. A filter that matches nothing is
+        an empty 404 (`NotFoundError`)."""
+        body = page_body(page, size, sort, certificado_filters("certificado", filters))
+        return models.PageCertificadoResultado.model_validate(
+            self._client.post("/api/v1/certificado/", body)
+        )
+
+    def iter_search(
+        self, size: int = 100, sort: dict[str, str] | None = None, **filters: Any
+    ) -> Iterator[models.CertificadoResultado]:
+        """Every certificate matching the filters, across pages."""
+        return iterate_pages(lambda page: self.search(page, size, sort, **filters))
+
+    def get(self, certificado_id: int) -> models.CertificadoDetalhe:
+        """One certificate by `idCertificado`, with its linhas de certificação."""
+        data = self._client.get(f"/api/v1/certificado/{certificado_id}")
+        return models.CertificadoDetalhe.model_validate(data)
+
+    def status(self) -> list[models.ChaveValorInteger]:
+        """Válido=0, Indeferido=1, Cancelado=2, Vencido=3."""
+        data = self._client.get("/api/v1/certificado/status")
+        return [models.ChaveValorInteger.model_validate(x) for x in data]
+
+    def concedida_por(self) -> list[models.EmissaoCertificadoDTO]:
+        """How a certification was granted (inspeção, análise de risco, ...): 10 entries."""
+        data = self._client.get("/api/v1/certificado/certificacaoConcedidaPor")
+        return [models.EmissaoCertificadoDTO.model_validate(x) for x in data]
+
+    def download(self, size: int = 10, **filters: Any) -> Download:
+        """The matching certificates as `consulta_certificado.xls`, which is OOXML despite
+        the name. Takes the filter keys of `search`; `size` was sent as 10 and the file held
+        every match (3 rows) on 2026-10-22. An empty filter was not tried."""
+        body = page_body(1, size, None, certificado_filters("certificado", filters))
+        return self._client.post_bytes("/api/v1/certificado/download", body)
+
+
+class CertificadoMedicamento:
+    """Certificados de boas práticas de fabricação de medicamentos, with their lines, classes
+    and pharmaceutical forms. On the gateway since 2026-10-01, recorded 2026-10-22."""
+
+    def __init__(self, client: Client) -> None:
+        self._client = client
+
+    def search(
+        self,
+        page: int = 1,
+        size: int = 20,
+        sort: dict[str, str] | None = None,
+        **filters: Any,
+    ) -> models.PageCertificadoResultado:
+        """One page of certificates (2,774 with `nacional=True, internacional=True,
+        status="0"` on 2026-10-22). At least one filter is required (`MissingFilterError`
+        locally). Verified: `nacional`, `internacional`, `status` and `cnpjSolicitante`
+        (international certificates carry no `cnpjCertificada`); `classesCertificacao`,
+        `formasFarmaceuticas`, `linhasCertificacao` (ids from the lookups), `codigoUnico`,
+        `pais` and the date keys are untested."""
+        body = page_body(page, size, sort, certificado_filters("certificadoMedicamento", filters))
+        return models.PageCertificadoResultado.model_validate(
+            self._client.post("/api/v1/certificadoMedicamento/", body)
+        )
+
+    def iter_search(
+        self, size: int = 100, sort: dict[str, str] | None = None, **filters: Any
+    ) -> Iterator[models.CertificadoResultado]:
+        """Every certificate matching the filters, across pages."""
+        return iterate_pages(lambda page: self.search(page, size, sort, **filters))
+
+    def get(self, certificado_id: int) -> models.CertificadoDetalhe:
+        """One certificate by `idCertificado`; `linhasCertificacao[].campos` carries the
+        line, class, steps and pharmaceutical form of each certified line."""
+        data = self._client.get(f"/api/v1/certificadoMedicamento/{certificado_id}")
+        return models.CertificadoDetalhe.model_validate(data)
+
+    def status(self) -> list[models.ChaveValorInteger]:
+        """Válido=0, Indeferido=1, Cancelado=2, Vencido=3."""
+        data = self._client.get("/api/v1/certificadoMedicamento/status")
+        return [models.ChaveValorInteger.model_validate(x) for x in data]
+
+    def concedida_por(self) -> list[models.EmissaoCertificadoDTO]:
+        """How a certification was granted; the same 10 entries as `certificado`."""
+        data = self._client.get("/api/v1/certificadoMedicamento/certificacaoConcedidaPor")
+        return [models.EmissaoCertificadoDTO.model_validate(x) for x in data]
+
+    def linhas_certificacao(self) -> list[models.LinhaCbpf]:
+        """Certification lines (carbapenêmicos, cefalosporínicos, citotóxicos, ...): 16."""
+        data = self._client.get("/api/v1/certificadoMedicamento/linhasCertificacao")
+        return [models.LinhaCbpf.model_validate(x) for x in data]
+
+    def formas_farmaceuticas(self) -> list[models.FormaFarmaceuticaBasica]:
+        """Basic pharmaceutical forms: 80 entries."""
+        data = self._client.get("/api/v1/certificadoMedicamento/formasFarmaceuticas")
+        return [models.FormaFarmaceuticaBasica.model_validate(x) for x in data]
+
+    def classes_certificacao(self) -> list[models.ClasseCertificacao]:
+        """Certification classes: 9 entries."""
+        data = self._client.get("/api/v1/certificadoMedicamento/classesCertificacao")
+        return [models.ClasseCertificacao.model_validate(x) for x in data]
+
+    def download(self, size: int = 10, **filters: Any) -> Download:
+        """The matching certificates as `consulta_certificado.xls` (OOXML despite the name).
+        Takes the filter keys of `search`; an empty filter was not tried."""
+        body = page_body(1, size, None, certificado_filters("certificadoMedicamento", filters))
+        return self._client.post_bytes("/api/v1/certificadoMedicamento/download", body)
+
+
+class Tabaco:
+    """Produtos derivados do tabaco: the registry, labels and lookups. On the gateway since
+    2026-10-01, recorded 2026-10-22."""
+
+    def __init__(self, client: Client) -> None:
+        self._client = client
+
+    def search(
+        self,
+        page: int = 1,
+        size: int = 20,
+        sort: dict[str, str] | None = None,
+        **filters: Any,
+    ) -> models.PageConsultaTabacoDTO:
+        """One page of products (3,578 rows on 2026-10-22). No filter is required. Verified:
+        `nomeProduto`; `cnpjEmpresa` and `cnpj` are silently ignored by the API (the whole
+        table comes back). The list view leaves `embalagens`, `rotulos`, `idProduto`, `origem`
+        and `categoriaAditivos` empty; `get` fills them."""
+        data = self._client.post("/api/v1/tabaco/tabacos", page_body(page, size, sort, filters))
+        return models.PageConsultaTabacoDTO.model_validate(data)
+
+    def iter_search(
+        self, size: int = 100, sort: dict[str, str] | None = None, **filters: Any
+    ) -> Iterator[models.ConsultaTabacoDTO]:
+        """Every product matching the filters, across pages."""
+        return iterate_pages(lambda page: self.search(page, size, sort, **filters))
+
+    def get(self, cod_documento: int) -> models.ConsultaTabacoDTO:
+        """One product by `codDocumento` from `search`, with embalagens, rótulos and medidas
+        cautelares. The processo number and `idProduto` are not accepted (`NoResultError`)."""
+        data = self._client.get(f"/api/v1/tabaco/detailTabaco/{cod_documento}")
+        return models.ConsultaTabacoDTO.model_validate(data)
+
+    def tipos(self) -> list[models.TipoProdutoTabaco]:
+        """Product types (bidis, blunt, charuto, cigarro, ...): 14."""
+        data = self._client.get("/api/v1/tabaco/tipoTabaco")
+        return [models.TipoProdutoTabaco.model_validate(x) for x in data]
+
+    def situacoes(self) -> list[models.ChaveValorObject]:
+        """Ativo=S, Inativo=N."""
+        data = self._client.get("/api/v1/tabaco/situacoes")
+        return [models.ChaveValorObject.model_validate(x) for x in data]
+
+    def origens(self) -> list[models.ChaveValorObject]:
+        """Importado, fabricação nacional, ...; `id` is null on every entry."""
+        data = self._client.get("/api/v1/tabaco/origemTabaco")
+        return [models.ChaveValorObject.model_validate(x) for x in data]
+
+    def destinos(self) -> list[models.ChaveValorObject]:
+        """Mercado interno, interno e externo, exportação; `id` is null on every entry."""
+        data = self._client.get("/api/v1/tabaco/destinoTabaco")
+        return [models.ChaveValorObject.model_validate(x) for x in data]
+
+    def categorias_aditivo(self) -> list[models.CategoriaAditivo]:
+        """Additive categories (adesivos, aglutinantes, umectantes, ...): 11."""
+        data = self._client.get("/api/v1/tabaco/categoriaAditivo")
+        return [models.CategoriaAditivo.model_validate(x) for x in data]
+
+    def download(self, **filters: Any) -> Download:
+        """The whole table as `consulta_fumigenos.xls` (BIFF .xls, 897 KB on 2026-10-22).
+        `filtro` goes in the query string as JSON, and the API ignored both the filter and the
+        size sent; the keys are accepted here only so the request documents what was asked."""
+        filtro = json.dumps({"page": 1, "size": 10, "sorting": {}, "filter": dict(filters)})
+        return self._client.get_bytes("/api/v1/tabaco/download", params={"filtro": filtro})
+
+    def download_pdf(self, cod_documento: int) -> Download:
+        """The product detail as a PDF (`consulta_tabaco.pdf`)."""
+        return self._client.get_bytes(f"/api/v1/tabaco/downloadPDF/{cod_documento}")
+
+    def download_rotulo(self, rotulo_id: int) -> Download:
+        """The label as a PDF/A (`rotulo_<id>.PDF`, 387 KB for 3631632), by `rotulos[].id`
+        from `get`. Sent as `application/force-download`."""
+        return self._client.get_bytes(f"/api/v1/tabaco/embalagem/{rotulo_id}")

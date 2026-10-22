@@ -4,22 +4,26 @@ Where the library stands after 0.5.0 and what is worth doing next, in order. Eve
 touches the API follows the rule in CONTRIBUTING.md: it goes in with a recorded response, not a
 guess.
 
-## Status (2026-10-08)
+## Status (2026-10-22)
 
-All 32 endpoints the OpenAPI document had until 2026-10-01 are wrapped, and `tests/test_spec.py`
-holds that count against the resolved spec. Seven open-data tables are live on GitHub Pages,
+All 59 endpoints of the OpenAPI document are wrapped (the 27 added on 2026-10-01 since
+2026-10-22), and `tests/test_spec.py` holds that count against the resolved spec. Seven open-data tables are live on GitHub Pages,
 cosméticos also as search files (2026-10-09), plus five derived tables (`produtos`, `empresas`, `medidas`,
 `cosmeticos_por_empresa`, `alimentos_por_produto`),
 a generated data dictionary and Portuguese column descriptions in the manifest (2026-10-11); the
 parser streams, so AFE is unblocked. What
 is left is verification of claims that come only from ANVISA's examples, robustness
-(retry/backoff), and the 27 endpoints ANVISA added on 2026-10-01.
+(retry/backoff), and the untested filter keys of the four new domains.
 
-## New on the gateway (2026-10-01): 27 endpoints, 4 domains
+## New on the gateway (2026-10-01): 27 endpoints, 4 domains — wrapped 2026-10-22
 
 The `drift` run of 2026-10-01 went red because the spec grew from 32 to 59 operations
-(snapshot committed 2026-10-06). Unauthenticated probes answer 401, like the wrapped
-endpoints, where the undeployed routes used to answer a Spring 404: they are live.
+(snapshot committed 2026-10-06). Recorded on 2026-10-22 (47 requests, 38 fixtures) and wrapped
+the same day as `saude`, `certificado`, `certificado_medicamento` and `tabaco`; overlay actions
+29 to 39 hold what the spec got wrong (`ChaveValorObject.id`, MSG-013, the query-string
+`filtro`, the 201 that is a 200, the ids). Still untested there: the date, UF and lookup-backed
+filter keys of the certificado searches, the example-only keys of `saude`, an empty filter on
+the certificado exports, and `sorting` everywhere.
 
 | Domain | Operations | Shape |
 |---|---|---|
@@ -28,10 +32,8 @@ endpoints, where the undeployed routes used to answer a Spring 404: they are liv
 | `certificadoMedicamento` | 8 | same, plus `linhasCertificacao`, `formasFarmaceuticas`, `classesCertificacao` |
 | `tabaco` | 10 | `POST /tabaco/tabacos` paginated, detail, `embalagem/{rotulo}`, six lookup lists, Excel and PDF downloads |
 
-Wrapping them follows CONTRIBUTING.md: one recorded response per endpoint before any code, and
-the `POST` searches need their filter keys discovered the way `udi` and `nomeTecnico` were.
-Budget about 30 to 40 authenticated requests for the lot. The portal also gained two API
-families, SAMMED (preços CMED) and SNCR (receitas), saved under `spec/portal/` and out of scope.
+The portal also gained two API families, SAMMED (preços CMED) and SNCR (receitas), saved under
+`spec/portal/` and out of scope.
 
 ## 0.5.0: verify, harden, convenience
 

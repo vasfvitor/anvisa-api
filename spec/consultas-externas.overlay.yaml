@@ -6,7 +6,7 @@
 overlay: 1.0.0
 info:
   title: ANVISA Consultas Externas — observed-behavior corrections
-  version: "2026-10-08"
+  version: "2026-10-22"
 extends: ./consultas-externas.openapi.json
 
 actions:
@@ -14,13 +14,13 @@ actions:
   - target: $.info
     update:
       title: ANVISA Consultas Externas API
-      version: "2026-10-08"
+      version: "2026-10-22"
       description: >-
         Consultas públicas da ANVISA: UDI de dispositivos médicos, nomes técnicos, fila de
         análise, listas e assuntos de peticionamento (observadas ao vivo em 2026-09) e, desde
-        2026-10-01, produtos para saúde, certificados de boas práticas e tabaco (ainda sem
-        correções nem respostas gravadas). Esta descrição foi corrigida por overlay a partir do
-        comportamento observado: veja `x-anvisa-client-requirements`.
+        2026-10-01, produtos para saúde, certificados de boas práticas (genéricos e de
+        medicamentos) e tabaco (observados ao vivo em 2026-10-22). Esta descrição foi corrigida
+        por overlay a partir do comportamento observado: veja `x-anvisa-client-requirements`.
 
   # 2. Token lifetime and the absence of a refresh token are not documented.
   - target: $.components.securitySchemes.Keycloak
@@ -411,3 +411,206 @@ actions:
       description: >-
         An array of `ServicoDTO` (`id`, `descricao`, `hiperlink` to the gov.br service page).
         One entry for codigoServico 13497 on 2026-09-08.
+
+  # --- The four domains ANVISA added on 2026-10-01 (recorded 2026-10-22, 47 requests) --------
+
+  # 29. ChaveValorObject.id is declared `object`; the tabaco lookups send a string ("S"/"N"
+  #     in /tabaco/situacoes) or null (every entry of origemTabaco and destinoTabaco).
+  - target: $.components.schemas.ChaveValorObject.properties.id
+    update:
+      type: string
+      nullable: true
+      description: >-
+        Observed: "S"/"N" on /tabaco/situacoes, null on every entry of /tabaco/origemTabaco and
+        /tabaco/destinoTabaco (filter those by `descricao`).
+
+  # 30. POST /saude (fixtures saude_p1, saude_filtro_nome, saude_filtro_cnpj): works with an
+  #     empty filter; the example body carries the portal's `count`/`order` and a string page.
+  - target: $.paths['/api/v1/saude'].post
+    update:
+      description: >-
+        Paginated produtos para saúde (193,109 rows on 2026-10-22). Works with an empty
+        `filter`. Verified live: `nomeProduto` (prefix/substring: "1000VINYL" matched 3 rows)
+        and `cnpj` (31 rows for 05993698000107); the other keys of the example are untested.
+      x-required-filters: {anyOf: []}
+      x-verified-filters: [nomeProduto, cnpj]
+  - target: $.paths['/api/v1/saude'].post.requestBody.content['application/json'].examples['Filtro completo de consulta produtos de saúde'].value.count
+    remove: true
+  - target: $.paths['/api/v1/saude'].post.requestBody.content['application/json'].examples['Filtro completo de consulta produtos de saúde'].value.order
+    remove: true
+  - target: $.paths['/api/v1/saude'].post.requestBody.content['application/json'].examples['Filtro completo de consulta produtos de saúde'].value
+    update: {page: 1, size: 10, filter: {nomeProduto: 1000VINYL}}
+
+  # 31. POST /saude/{numeroProcesso} (fixture saude_detail): the body the spec declares is the
+  #     response type; an empty JSON object works.
+  - target: $.paths['/api/v1/saude/{numeroProcesso}'].post
+    update:
+      description: >-
+        One produto para saúde by processo number (17 digits, no punctuation), with its
+        apresentações, fabricantes and risk class. The request body is ignored as far as
+        observed: `{}` returned the product on 2026-10-22. `apresentacoes` came empty and
+        `apresentacoesPage.content` carried the models.
+  - target: $.paths['/api/v1/saude/{numeroProcesso}'].post.requestBody.content['application/json'].examples
+    remove: true
+
+  # 32. The two saude exports (fixtures saude_downloadPDF, saude_downloadExcel).
+  - target: $.paths['/api/v1/saude/downloadPDF/{numeroProcesso}'].get
+    update:
+      description: >-
+        The product detail as a PDF (2,507 bytes for 25351279419201172). Sent
+        `Content-Disposition: inline; filename=consulta_alimento.pdf` (sic). Requires `Accept: */*`.
+      x-accept: "*/*"
+  - target: $.paths['/api/v1/saude/downloadPDF/{numeroProcesso}'].get.responses['200']
+    update:
+      description: >-
+        The PDF, inline, named consulta_alimento.pdf. Requires `Accept: */*`.
+      content:
+        application/pdf:
+          schema: {type: string, format: binary}
+  - target: $.paths['/api/v1/saude/downloadExcel/{numeroProcesso}'].get
+    update:
+      description: >-
+        The product detail as `DetalheProdutoSaude.xls` (BIFF .xls, magic `D0 CF 11 E0`,
+        14,336 bytes for one product). Requires `Accept: */*`.
+      x-accept: "*/*"
+  - target: $.paths['/api/v1/saude/downloadExcel/{numeroProcesso}'].get.responses['200']
+    update:
+      description: >-
+        The spreadsheet, `Content-Disposition: attachment; filename=DetalheProdutoSaude.xls`.
+      content:
+        application/vnd.ms-excel:
+          schema: {type: string, format: binary}
+
+  # 33. POST /certificado/ and /certificadoMedicamento/ need one real filter key: an empty
+  #     filter, and `{contexto: ...}` alone, fail with HTTP 500 `mensagens.MSG-013` (fixtures
+  #     err_msg013, err_msg013_medicamento). No match is an empty-bodied 404
+  #     (certificado_vazio). The trailing slash is part of the route.
+  - &certificado_search
+    target: $.paths['/api/v1/certificado/'].post
+    update:
+      description: >-
+        Paginated certificados de boas práticas (6,886 rows with nacional + internacional on
+        2026-10-22). At least one filter key besides `contexto` is required, otherwise HTTP
+        500 `mensagens.MSG-013`; a filter that matches nothing is an empty-bodied 404.
+        Verified live: `nacional` + `internacional` (booleans), `status` (ids from
+        /certificado/status, comma-separated) and `cnpjCertificada` (3 rows for
+        05993698000450); the date and UF keys of the example are untested.
+      x-required-filters:
+        anyOf: [nacional, internacional, status, cnpjCertificada, certificacaoConcedidaPor, ufs,
+                tipoCertificado, dataPublicacaoInicial, dataPublicacaoFinal, dataValidadeInicial,
+                dataValidadeFinal, liberacaoSim, liberacaoNao]
+        verified: [nacional, internacional, status, cnpjCertificada]
+  - <<: *certificado_search
+    target: $.paths['/api/v1/certificadoMedicamento/'].post
+    update:
+      description: >-
+        Paginated certificados de boas práticas de medicamentos (2,774 rows with nacional +
+        internacional + status 0 on 2026-10-22). At least one filter key besides `contexto` is
+        required, otherwise HTTP 500 `mensagens.MSG-013`. Verified live: `nacional` +
+        `internacional`, `status` and `cnpjSolicitante` (7 rows for 39809660000153; international
+        certificates carry no cnpjCertificada). The lookup-backed keys (classesCertificacao,
+        formasFarmaceuticas, linhasCertificacao, certificacaoConcedidaPor) are untested.
+      x-required-filters:
+        anyOf: [nacional, internacional, status, cnpjCertificada, cnpjSolicitante, codigoUnico,
+                pais, certificacaoConcedidaPor, classesCertificacao, formasFarmaceuticas,
+                linhasCertificacao, ufs, dataPublicacaoInicial, dataPublicacaoFinal,
+                dataValidadeInicial, dataValidadeFinal]
+        verified: [nacional, internacional, status, cnpjSolicitante]
+
+  # 34. Their exports (fixtures certificado_download, certificadoMedicamento_download):
+  #     OOXML named `.xls`, the filters of the search; an empty filter was not tried.
+  - &certificado_download
+    target: $.paths['/api/v1/certificado/download'].post
+    update:
+      description: >-
+        The matching certificados as `consulta_certificado.xls`, which is OOXML (magic `PK`),
+        4,212 bytes for 3 rows. Takes the filter keys of the search; `size` was 10 and the
+        file held every match. Requires `Accept: */*`.
+      x-accept: "*/*"
+  - <<: *certificado_download
+    target: $.paths['/api/v1/certificadoMedicamento/download'].post
+  - &spreadsheet_ooxml_as_xls
+    target: $.paths['/api/v1/certificado/download'].post.responses['200']
+    update:
+      description: >-
+        OOXML bytes named `consulta_certificado.xls` with `Content-Type:
+        application/vnd.ms-excel`. Requires `Accept: */*`.
+      content:
+        application/vnd.ms-excel:
+          schema: {type: string, format: binary}
+  - {<<: *spreadsheet_ooxml_as_xls, target: "$.paths['/api/v1/certificadoMedicamento/download'].post.responses['200']"}
+
+  # 35. POST /tabaco/tabacos (fixtures tabaco_p1, tabaco_filtro_nome, tabaco_filtro_cnpj_ignorado).
+  - target: $.paths['/api/v1/tabaco/tabacos'].post
+    update:
+      description: >-
+        Paginated produtos derivados do tabaco (3,578 rows on 2026-10-22). Works with an empty
+        `filter`. Verified live: `nomeProduto` (1 row for "7 PONTAS"); `cnpjEmpresa` and `cnpj`
+        are silently ignored (the whole table comes back). The list view leaves `embalagens`,
+        `rotulos`, `idProduto`, `origem` and `categoriaAditivos` empty; the detail fills them.
+      x-required-filters: {anyOf: []}
+      x-verified-filters: [nomeProduto]
+      x-ignored-filters: [cnpjEmpresa, cnpj]
+
+  # 36. GET /tabaco/detailTabaco/{id}: the id is `codDocumento` from the list, not the processo
+  #     number nor `idProduto` (both: HTTP 500 NoResultException; fixture err_tabaco_detail).
+  - target: $.paths['/api/v1/tabaco/detailTabaco/{id}'].get
+    update:
+      description: >-
+        One product with its embalagens, rótulos and medidas cautelares. `id` is
+        `codDocumento` from the list (33007111 on 2026-10-22); the processo number and
+        `idProduto` answer HTTP 500 "javax.persistence.NoResultException".
+
+  # 37. GET /tabaco/embalagem/{rotulo} is the label as a PDF (fixture headers_tabaco_embalagem).
+  - target: $.paths['/api/v1/tabaco/embalagem/{rotulo}'].get
+    update:
+      summary: Download do rótulo (PDF)
+      description: >-
+        The label file: a PDF/A (`%PDF-1.7`, 387,531 bytes for rótulo 3631632) with
+        `Content-Type: application/force-download` and a quoted file name
+        (`rotulo_3631632.PDF`). `rotulo` is `rotulos[].id` from the detail. Requires `Accept: */*`.
+      x-accept: "*/*"
+  - target: $.paths['/api/v1/tabaco/embalagem/{rotulo}'].get.responses['200']
+    update:
+      description: >-
+        The PDF, `Content-Type: application/force-download`.
+      content:
+        application/force-download:
+          schema: {type: string, format: binary}
+
+  # 38. GET /tabaco/download (fixture headers_tabaco_download): `filtro` is a JSON
+  #     PaginationBuilder in the query string, and it is ignored.
+  - target: $.paths['/api/v1/tabaco/download'].get
+    update:
+      description: >-
+        The whole table as `consulta_fumigenos.xls` (BIFF .xls, 897,024 bytes, 3,578 rows on
+        2026-10-22). `filtro` is the JSON text of a `PaginationBuilder` in the query string;
+        the filter and `size` sent were ignored. Answers 200, not the declared 201. Requires
+        `Accept: */*`.
+      x-paginated: false
+      x-accept: "*/*"
+  - target: $.paths['/api/v1/tabaco/download'].get.responses['201']
+    remove: true
+  - target: $.paths['/api/v1/tabaco/download'].get.responses
+    update:
+      '200':
+        description: >-
+          The spreadsheet, `Content-Disposition: attachment; filename=consulta_fumigenos.xls`.
+        content:
+          application/vnd.ms-excel:
+            schema: {type: string, format: binary}
+
+  # 39. GET /tabaco/downloadPDF/{codDocumento} (fixture tabaco_downloadPDF).
+  - target: $.paths['/api/v1/tabaco/downloadPDF/{codDocumento}'].get
+    update:
+      description: >-
+        The product detail as a PDF (2,328 bytes for 33007111), sent `inline` as
+        `consulta_tabaco.pdf`. Requires `Accept: */*`.
+      x-accept: "*/*"
+  - target: $.paths['/api/v1/tabaco/downloadPDF/{codDocumento}'].get.responses['200']
+    update:
+      description: >-
+        The PDF, inline, named consulta_tabaco.pdf. Requires `Accept: */*`.
+      content:
+        application/pdf:
+          schema: {type: string, format: binary}

@@ -16,7 +16,7 @@ is in `ROADMAP.md`. An untracked `NOTES.local.md` holds the running to-do list w
   spends about 14 requests. Batch a handful of requests per run and state the count.
 - **`tests/test_spec.py`** asserts how many operations are wrapped and how many are not, against
   the resolved spec. Wrapping an endpoint means updating that count.
-- **Releases**: bump `__version__` and the pyproject `version`, update `CHANGELOG.md`, then the
+- **Releases**: bump `__version__` (pyproject reads it), update `CHANGELOG.md`, then the
   user pushes a signed tag `vX.Y.Z`; `release.yml` publishes to PyPI by trusted publishing.
   Never push or tag from a session.
 - **Before every commit** run `git status --short` and `git add` any `??` file the change

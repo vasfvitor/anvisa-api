@@ -1,0 +1,6 @@
+HTTP/1.1 200
+Content-Type: application/vnd.ms-excel
+Content-Disposition: attachment; filename=consulta_fumigenos.xls
+Transfer-Encoding: chunked
+
+body: 897,024 bytes, magic b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1' (not kept); BIFF .xls with the whole table (3,578 rows) whatever `filtro` says; the spec promises 201, the gateway answers 200
