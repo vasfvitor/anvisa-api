@@ -2,6 +2,12 @@
 
 ## 0.7.0 (2026-10-22)
 
+- **`medicamentos` and `produtos_saude` datasets** (`DADOS_ABERTOS_MEDICAMENTOS.csv`,
+  `TA_PRODUTO_SAUDE_SITE.csv`) and the derived `medicamentos_por_produto` and
+  `produtos_saude_por_produto`; `produtos` and `empresas` cover five areas. `Dataset.quoted`
+  (default true) tells `parse.normalize` to read a file that quotes nothing line by line, with
+  `"` as an ordinary character (`parse.unquoted`): TA_PRODUTO_SAUDE_SITE is the first such file.
+  Details in `CHANGELOG.dados.md`.
 - **`anvisa.dados.cmed`, the CMED price list**: ANVISA republishes CMED's monthly list of
   maximum medicine prices as two CSVs on the open-data server (`TA_PRECO_MEDICAMENTO.csv`,
   PF + PMC; `TA_PRECO_MEDICAMENTO_GOV.csv`, PF + PMVG; UTF-8 with BOM, `;`, no quoting, one
@@ -15,6 +21,13 @@
   is the conditional GET `download` always was, now callable by URL. Recorded on 2026-10-22
   (2 files, 2 fixtures of 22 records each). The xlsx gov.br advertises is the same cut, but
   for two rows corrected there two hours later.
+- **`medicamentos` and `produtos_saude` tables**, the registries behind "está liberado?" for
+  medicines and medical devices (`DADOS_ABERTOS_MEDICAMENTOS.csv`, `TA_PRODUTO_SAUDE_SITE.csv`),
+  folded into `produtos` and `empresas`, plus the derived `medicamentos_por_produto` and
+  `produtos_saude_por_produto`. `Dataset` gained `quoted` for the one file that quotes nothing.
+  Row counts, keys and quirks in `CHANGELOG.dados.md`.
+- `models.py` regenerated as `make models` writes it (one line wrapped), so the `spec-drift`
+  CI job is green again.
 
 ## 0.6.0 (2026-10-22)
 
