@@ -61,30 +61,46 @@ _PETICAO = {
 }
 
 _PRODUTOS_COLS = {
-    "area": '"alimentos" ou "saneantes": a tabela de origem.',
+    "area": ('"alimentos", "saneantes", "medicamentos" ou "produtos_saude": a tabela de origem.'),
     "id": (
-        "Identificador na origem: co_seq_produto nos alimentos, nu_expediente nos saneantes. "
-        "Único com area."
+        "Identificador na origem: co_seq_produto nos alimentos, nu_expediente nos saneantes, "
+        "o registro de 9 dígitos nos medicamentos (ou sem-registro- e um hash quando não há), "
+        "o registro ou cadastro nos produtos para saúde. Único com area."
     ),
     "nome": _NOME_PRODUTO,
-    "marcas": 'Marcas do alimento, separadas por " ; "; nulo nos saneantes.',
+    "marcas": 'Marcas do alimento, separadas por " ; "; nulo nas outras áreas.',
     "empresa": _RAZAO,
     "cnpj": _CNPJ,
     "processo": _PROCESSO,
     "registro": (
-        "Nº de registro do produto (9 dígitos); nas notificações de alimentos, o nº do "
-        "processo; vazio nas de saneantes."
+        "Nº de registro do produto (9 dígitos; 10 ou 11 nos produtos para saúde); nas "
+        "notificações de alimentos, o nº do processo; vazio nas de saneantes e nos "
+        "medicamentos sem registro."
     ),
-    "ativo": "Regularização ativa na ANVISA no dia do build.",
-    "tipo": _TIPO,
-    "categoria": "Categoria do alimento (ex.: Suplementos alimentares); nulo nos saneantes.",
-    "desde": "Primeira regularização do alimento (data); nulo nos saneantes.",
+    "ativo": (
+        "Regularização ativa na ANVISA no dia do build; nos produtos para saúde, vigente na "
+        "data do arquivo."
+    ),
+    "tipo": (
+        _TIPO + " Nos medicamentos, a categoria regulatória (Genérico, Similar, Novo...); nos "
+        'produtos para saúde, "Registrado" ou "Cadastrado".'
+    ),
+    "categoria": (
+        "Categoria do alimento (ex.: Suplementos alimentares), classe terapêutica do "
+        "medicamento ou classe de risco do produto para saúde (Classe I a IV); nulo nos "
+        "saneantes."
+    ),
+    "desde": (
+        "Primeira regularização do alimento, concessão do registro do medicamento ou "
+        "publicação do produto para saúde (data); nulo nos saneantes."
+    ),
     "vencimento": (
         "Vencimento da regularização (data): nos alimentos, o mais tardio entre as "
         "apresentações, com precisão de mês, e 2029-12-01 em toda notificação; nos saneantes "
-        "pode faltar ou ir até o ano 3033."
+        "pode faltar ou ir até o ano 3033; nos medicamentos, precisão de mês; nulo nos "
+        "cadastros de produtos para saúde."
     ),
-    "apresentacoes": "Quantas apresentações o alimento tem em alimentos; 1 nos saneantes.",
+    "apresentacoes": "Quantas apresentações o alimento tem em alimentos; 1 nas outras áreas.",
     "registros": (
         "Os nº de registro das apresentações do alimento (13 dígitos cada), em ordem; lista "
         "vazia nas notificações e nos saneantes."
@@ -410,8 +426,21 @@ DESCRICOES: dict[str, dict[str, str]] = {
         "saneantes_ativos": "Desses, quantos ativos.",
         "cosmeticos": "Cosméticos da empresa (processos distintos; um par de linhas conta uma).",
         "cosmeticos_ativos": "Desses, quantos ativos, pela linha sem registro do par.",
-        "produtos": "alimentos + saneantes + cosmeticos.",
-        "ativos": "alimentos_ativos + saneantes_ativos + cosmeticos_ativos.",
+        "medicamentos": (
+            "Medicamentos da empresa (produtos, por registro de 9 dígitos ou por nome quando "
+            "não há registro)."
+        ),
+        "medicamentos_ativos": "Desses, quantos com alguma linha Ativo na origem.",
+        "produtos_saude": "Produtos para saúde da empresa (registros e cadastros).",
+        "produtos_saude_ativos": (
+            "Desses, quantos vigentes: cadastros (sem prazo) e registros cuja validade não "
+            "tinha vencido na data do arquivo."
+        ),
+        "produtos": "alimentos + saneantes + cosmeticos + medicamentos + produtos_saude.",
+        "ativos": (
+            "alimentos_ativos + saneantes_ativos + cosmeticos_ativos + medicamentos_ativos + "
+            "produtos_saude_ativos."
+        ),
         "medidas": (
             "Dossiês de fiscalização em que a empresa é a fiscalizada "
             "(produtos_irregulares.nu_cnpj_empresa_investigada); 0 quando nenhum."
@@ -540,4 +569,55 @@ DESCRICOES: dict[str, dict[str, str]] = {
         "DT_ATUALIZACAO_DADO": _ATUALIZACAO,
     },
     "cmed": _CMED,
+    "medicamentos_por_produto": {
+        "id": (
+            "O registro de 9 dígitos ou, sem registro na origem, 'sem-registro-' e um hash "
+            "de empresa, nome e processo; o mesmo id da tabela produtos (area medicamentos)."
+        ),
+        "registro_produto": (
+            "Nº de registro do produto, 9 dígitos; nulo quando a origem não dá. Liga a cmed "
+            "(registro_produto)."
+        ),
+        "processo": _PROCESSO,
+        "nome": _NOME_PRODUTO,
+        "cnpj": _CNPJ,
+        "empresa": _RAZAO,
+        "ativo": (
+            "Verdadeiro quando alguma linha da origem está Ativo; registros podem vir com "
+            "linhas Ativo e Inativo ao mesmo tempo."
+        ),
+        "categoria_regulatoria": (
+            "Categoria regulatória (Genérico, Similar, Novo, Biológico...), como a ANVISA "
+            "escreve; nula em parte."
+        ),
+        "classe_terapeutica": "Classe terapêutica, em maiúsculas; nula em parte.",
+        "principio_ativo": "Princípio ativo em minúsculas; associações listam vários.",
+        "desde": "Concessão mais antiga entre as linhas do produto (data); nulo em parte.",
+        "vencimento": (
+            "Vencimento mais tardio entre as linhas do produto, com precisão de mês; nulo em parte."
+        ),
+        "processos": "Quantos processos distintos a origem traz para o produto.",
+        "linhas": "Quantas linhas a origem traz para o produto (repetições incluídas).",
+    },
+    "produtos_saude_por_produto": {
+        "id": "O registro ou cadastro (10 ou 11 dígitos); o mesmo id da tabela produtos.",
+        "registro": "Nº de registro ou cadastro, igual a id. Texto, nunca número.",
+        "processo": _PROCESSO,
+        "nome": "Nome comercial do produto.",
+        "nome_tecnico": "Nome técnico na nomenclatura da ANVISA.",
+        "classe_risco": "Classe de risco: I, II, III ou IV.",
+        "cnpj": _CNPJ,
+        "empresa": _RAZAO,
+        "tipo": '"Cadastrado" (registro começa com 8, sem prazo) ou "Registrado".',
+        "ativo": (
+            "Verdadeiro nos cadastros (VIGENTE) e nos registros cuja validade não tinha "
+            "vencido na data do arquivo."
+        ),
+        "publicacao": "Publicação do registro ou cadastro (data); nula em parte.",
+        "vencimento": "Validade do registro (data); nula nos cadastros.",
+        "fabricantes": (
+            "Fabricantes como 'nome (país)', sem repetição, em ordem; lista vazia sem informação."
+        ),
+        "linhas": "Quantas linhas a origem traz (uma por fabricante).",
+    },
 }

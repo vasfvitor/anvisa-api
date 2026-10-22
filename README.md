@@ -167,11 +167,13 @@ ordered):
 
 | Table | Built from | One row per |
 |---|---|---|
-| `produtos` | `alimentos`, `alimentos_resultado`, `saneantes` | product: alimentos grouped by `co_seq_produto` (first regularization, apresentação count, the list of `registros`), saneantes one per `nu_expediente`; one schema (`area`, `id`, `nome`, `marcas`, `empresa`, `cnpj`, `processo`, `registro`, `ativo`, `tipo`, `categoria`, `desde`, `vencimento`, `apresentacoes`, `registros`), plus what the label declares, from `alimentos_resultado` across the product's apresentações: `gluten` and `lactose` (Sim, Não, Varia), the sorted lists `contem` (Contém and Contém derivado de), `pode_conter` and `nao_contem` (an item some apresentação contains leaves the other two), and `alergia_varia`; NULL when no apresentação declares anything (39,278 of 50,522 alimentos) and on saneantes. Sorted by `cnpj`, `area`, `id`. Cosméticos are not in it (1.2M rows): use the search files. |
-| `empresas` | `alimentos`, `saneantes`, `cosmeticos`, `produtos_irregulares` | 14-digit CNPJ that holds a product or was the target of a measure: commonest spelling of the name, products and active products per area and in total (cosméticos by distinct processo), `medidas` (dossiês against it) and `medida_ultima`; sorted by `cnpj`. |
+| `produtos` | `alimentos`, `alimentos_resultado`, `saneantes`, `medicamentos`, `produtos_saude` | product: alimentos grouped by `co_seq_produto` (first regularization, apresentação count, the list of `registros`), saneantes one per `nu_expediente`; one schema (`area`, `id`, `nome`, `marcas`, `empresa`, `cnpj`, `processo`, `registro`, `ativo`, `tipo`, `categoria`, `desde`, `vencimento`, `apresentacoes`, `registros`), plus what the label declares, from `alimentos_resultado` across the product's apresentações: `gluten` and `lactose` (Sim, Não, Varia), the sorted lists `contem` (Contém and Contém derivado de), `pode_conter` and `nao_contem` (an item some apresentação contains leaves the other two), and `alergia_varia`; NULL when no apresentação declares anything (39,278 of 50,522 alimentos) and on saneantes. Sorted by `cnpj`, `area`, `id`. Cosméticos are not in it (1.2M rows): use the search files. |
+| `empresas` | `alimentos`, `saneantes`, `cosmeticos`, `medicamentos`, `produtos_saude`, `produtos_irregulares` | 14-digit CNPJ that holds a product or was the target of a measure: commonest spelling of the name, products and active products per area (five areas) and in total (cosméticos by distinct processo, medicamentos by 9-digit registro), `medidas` (dossiês against it) and `medida_ultima`; sorted by `cnpj`. |
 | `medidas` | `produtos_irregulares` | dossiê × produto (the source has one row per dossiê × ação × atividade × produto): `area`/`area_codigo`, `risco`, `processo` (the measure's), `cnpj` only when the target is a 14-digit CNPJ, `empresa`, `pessoa` (target is a CPF: no number, no name), sorted lists `registros`, `acoes`, `atividades`, `primeira`/`ultima` publication, `autor_cnpj`/`autor` (who filed); sorted by `area_codigo`, `dossie`, `produto`. 14,092 rows, 0.4 MB on 2026-10-12. |
 | `cosmeticos_por_empresa` | `cosmeticos` | the first 100 cosmetics of each CNPJ (`ordem` 1 to 100: active first, then name, then processo), one row per processo (the unregistered row of a duplicate pair, as `empresas` counts them), with `produtos`-like columns (`id`, `nome`, `empresa`, `processo`, `registro`, `ativo`, `tipo` normalized to Registrado, Notificado, Isento de registro, Descartável, `vencimento`); totals per company are in `empresas`. 281,220 rows, 7.6 MB on 2026-10-12; sorted by `cnpj`, `ordem`. |
 | `alimentos_por_produto` | `alimentos`, `alimentos_resultado` | the alimentos rows of `produtos`, same columns and values, plus the petição's `situacao_assunto` and `alegacao` (constant within a product) and three timestamps: `publicacao` and `situacao_em` (latest among the apresentações), `inicio_analise` (earliest). A list of foods without the per-apresentação table. 50,522 rows, 2.8 MB on 2026-10-12; sorted by `cnpj`, `id`. |
+| `medicamentos_por_produto` | `medicamentos` | one row per medicine (the 9-digit `registro_produto`, or a stable `sem-registro-<hash>` id when the source gives none): the `produtos` columns plus `principio_ativo`, `classe_terapeutica`, `categoria_regulatoria`, `processos` and `linhas` (how many the source repeats); `ativo` when any source row is Ativo; joins `cmed` on `registro_produto`. 36,427 rows, 1.0 MB on 2026-10-13; sorted by `cnpj`, `id`. |
+| `produtos_saude_por_produto` | `produtos_saude` | one row per registro or cadastro of a medical device: `nome_tecnico`, `classe_risco`, `tipo` (Registrado or Cadastrado), `ativo` (VIGENTE, or a validity not past on the file's own date), `publicacao`, `vencimento`, the sorted `fabricantes` list as "nome (país)". 100,681 rows, 3.5 MB; sorted by `cnpj`, `id`. |
 
 Column names are ANVISA's, lowercased, so the
 [data dictionary](https://dados.anvisa.gov.br/dados/CONSULTAS/PRODUTOS/Documentacao_e_Dicionario_de_Dados_Regularizados_Alimentos.pdf)
@@ -295,10 +297,11 @@ Covered: every endpoint of the spec, 59 as of 2026-10-22: the 32 it had before 2
 the `fila`, `lista`, `udi`, `nome_tecnico` and `assunto` domains (eight file downloads and
 `servicosAssociados` included, wrapped on 2026-09-08), and the 27 ANVISA added on 2026-10-01 as
 `saude`, `certificado`, `certificado_medicamento` and `tabaco` (recorded and wrapped on
-2026-10-22, 47 requests). From the open data (`anvisa.dados`), seven tables:
+2026-10-22, 47 requests). From the open data (`anvisa.dados`), ten tables:
 `alimentos`, `alimentos_resultado`, `saneantes`, `peticoes_alimento`,
-`peticoes_alimento_andamento`, `produtos_irregulares` and `cosmeticos`. The SNGPC, SAMMED and
-SNCR APIs (separate services) are out of scope.
+`peticoes_alimento_andamento`, `produtos_irregulares`, `cosmeticos`, `medicamentos`,
+`produtos_saude` and `cmed`, plus seven derived ones. The SNGPC and SNCR APIs (separate
+services) are out of scope; CMED's list comes from the open data, not from the SAMMED API.
 
 What comes next, and what was ruled out and why, is in [ROADMAP.md](ROADMAP.md).
 

@@ -149,6 +149,68 @@ def _alimentos(t: dict[str, str], extras: dict[str, str] | None = None) -> str:
         LEFT JOIN ({_alergia(t["alimentos_resultado"])}) alergia ON alergia.co_produto = base.co"""
 
 
+def _medicamentos_unicos(t: dict[str, str]) -> str:
+    """medicamentos as one row per product. The source repeats product × processo rows (228,869
+    rows, 42,661 distinct on 2026-10-13) and lists a registro under Ativo and Inativo rows at
+    once (2,429 of 32,800): name, company and CNPJ are constant within a registro, so min()
+    reads the one value and `ativo` is true when any row is. The 21,495 rows without a
+    registro (3,627 distinct products: dinamizados and notified low-risk products, 21,390 of
+    them without a processo either) get a stable id from what they have."""
+    cnpj = "regexp_extract(empresa_detentora_registro, '^([0-9]{14})', 1)"
+    empresa = "regexp_replace(empresa_detentora_registro, '^[0-9]{14} - ', '')"
+    return f"""
+        SELECT id,
+          min(numero_registro_produto) AS registro_produto,
+          min(numero_processo) AS processo,
+          min(nome_produto) AS nome,
+          min(cnpj) AS cnpj,
+          min(empresa) AS empresa,
+          bool_or(situacao_registro = 'Ativo') AS ativo,
+          min(categoria_regulatoria) AS categoria_regulatoria,
+          min(classe_terapeutica) AS classe_terapeutica,
+          min(principio_ativo) AS principio_ativo,
+          min(data_finalizacao_processo) AS desde,
+          max(data_vencimento_registro) AS vencimento,
+          CAST(count(DISTINCT numero_processo) AS INTEGER) AS processos,
+          CAST(count(*) AS INTEGER) AS linhas
+        FROM (
+          SELECT *,
+            coalesce(numero_registro_produto, 'sem-registro-' || substr(md5(
+              cnpj || '|' || nome_produto || '|' || coalesce(numero_processo, '')), 1, 12)) AS id
+          FROM (SELECT *, {cnpj} AS cnpj, {empresa} AS empresa FROM {t["medicamentos"]}))
+        GROUP BY id"""
+
+
+def _produtos_saude_unicos(t: dict[str, str]) -> str:
+    """produtos_saude as one row per registro: the source has one row per registro ×
+    fabricante (116,008 rows, 100,681 registros), everything but the fabricante equal. The
+    registration is in force when the source says VIGENTE (cadastros, no term) or its date is
+    on or after the file's own load date (dt_atualizacao_dado): nothing here depends on the
+    day of the build."""
+    validade = "try_strptime(validade_registro_cadastro, '%d/%m/%Y')"
+    fabricante = "nome_fabricante || coalesce(' (' || nome_pais_fabric || ')', '')"
+    return f"""
+        SELECT numero_registro_cadastro AS id,
+          numero_registro_cadastro AS registro,
+          min(numero_processo) AS processo,
+          min(nome_comercial) AS nome,
+          min(nome_tecnico) AS nome_tecnico,
+          min(classe_risco) AS classe_risco,
+          min(cnpj_detentor_registro_cadastro) AS cnpj,
+          min(detentor_registro_cadastro) AS empresa,
+          CASE WHEN substr(numero_registro_cadastro, 1, 1) = '8' THEN 'Cadastrado'
+               ELSE 'Registrado' END AS tipo,
+          bool_or(validade_registro_cadastro = 'VIGENTE'
+                  OR {validade} >= dt_atualizacao_dado) AS ativo,
+          min(dt_pub_registro_cadastro) AS publicacao,
+          CAST(max({validade}) AS DATE) AS vencimento,
+          list_sort(list_distinct(list({fabricante}) FILTER (WHERE nome_fabricante IS NOT NULL)))
+            AS fabricantes,
+          CAST(count(*) AS INTEGER) AS linhas
+        FROM {t["produtos_saude"]}
+        GROUP BY numero_registro_cadastro"""
+
+
 def _produtos(t: dict[str, str]) -> str:
     alimentos = _alimentos(t)
     # saneantes: one row per nu_expediente, no detail file. Six expedientes come twice, as a
@@ -177,21 +239,50 @@ def _produtos(t: dict[str, str]) -> str:
           CAST(NULL AS VARCHAR[]) AS nao_contem,
           CAST(NULL AS BOOLEAN) AS alergia_varia
         FROM ({_saneantes_unicos(t["saneantes"])})"""
-    return f"{alimentos}\n        UNION ALL BY NAME\n{saneantes}"
+    nulos = """
+          CAST(NULL AS VARCHAR) AS marcas,
+          CAST([] AS VARCHAR[]) AS registros,
+          CAST(NULL AS VARCHAR) AS gluten,
+          CAST(NULL AS VARCHAR) AS lactose,
+          CAST(NULL AS VARCHAR[]) AS contem,
+          CAST(NULL AS VARCHAR[]) AS pode_conter,
+          CAST(NULL AS VARCHAR[]) AS nao_contem,
+          CAST(NULL AS BOOLEAN) AS alergia_varia"""
+    # medicamentos: tipo is the regulatory category (Genérico, Similar, Novo...), categoria the
+    # therapeutic class; the registro is the 9-digit product
+    medicamentos = f"""
+        SELECT 'medicamentos' AS area, id, nome, empresa, cnpj, processo,
+          registro_produto AS registro, ativo,
+          categoria_regulatoria AS tipo, classe_terapeutica AS categoria,
+          desde, vencimento, 1 AS apresentacoes,{nulos}
+        FROM ({_medicamentos_unicos(t)})"""
+    produtos_saude = f"""
+        SELECT 'produtos_saude' AS area, id, nome, empresa, cnpj, processo, registro, ativo,
+          tipo, 'Classe ' || classe_risco AS categoria,
+          publicacao AS desde, vencimento, 1 AS apresentacoes,{nulos}
+        FROM ({_produtos_saude_unicos(t)})"""
+    return "\n        UNION ALL BY NAME\n".join(
+        [alimentos, saneantes, medicamentos, produtos_saude]
+    )
 
 
 PRODUTOS = Derivada(
     name="produtos",
     group="produtos",
-    title="Produtos: uma linha por alimento ou saneante regularizado",
-    fontes=("alimentos", "alimentos_resultado", "saneantes"),
+    title="Produtos: uma linha por alimento, saneante, medicamento ou produto para saúde",
+    fontes=("alimentos", "alimentos_resultado", "saneantes", "medicamentos", "produtos_saude"),
     sort=("cnpj", "area", "id"),
     notes=(
         "Uma linha por produto, com as mesmas colunas para alimentos (agrupados por "
-        "co_seq_produto: um produto, várias apresentações) e saneantes (uma linha por "
+        "co_seq_produto: um produto, várias apresentações), saneantes (uma linha por "
         "nu_expediente; dos seis expedientes que a origem lista como Registrado e Notificado, "
-        "fica a linha registrada). Derivada de alimentos, alimentos_resultado e saneantes a "
-        "cada build.",
+        "fica a linha registrada), medicamentos (uma linha por registro de 9 dígitos, ou por "
+        "nome e empresa quando a origem não dá registro: id começa com sem-registro-) e "
+        "produtos para saúde (uma linha por registro ou cadastro). Derivada a cada build.",
+        "Nos medicamentos, tipo é a categoria regulatória (Genérico, Similar, Novo, "
+        "Biológico...) e categoria a classe terapêutica; nos produtos para saúde, tipo é "
+        "Registrado ou Cadastrado e categoria a classe de risco (Classe I a IV). Mais colunas "
+        "dessas áreas em medicamentos_por_produto e produtos_saude_por_produto.",
         "gluten, lactose, contem, pode_conter, nao_contem e alergia_varia resumem o que os "
         "rótulos das apresentações do alimento declaram (alimentos_resultado); nulos quando "
         "nenhuma apresentação declara nada (a maioria) e nos saneantes. contem junta "
@@ -202,7 +293,8 @@ PRODUTOS = Derivada(
         "vencimento nas notificações de alimentos é 2029-12-01, um valor de preenchimento da "
         "ANVISA; desde (primeira regularização) e categoria só existem para alimentos.",
         "ativo é a situação na ANVISA no dia do build; se a data de vencimento já passou, "
-        "decida na consulta, com a data do dia.",
+        "decida na consulta, com a data do dia. Nos produtos para saúde, que não têm situação "
+        "na origem, ativo é VIGENTE (cadastros) ou validade não vencida na data do arquivo.",
     ),
     sql=_produtos,
 )
@@ -234,6 +326,14 @@ def _empresas(t: dict[str, str]) -> str:
                   arg_min(st_situacao_produto, CAST(st_registrado AS INTEGER)) AS ativo
                 FROM {t["cosmeticos"]} GROUP BY 1, 2)
           GROUP BY cnpj),
+        md AS (
+          SELECT cnpj, CAST(count(*) AS INTEGER) AS medicamentos,
+            CAST(count(*) FILTER (WHERE ativo) AS INTEGER) AS medicamentos_ativos
+          FROM ({_medicamentos_unicos(t)}) GROUP BY cnpj),
+        ps AS (
+          SELECT cnpj, CAST(count(*) AS INTEGER) AS produtos_saude,
+            CAST(count(*) FILTER (WHERE ativo) AS INTEGER) AS produtos_saude_ativos
+          FROM ({_produtos_saude_unicos(t)}) GROUP BY cnpj),
         me AS (
           SELECT nu_cnpj_empresa_investigada AS cnpj,
             CAST(count(DISTINCT co_seq_dossie_investig_med) AS INTEGER) AS medidas,
@@ -248,12 +348,15 @@ def _empresas(t: dict[str, str]) -> str:
                   SELECT nu_cnpj_empresa AS cnpj, no_razao_social_empresa AS nome
                   FROM {t["alimentos"]}
                   UNION ALL SELECT nu_cnpj_empresa, no_razao_social_empresa FROM {t["saneantes"]}
-                  UNION ALL SELECT nu_cnpj_empresa, no_razao_social_empresa FROM {t["cosmeticos"]})
+                  UNION ALL SELECT nu_cnpj_empresa, no_razao_social_empresa FROM {t["cosmeticos"]}
+                  UNION ALL SELECT cnpj, empresa FROM ({_medicamentos_unicos(t)})
+                  UNION ALL SELECT cnpj_detentor_registro_cadastro, detentor_registro_cadastro
+                  FROM {t["produtos_saude"]})
                 WHERE nome IS NOT NULL GROUP BY 1, 2)
           GROUP BY cnpj),
         chaves AS (
           SELECT cnpj FROM al UNION SELECT cnpj FROM sa UNION SELECT cnpj FROM co
-          UNION SELECT cnpj FROM me)
+          UNION SELECT cnpj FROM md UNION SELECT cnpj FROM ps UNION SELECT cnpj FROM me)
         SELECT k.cnpj,
           coalesce(nomes.nome, me.nome) AS nome,
           coalesce(al.alimentos, 0) AS alimentos,
@@ -262,14 +365,20 @@ def _empresas(t: dict[str, str]) -> str:
           coalesce(sa.saneantes_ativos, 0) AS saneantes_ativos,
           coalesce(co.cosmeticos, 0) AS cosmeticos,
           coalesce(co.cosmeticos_ativos, 0) AS cosmeticos_ativos,
+          coalesce(md.medicamentos, 0) AS medicamentos,
+          coalesce(md.medicamentos_ativos, 0) AS medicamentos_ativos,
+          coalesce(ps.produtos_saude, 0) AS produtos_saude,
+          coalesce(ps.produtos_saude_ativos, 0) AS produtos_saude_ativos,
           coalesce(al.alimentos, 0) + coalesce(sa.saneantes, 0) + coalesce(co.cosmeticos, 0)
-            AS produtos,
+            + coalesce(md.medicamentos, 0) + coalesce(ps.produtos_saude, 0) AS produtos,
           coalesce(al.alimentos_ativos, 0) + coalesce(sa.saneantes_ativos, 0)
-            + coalesce(co.cosmeticos_ativos, 0) AS ativos,
+            + coalesce(co.cosmeticos_ativos, 0) + coalesce(md.medicamentos_ativos, 0)
+            + coalesce(ps.produtos_saude_ativos, 0) AS ativos,
           coalesce(me.medidas, 0) AS medidas,
           me.medida_ultima
         FROM chaves k
         LEFT JOIN al USING (cnpj) LEFT JOIN sa USING (cnpj) LEFT JOIN co USING (cnpj)
+        LEFT JOIN md USING (cnpj) LEFT JOIN ps USING (cnpj)
         LEFT JOIN me USING (cnpj) LEFT JOIN nomes USING (cnpj)"""
 
 
@@ -277,14 +386,23 @@ EMPRESAS = Derivada(
     name="empresas",
     group="empresas",
     title="Empresas: uma linha por CNPJ, com produtos por área e medidas de fiscalização",
-    fontes=("alimentos", "saneantes", "cosmeticos", "produtos_irregulares"),
+    fontes=(
+        "alimentos",
+        "saneantes",
+        "cosmeticos",
+        "medicamentos",
+        "produtos_saude",
+        "produtos_irregulares",
+    ),
     sort=("cnpj",),
     notes=(
-        "Uma linha por CNPJ (14 dígitos) que detém um alimento, saneante ou cosmético ou que "
-        "foi alvo de uma medida de fiscalização. Derivada a cada build.",
+        "Uma linha por CNPJ (14 dígitos) que detém um alimento, saneante, cosmético, "
+        "medicamento ou produto para saúde, ou que foi alvo de uma medida de fiscalização. "
+        "Derivada a cada build.",
         "Os totais contam produtos, não linhas: alimentos por co_seq_produto, saneantes por "
-        "nu_expediente e cosméticos por nu_processo (um processo listado duas vezes conta uma, "
-        "e a linha sem registro decide se está ativo).",
+        "nu_expediente, cosméticos por nu_processo (um processo listado duas vezes conta uma, "
+        "e a linha sem registro decide se está ativo), medicamentos por registro de 9 dígitos "
+        "(ou por nome quando não há registro) e produtos para saúde por registro ou cadastro.",
         "nome é a grafia mais frequente da razão social nas tabelas de produtos; empresas "
         "conhecidas só por medidas levam o nome escrito na medida.",
         "medidas conta dossiês de fiscalização contra a empresa (nu_cnpj_empresa_investigada) "
@@ -442,12 +560,68 @@ ALIMENTOS_POR_PRODUTO = Derivada(
     sql=_alimentos_por_produto,
 )
 
+MEDICAMENTOS_POR_PRODUTO = Derivada(
+    name="medicamentos_por_produto",
+    group="medicamentos",
+    title="Medicamentos: uma linha por produto, com princípio ativo e classe terapêutica",
+    fontes=("medicamentos",),
+    sort=("cnpj", "id"),
+    notes=(
+        "Uma linha por medicamento: as linhas de medicamentos da tabela produtos (mesmo id) "
+        "mais o princípio ativo, a classe terapêutica, a categoria regulatória e quantas "
+        "linhas e processos a origem traz. Derivada de medicamentos a cada build.",
+        "id é o registro de 9 dígitos (registro_produto); quando a origem não dá registro "
+        "(dinamizados e produtos de baixo risco notificados, sem processo na maioria), id "
+        "começa com sem-registro- seguido de um hash de empresa, nome e processo, estável "
+        "entre builds, e registro_produto é nulo.",
+        "ativo é verdadeiro quando alguma linha da origem está Ativo: 2.429 registros vêm "
+        "com linhas Ativo e Inativo ao mesmo tempo. vencimento é o mais tardio, com precisão "
+        "de mês; desde é a concessão mais antiga.",
+        "Preços por apresentação na tabela cmed: cmed.registro_produto = registro_produto.",
+    ),
+    sql=lambda t: (
+        f"""
+        SELECT id, registro_produto, processo, nome, cnpj, empresa, ativo,
+          categoria_regulatoria, classe_terapeutica, principio_ativo, desde, vencimento,
+          processos, linhas
+        FROM ({_medicamentos_unicos(t)})"""
+    ),
+)
+
+PRODUTOS_SAUDE_POR_PRODUTO = Derivada(
+    name="produtos_saude_por_produto",
+    group="produtos_saude",
+    title="Produtos para saúde: uma linha por registro, com nome técnico, classe e fabricantes",
+    fontes=("produtos_saude",),
+    sort=("cnpj", "id"),
+    notes=(
+        "Uma linha por registro ou cadastro de produto para saúde (dispositivo médico): as "
+        "linhas de produtos_saude da tabela produtos (mesmo id) mais o nome técnico, a classe "
+        "de risco, a lista de fabricantes com o país e quantas linhas a origem traz. Derivada "
+        "de produtos_saude a cada build.",
+        "tipo é Cadastrado (registro começa com 8: notificação, classes I e II, sem prazo) ou "
+        "Registrado. ativo é verdadeiro nos cadastros (VIGENTE) e nos registros cuja validade "
+        "não tinha vencido na data do arquivo (dt_atualizacao_dado); vencimento é essa "
+        "validade, nula nos cadastros.",
+        "fabricantes lista cada fabricante como 'nome (país)', sem repetição, em ordem; vazia "
+        "quando a origem não informa.",
+    ),
+    sql=lambda t: (
+        f"""
+        SELECT id, registro, processo, nome, nome_tecnico, classe_risco, cnpj, empresa, tipo,
+          ativo, publicacao, vencimento, fabricantes, linhas
+        FROM ({_produtos_saude_unicos(t)})"""
+    ),
+)
+
 DERIVADAS: tuple[Derivada, ...] = (
     PRODUTOS,
     EMPRESAS,
     MEDIDAS,
     COSMETICOS_POR_EMPRESA_TABELA,
     ALIMENTOS_POR_PRODUTO,
+    MEDICAMENTOS_POR_PRODUTO,
+    PRODUTOS_SAUDE_POR_PRODUTO,
 )
 
 

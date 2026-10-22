@@ -1423,22 +1423,37 @@ def test_produtos_on_the_fixtures(fake_dados, tmp_path):
         manifest = build(out, http=http, now=NOW, commit="abc123")
     entry = manifest["tables"]["produtos"]
     assert entry["path"] == "data/20261006T210312Z/produtos.parquet"
-    assert entry["fontes"] == ["alimentos", "alimentos_resultado", "saneantes"]
+    assert entry["fontes"] == [
+        "alimentos",
+        "alimentos_resultado",
+        "saneantes",
+        "medicamentos",
+        "produtos_saude",
+    ]
     assert entry["sort"] == ["cnpj", "area", "id"]
-    assert entry["source"]["name"] == "derivada de alimentos, alimentos_resultado, saneantes"
+    assert entry["source"]["name"] == (
+        "derivada de alimentos, alimentos_resultado, saneantes, medicamentos, produtos_saude"
+    )
     assert entry["source"]["url"].endswith(
         "/blob/abc123/packages/python/src/anvisa/dados/derivar.py"
     )
-    # the latest load among the sources: saneantes' (its fixture has two records of a later file)
-    assert entry["source"]["loaded_at"] == "2026-10-06T00:00:00"
+    # the latest load among the sources: produtos_saude's (2026-10-12; medicamentos has none)
+    assert entry["source"]["loaded_at"] == "2026-10-12T19:00:00"
     assert entry["nulls_added"] == {} and entry["rejected_records"] == 0
     assert [c["name"] for c in entry["columns"]] == list(derivar.PRODUTOS.descriptions)
     path = out / entry["path"]
-    assert entry["bytes"] == path.stat().st_size and entry["rows"] == 36 + 24
+    assert entry["bytes"] == path.stat().st_size and entry["rows"] == 36 + 24 + 28 + 21
     con = duckdb.connect()
     rows = con.execute(f"SELECT area, count(*) FROM '{path}' GROUP BY 1 ORDER BY 1").fetchall()
-    # 38 apresentações of 36 products; 25 saneante records, one expediente listed twice
-    assert rows == [("alimentos", 36), ("saneantes", 24)]
+    # 38 apresentações of 36 products; 25 saneante records, one expediente listed twice;
+    # 30 medicamento rows of 28 products (three LYSUGI rows, 8 without registro); 29
+    # produtos_saude rows of 21 registros (one per fabricante)
+    assert rows == [
+        ("alimentos", 36),
+        ("medicamentos", 28),
+        ("produtos_saude", 21),
+        ("saneantes", 24),
+    ]
     # of the Registrado/Notificado pair, the registered row stays
     assert con.execute(
         f"SELECT tipo, registro FROM '{path}' WHERE id = '0152242186'"
@@ -1451,10 +1466,9 @@ def test_produtos_on_the_fixtures(fake_dados, tmp_path):
     # registros: one per apresentação on registros, an empty list (never NULL) on notificações
     assert all(len(m[2]) in (0, 2) and m[2] == sorted(m[2]) for m in multi)
     assert con.execute(f"SELECT count(*) FROM '{path}' WHERE registros IS NULL").fetchone() == (0,)
-    assert con.execute(f"SELECT DISTINCT tipo FROM '{path}' ORDER BY 1").fetchall() == [
-        ("Notificado",),
-        ("Registrado",),
-    ]
+    assert con.execute(
+        f"SELECT DISTINCT tipo FROM '{path}' WHERE area IN ('alimentos', 'saneantes') ORDER BY 1"
+    ).fetchall() == [("Notificado",), ("Registrado",)]
     assert con.execute(
         f"SELECT count(*) FILTER (WHERE ativo), count(*) FROM '{path}' WHERE area = 'saneantes'"
     ).fetchone() == (18, 24)
@@ -1543,8 +1557,29 @@ def test_allergen_summary_rules(tmp_path):
         "nu_registro_produto VARCHAR, "
         "st_produto_ativo BOOLEAN, is_registrado BOOLEAN, dt_vencimento_produto TIMESTAMP)"
     )
+    # the two other areas of produtos, empty: the rules under test are the alimentos ones
+    con.execute(
+        "CREATE TABLE m (numero_registro_produto VARCHAR, numero_processo VARCHAR, "
+        "nome_produto VARCHAR, empresa_detentora_registro VARCHAR, situacao_registro VARCHAR, "
+        "categoria_regulatoria VARCHAR, classe_terapeutica VARCHAR, principio_ativo VARCHAR, "
+        "data_finalizacao_processo DATE, data_vencimento_registro DATE)"
+    )
+    con.execute(
+        "CREATE TABLE p (numero_registro_cadastro VARCHAR, numero_processo VARCHAR, "
+        "nome_comercial VARCHAR, nome_tecnico VARCHAR, classe_risco VARCHAR, "
+        "cnpj_detentor_registro_cadastro VARCHAR, detentor_registro_cadastro VARCHAR, "
+        "nome_fabricante VARCHAR, nome_pais_fabric VARCHAR, dt_pub_registro_cadastro DATE, "
+        "validade_registro_cadastro VARCHAR, dt_atualizacao_dado TIMESTAMP)"
+    )
     paths = {}
-    for name, table in (("alimentos", "a"), ("alimentos_resultado", "r"), ("saneantes", "s")):
+    tables = (
+        ("alimentos", "a"),
+        ("alimentos_resultado", "r"),
+        ("saneantes", "s"),
+        ("medicamentos", "m"),
+        ("produtos_saude", "p"),
+    )
+    for name, table in tables:
         paths[name] = tmp_path / f"{name}.parquet"
         con.execute(f"COPY {table} TO '{paths[name]}' (FORMAT parquet)")
     rows, _ = derivar.write(
@@ -1575,7 +1610,14 @@ def test_empresas_on_the_fixtures(fake_dados, tmp_path):
     with fake_dados.client() as http:
         manifest = build(out, http=http, now=NOW, commit="abc123")
     entry = manifest["tables"]["empresas"]
-    assert entry["fontes"] == ["alimentos", "saneantes", "cosmeticos", "produtos_irregulares"]
+    assert entry["fontes"] == [
+        "alimentos",
+        "saneantes",
+        "cosmeticos",
+        "medicamentos",
+        "produtos_saude",
+        "produtos_irregulares",
+    ]
     assert [c["name"] for c in entry["columns"]] == list(derivar.EMPRESAS.descriptions)
     path = out / entry["path"]
     con = duckdb.connect()
@@ -1609,8 +1651,8 @@ def test_empresas_on_the_fixtures(fake_dados, tmp_path):
         ).fetchone()[0]
         assert q(f"SELECT cosmeticos FROM E WHERE cnpj = '{cnpj}'") == [(distinct,)]
     (sums,) = q(
-        "SELECT bool_and(produtos = alimentos + saneantes + cosmeticos AND ativos <= produtos) "
-        "FROM E"
+        "SELECT bool_and(produtos = alimentos + saneantes + cosmeticos + medicamentos "
+        "+ produtos_saude AND ativos <= produtos) FROM E"
     )
     assert sums == (True,)
     assert q("SELECT count(*) FROM E WHERE nome IS NULL AND produtos > 0") == [(0,)]
@@ -1806,6 +1848,124 @@ def test_alimentos_por_produto_on_the_fixtures(fake_dados, tmp_path):
 
 
 @needs_duckdb
+def test_medicamentos_por_produto_on_the_fixtures(fake_dados, tmp_path):
+    """One row per product: the repeated LYSUGI rows collapse, a registro is the id, products
+    without one get a stable hash id, and the produtos rows agree with this table."""
+    import duckdb
+
+    out = tmp_path / "dist"
+    with fake_dados.client() as http:
+        manifest = build(out, http=http, now=NOW, commit="abc123")
+    entry = manifest["tables"]["medicamentos_por_produto"]
+    assert entry["fontes"] == ["medicamentos"] and entry["sort"] == ["cnpj", "id"]
+    assert [c["name"] for c in entry["columns"]] == list(
+        derivar.MEDICAMENTOS_POR_PRODUTO.descriptions
+    )
+    path = out / entry["path"]
+    con = duckdb.connect()
+    q = lambda sql: con.execute(sql.replace("FROM M", f"FROM '{path}'")).fetchall()  # noqa: E731
+    assert entry["rows"] == 28 and q("SELECT count(DISTINCT id) FROM M") == [(28,)]
+    (lysugi,) = q(
+        "SELECT registro_produto, processo, cnpj, empresa, ativo, categoria_regulatoria, "
+        "classe_terapeutica, principio_ativo, desde, vencimento, processos, linhas "
+        "FROM M WHERE id = '151430058'"
+    )
+    assert lysugi == (
+        "151430058",
+        "25351686176201544",
+        "03978166000175",
+        "DR. REDDYS FARMACÊUTICA DO BRASIL LTDA",
+        True,
+        "Similar",
+        "ANTICONVULSIVANTES",
+        "pregabalina",
+        date(2020, 9, 8),
+        date(2030, 9, 1),
+        1,
+        3,
+    )
+    # without a registro: a hash id, stable across builds, from company, name and processo
+    sem = q("SELECT id, nome, registro_produto, processos FROM M WHERE id LIKE 'sem-registro-%'")
+    assert len(sem) == 8 and all(re.fullmatch(r"sem-registro-[0-9a-f]{12}", r[0]) for r in sem)
+    assert all(r[2] is None for r in sem)
+    assert {r[1] for r in sem} >= {"LABORHEX 2,0%", "KALOPÉ", "GÁS OXIGÊNIO MEDICINAL LUMIAR"}
+    assert next(r for r in sem if r[1].startswith("GÁS"))[3] == 1  # the one with a processo
+    # entities decoded, the source's spelling kept
+    assert q("SELECT count(*) FROM M WHERE nome LIKE 'SOLUçãO%'") == [(1,)]
+    assert q("SELECT count(*) FROM M WHERE categoria_regulatoria = 'FITOTER?PICO'") == [(1,)]
+    # the same rows in produtos, with the shared columns
+    prod = out / manifest["tables"]["produtos"]["path"]
+    assert con.execute(
+        f"SELECT count(*) FROM (SELECT id, nome, cnpj, ativo, vencimento FROM '{path}' "
+        f"EXCEPT SELECT id, nome, cnpj, ativo, vencimento FROM '{prod}' "
+        "WHERE area = 'medicamentos')"
+    ).fetchone() == (0,)
+    assert con.execute(
+        f"SELECT tipo, categoria FROM '{prod}' WHERE area = 'medicamentos' AND id = '151430058'"
+    ).fetchone() == ("Similar", "ANTICONVULSIVANTES")
+    key = q("SELECT cnpj, id FROM M")
+    assert key == sorted(key)
+
+
+@needs_duckdb
+def test_produtos_saude_por_produto_on_the_fixtures(fake_dados, tmp_path):
+    """One row per registro with its fabricantes listed; VIGENTE and dated validades become
+    `ativo` against the file's own date, never the build's."""
+    import duckdb
+
+    out = tmp_path / "dist"
+    with fake_dados.client() as http:
+        manifest = build(out, http=http, now=NOW, commit="abc123")
+    entry = manifest["tables"]["produtos_saude_por_produto"]
+    assert entry["fontes"] == ["produtos_saude"] and entry["rows"] == 21
+    assert [c["name"] for c in entry["columns"]] == list(
+        derivar.PRODUTOS_SAUDE_POR_PRODUTO.descriptions
+    )
+    path = out / entry["path"]
+    con = duckdb.connect()
+    q = lambda sql: con.execute(sql.replace("FROM P", f"FROM '{path}'")).fetchall()  # noqa: E731
+    (sonda,) = q(
+        "SELECT registro, nome, nome_tecnico, classe_risco, tipo, ativo, publicacao, vencimento, "
+        "fabricantes, linhas FROM P WHERE id = '10150470123'"
+    )
+    assert sonda == (
+        "10150470123",
+        "SONDA DE FOLEY SILICONE RUSCH",
+        "Sondas",
+        "II",
+        "Registrado",
+        True,
+        date(1999, 4, 16),
+        None,  # VIGENTE: no term
+        [
+            "RUSCH INC (ESTADOS UNIDOS DA AMÉRICA)",
+            "TELEFLEX MEDICAL SDN. BHD. (MALÁSIA)",
+            "WILLY RUSCH GMBH (ALEMANHA)",
+        ],
+        3,
+    )
+    (preserv,) = q("SELECT ativo, vencimento, fabricantes FROM P WHERE id = '10163770014'")
+    assert preserv == (True, date(2035, 5, 26), ["SURETEX LIMITED (TAILÂNDIA, REINO DA)"])
+    assert q("SELECT tipo, count(*) FROM P GROUP BY 1 ORDER BY 1") == [
+        ("Cadastrado", 3),
+        ("Registrado", 18),
+    ]
+    # a row without fabricante adds nothing to the list (B. Braun's electrode has one such row)
+    assert q("SELECT fabricantes FROM P WHERE id = '10008530286'") == [
+        (["AESCULAP AG (ALEMANHA)"],)
+    ]
+    assert q("SELECT count(*) FROM P WHERE fabricantes IS NULL") == [(0,)]
+    assert q("SELECT count(*) FROM P WHERE NOT ativo") == [(0,)]
+    types = {r[0]: r[1] for r in con.execute(f"DESCRIBE SELECT * FROM '{path}'").fetchall()}
+    assert types["fabricantes"] == "VARCHAR[]" and types["vencimento"] == "DATE"
+    prod = out / manifest["tables"]["produtos"]["path"]
+    assert con.execute(
+        f"SELECT tipo, categoria, desde FROM '{prod}' WHERE area = 'produtos_saude' "
+        "AND id = '8003400137'"
+    ).fetchone() == ("Cadastrado", "Classe I", date(2022, 1, 13))
+
+
+@needs_duckdb
 def test_derived_table_with_a_missing_source(fake_dados, tmp_path, monkeypatch):
     """`-d cosmeticos` with no published site has nothing to derive produtos from: skipped,
     said so. A full build that lacks a source is a bug, not a skip."""
@@ -1815,7 +1975,10 @@ def test_derived_table_with_a_missing_source(fake_dados, tmp_path, monkeypatch):
     # the derived table whose only fonte is cosmeticos is built even in this partial build
     assert list(result["tables"]) == ["cosmeticos", "cosmeticos_por_empresa"]
     assert any(
-        m.startswith("skipping produtos: alimentos, alimentos_resultado, saneantes not in")
+        m.startswith(
+            "skipping produtos: alimentos, alimentos_resultado, saneantes, medicamentos, "
+            "produtos_saude not in"
+        )
         for m in log
     )
     broken = dataclasses.replace(derivar.PRODUTOS, fontes=("alimentos", "nope"))

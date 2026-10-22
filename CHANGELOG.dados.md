@@ -20,8 +20,22 @@ consumer must change to keep reading it; everything below has been additive, so 
   `validade_registro_cadastro` a date or the word `VIGENTE`, `dt_atualizacao_dado` the load
   time (month first, unlike its publication date). It is the first open-data file that quotes
   nothing, so the catalog gained `Dataset.quoted` (false: one record per line, `"` an ordinary
-  character). Groups `medicamentos` (shared with `cmed`) and `produtos_saude`. Derived tables
-  follow in the next entry.
+  character). Groups `medicamentos` (shared with `cmed`) and `produtos_saude`.
+- **Medicines and medical devices in the derived tables.** `produtos` gains the areas
+  `medicamentos` (one row per 9-digit registro, 36,427 on 2026-10-13; a product the source
+  lists without a registro, 3,627 of them, gets a stable `sem-registro-<hash>` id from its
+  company, name and processo) and `produtos_saude` (one row per registro or cadastro,
+  100,681), with the shared columns: there `tipo` is the regulatory category or
+  Registrado/Cadastrado and `categoria` the therapeutic class or `Classe I` to `IV`. **`empresas`
+  changes shape**: four new counts (`medicamentos`, `medicamentos_ativos`, `produtos_saude`,
+  `produtos_saude_ativos`) and `produtos`/`ativos` now sum five areas, so a company's totals
+  grow. Two new per-area tables carry what the common schema cannot:
+  `medicamentos_por_produto` (principio_ativo, classe_terapeutica, categoria_regulatoria,
+  `registro_produto` to join `cmed`, how many rows and processos the source repeats) and
+  `produtos_saude_por_produto` (nome_tecnico, classe_risco, the sorted `fabricantes` list as
+  "nome (país)"). `ativo` on produtos para saúde, which have no status column, is VIGENTE or a
+  validity not yet past on the file's own load date, so nothing depends on the day of the
+  build. 7 derived tables, 17 published.
 - **`cmed`, the CMED price list**, the first table from a source other than ANVISA's
   Windows-1252 product files: CMED's monthly maximum prices per medicine presentation, from the
   two CSVs at the root of dados.anvisa.gov.br (`TA_PRECO_MEDICAMENTO.csv` and
