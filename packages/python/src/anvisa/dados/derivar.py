@@ -306,7 +306,9 @@ def _empresas(t: dict[str, str]) -> str:
     # nu_processo (the unregistered row of a duplicate pair decides `ativo`, as the site does;
     # a processo listed once is its own only row). The name is the commonest spelling across
     # the product tables, ties alphabetical; a company known only from measures takes the
-    # name written there.
+    # name written there. envasa_para / envasado_por count the other CNPJs (grupo or terceira
+    # in alimentos_fabricacao) a company packs food for and is packed by; a packer with no
+    # product and no measure gets a row too, named as the packer string writes it.
     cnpj14 = "regexp_full_match(nu_cnpj_empresa_investigada, '[0-9]{14}')"
     return f"""
         WITH al AS (
@@ -342,6 +344,15 @@ def _empresas(t: dict[str, str]) -> str:
           FROM {t["produtos_irregulares"]}
           WHERE {cnpj14} AND nu_cnpj_empresa_investigada <> '00000000000000'
           GROUP BY 1),
+        env AS (
+          SELECT cnpj, fabricante_cnpj, min(fabricante) AS nome
+          FROM ({_alimentos_fabricacao(t)})
+          WHERE vinculo IN ('grupo', 'terceira') GROUP BY 1, 2),
+        ev AS (SELECT cnpj, CAST(count(*) AS INTEGER) AS envasado_por FROM env GROUP BY 1),
+        ep AS (
+          SELECT fabricante_cnpj AS cnpj, CAST(count(*) AS INTEGER) AS envasa_para,
+            min(nome) AS nome
+          FROM env GROUP BY 1),
         nomes AS (
           SELECT cnpj, first(nome ORDER BY n DESC, nome) AS nome
           FROM (SELECT cnpj, nome, count(*) AS n FROM (
@@ -356,9 +367,10 @@ def _empresas(t: dict[str, str]) -> str:
           GROUP BY cnpj),
         chaves AS (
           SELECT cnpj FROM al UNION SELECT cnpj FROM sa UNION SELECT cnpj FROM co
-          UNION SELECT cnpj FROM md UNION SELECT cnpj FROM ps UNION SELECT cnpj FROM me)
+          UNION SELECT cnpj FROM md UNION SELECT cnpj FROM ps UNION SELECT cnpj FROM me
+          UNION SELECT cnpj FROM ep)
         SELECT k.cnpj,
-          coalesce(nomes.nome, me.nome) AS nome,
+          coalesce(nomes.nome, me.nome, ep.nome) AS nome,
           coalesce(al.alimentos, 0) AS alimentos,
           coalesce(al.alimentos_ativos, 0) AS alimentos_ativos,
           coalesce(sa.saneantes, 0) AS saneantes,
@@ -375,11 +387,14 @@ def _empresas(t: dict[str, str]) -> str:
             + coalesce(co.cosmeticos_ativos, 0) + coalesce(md.medicamentos_ativos, 0)
             + coalesce(ps.produtos_saude_ativos, 0) AS ativos,
           coalesce(me.medidas, 0) AS medidas,
-          me.medida_ultima
+          me.medida_ultima,
+          coalesce(ep.envasa_para, 0) AS envasa_para,
+          coalesce(ev.envasado_por, 0) AS envasado_por
         FROM chaves k
         LEFT JOIN al USING (cnpj) LEFT JOIN sa USING (cnpj) LEFT JOIN co USING (cnpj)
         LEFT JOIN md USING (cnpj) LEFT JOIN ps USING (cnpj)
-        LEFT JOIN me USING (cnpj) LEFT JOIN nomes USING (cnpj)"""
+        LEFT JOIN me USING (cnpj) LEFT JOIN nomes USING (cnpj)
+        LEFT JOIN ev USING (cnpj) LEFT JOIN ep USING (cnpj)"""
 
 
 EMPRESAS = Derivada(
@@ -393,6 +408,7 @@ EMPRESAS = Derivada(
         "medicamentos",
         "produtos_saude",
         "produtos_irregulares",
+        "alimentos_resultado",
     ),
     sort=("cnpj",),
     notes=(
@@ -411,6 +427,10 @@ EMPRESAS = Derivada(
         "dossiês que ela abriu. Alvos sem CNPJ de 14 dígitos (CPF, texto, CNPJ com 13 dígitos) "
         "ficam de fora; o CNPJ da própria ANVISA (03112386000111) aparece como alvo em alguns "
         "dossiês e vem como está.",
+        "envasa_para e envasado_por contam os pares de alimentos_fabricacao com vinculo grupo "
+        "ou terceira: as outras empresas para as quais esta envasa alimentos e as que envasam "
+        "os dela. Uma envasadora sem produto nem medida também tem linha, com produtos 0 e o "
+        "nome escrito na lista de envasadoras.",
     ),
     sql=_empresas,
 )
@@ -560,6 +580,98 @@ ALIMENTOS_POR_PRODUTO = Derivada(
     sql=_alimentos_por_produto,
 )
 
+
+def _alimentos_fabricacao(t: dict[str, str]) -> str:
+    # Who makes each company's food, from the two manufacturer columns of alimentos_resultado
+    # (one row per apresentação). empresas_envasadoras lists Brazilian packers as
+    # "NOME - CIDADE - PAÍS ; CNPJ14" joined by " | "; the name itself can contain " - "
+    # (CASTROLANDA - COOPERATIVA …), so city and country are read from the right and the
+    # CNPJ from the end (profiled 2026-10-22: every one of 21,179 entries ends with 14
+    # digits; name, city and country never vary for one CNPJ). empresas_internacionais is
+    # "NOME - PAÍS ; CÓDIGO", the code D/A/C + 6 digits or empty (NUTRELLA … - BRASIL ;).
+    # Rows of alimentos_resultado without an alimentos row (356) are dropped; the holder,
+    # its name and `ativo` are the product's, as _alimentos reads them.
+    produto = f"""
+        SELECT co_seq_produto AS produto, min(nu_cnpj_empresa) AS cnpj,
+          min(no_razao_social_empresa) AS empresa, bool_or(situacao_registro = 'Ativo') AS ativo
+        FROM {t["alimentos"]} GROUP BY 1"""
+    itens = """
+        SELECT co_seq_apresentacao_produto AS apresentacao, trim(item) AS item
+        FROM (SELECT co_seq_apresentacao_produto, unnest(string_split({col}, '|')) AS item
+              FROM {src} WHERE {col} IS NOT NULL)
+        WHERE trim(item) <> ''"""
+    return f"""
+        WITH produto AS ({produto}),
+        ap AS (
+          SELECT co_seq_apresentacao_produto AS apresentacao, co_seq_produto AS produto
+          FROM {t["alimentos"]}),
+        envasadoras AS (
+          SELECT apresentacao,
+            regexp_extract(item, ';\\s*([0-9]{{14}})$', 1) AS fabricante_cnpj,
+            CAST(NULL AS VARCHAR) AS fabricante_codigo,
+            string_split(regexp_replace(item, '\\s*;\\s*[0-9]{{14}}$', ''), ' - ') AS p
+          FROM ({itens.format(col="empresas_envasadoras", src=t["alimentos_resultado"])})
+          WHERE regexp_matches(item, ';\\s*[0-9]{{14}}$')),
+        internacionais AS (
+          SELECT apresentacao,
+            CAST(NULL AS VARCHAR) AS fabricante_cnpj,
+            nullif(regexp_extract(item, ';\\s*([A-Z][0-9]{{6}})$', 1), '') AS fabricante_codigo,
+            string_split(regexp_replace(item, '\\s*;\\s*[A-Z0-9]*$', ''), ' - ') AS p
+          FROM ({itens.format(col="empresas_internacionais", src=t["alimentos_resultado"])})),
+        partes AS (
+          SELECT apresentacao, fabricante_cnpj, fabricante_codigo, 'exterior' AS origem,
+            trim(CASE WHEN len(p) >= 2 THEN array_to_string(p[1:len(p) - 1], ' - ')
+                      ELSE p[1] END) AS fabricante,
+            CAST(NULL AS VARCHAR) AS cidade,
+            CASE WHEN len(p) >= 2 THEN trim(p[-1]) END AS pais
+          FROM internacionais
+          UNION ALL
+          SELECT apresentacao, fabricante_cnpj, fabricante_codigo, 'brasil',
+            trim(CASE WHEN len(p) >= 3 THEN array_to_string(p[1:len(p) - 2], ' - ')
+                      ELSE p[1] END),
+            CASE WHEN len(p) >= 3 THEN trim(p[-2]) END,
+            CASE WHEN len(p) >= 2 THEN trim(p[-1]) END
+          FROM envasadoras),
+        linhas AS (
+          SELECT pr.cnpj, pr.empresa, pr.produto, pr.ativo, x.*
+          FROM partes x JOIN ap USING (apresentacao) JOIN produto pr USING (produto))
+        SELECT cnpj, min(empresa) AS empresa, fabricante_cnpj, fabricante_codigo,
+          min(fabricante) AS fabricante, min(cidade) AS cidade, min(pais) AS pais,
+          CASE WHEN origem = 'exterior' THEN 'exterior'
+               WHEN cnpj = fabricante_cnpj THEN 'propria'
+               WHEN cnpj[1:8] = fabricante_cnpj[1:8] THEN 'grupo'
+               ELSE 'terceira' END AS vinculo,
+          CAST(count(DISTINCT produto) AS INTEGER) AS produtos,
+          CAST(count(DISTINCT produto) FILTER (WHERE ativo) AS INTEGER) AS produtos_ativos,
+          CAST(count(DISTINCT apresentacao) AS INTEGER) AS apresentacoes
+        FROM linhas
+        GROUP BY cnpj, origem, fabricante_cnpj, fabricante_codigo,
+          CASE WHEN fabricante_cnpj IS NULL AND fabricante_codigo IS NULL THEN fabricante END"""
+
+
+ALIMENTOS_FABRICACAO = Derivada(
+    name="alimentos_fabricacao",
+    group="alimentos",
+    title="Alimentos: quem fabrica para quem, uma linha por empresa e fabricante",
+    fontes=("alimentos", "alimentos_resultado"),
+    sort=("cnpj", "fabricante_cnpj", "fabricante_codigo", "fabricante"),
+    notes=(
+        "Uma linha por empresa detentora (cnpj) e fabricante dos alimentos dela, lidos das "
+        "apresentações em alimentos_resultado: envasadora no Brasil, pelo CNPJ "
+        "(empresas_envasadoras), ou fabricante no exterior, pelo código da ANVISA "
+        "(empresas_internacionais), ou pelo nome quando o código vem vazio. Derivada a cada "
+        "build.",
+        'vinculo diz quem é o fabricante: "propria" (o próprio CNPJ), "grupo" (mesma raiz de 8 '
+        'dígitos), "terceira" (outra empresa) ou "exterior". A maioria das empresas envasa os '
+        "próprios alimentos; envasar para outra é fabricar o que ela registra com a marca dela.",
+        "Ficam de fora as apresentações sem linha em alimentos e as envasadoras sem CNPJ de 14 "
+        'dígitos no fim. Nome, cidade e país são lidos da direita, porque o nome pode ter " - " '
+        "(CASTROLANDA - COOPERATIVA ...); produtos, produtos_ativos e apresentacoes contam os "
+        "distintos que citam o fabricante.",
+    ),
+    sql=_alimentos_fabricacao,
+)
+
 MEDICAMENTOS_POR_PRODUTO = Derivada(
     name="medicamentos_por_produto",
     group="medicamentos",
@@ -631,6 +743,7 @@ DERIVADAS: tuple[Derivada, ...] = (
     ALIMENTOS_POR_PRODUTO,
     MEDICAMENTOS_POR_PRODUTO,
     PRODUTOS_SAUDE_POR_PRODUTO,
+    ALIMENTOS_FABRICACAO,
 )
 
 

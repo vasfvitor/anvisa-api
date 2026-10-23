@@ -8,8 +8,9 @@ guess.
 
 All 59 endpoints of the OpenAPI document are wrapped (the 27 added on 2026-10-01 since
 2026-10-22), and `tests/test_spec.py` holds that count against the resolved spec. Seven open-data tables are live on GitHub Pages,
-cosméticos also as search files (2026-10-09), plus five derived tables (`produtos`, `empresas`, `medidas`,
-`cosmeticos_por_empresa`, `alimentos_por_produto`),
+cosméticos also as search files (2026-10-09), plus eight derived tables (`produtos`, `empresas`, `medidas`,
+`cosmeticos_por_empresa`, `alimentos_por_produto`, `medicamentos_por_produto`,
+`produtos_saude_por_produto`, `alimentos_fabricacao`),
 a generated data dictionary and Portuguese column descriptions in the manifest (2026-10-11); the
 parser streams, so AFE is unblocked. What
 is left is verification of claims that come only from ANVISA's examples, robustness

@@ -42,9 +42,10 @@ validation errors ANVISA reports as HTTP 500.
 
 Open data, no credentials: `pip install 'anvisa[dados]'` adds `anvisa dados build`, which turns
 ANVISA's bulk CSVs from dados.anvisa.gov.br (alimentos, saneantes, cosméticos, petições,
-produtos irregulares; Windows-1252, unescaped quotes) into typed, sorted Parquet plus five
+produtos irregulares; Windows-1252, unescaped quotes) into typed, sorted Parquet plus eight
 derived tables (`produtos`, `empresas`, `medidas`, `cosmeticos_por_empresa`,
-`alimentos_por_produto`), a `manifest.json` with Portuguese column descriptions
+`alimentos_por_produto`, `medicamentos_por_produto`, `produtos_saude_por_produto`,
+`alimentos_fabricacao`), a `manifest.json` with Portuguese column descriptions
 and a data dictionary page. The daily result is live at
 https://vasfvitor.github.io/anvisa-api/ (dictionary: `dicionario.html`).
 

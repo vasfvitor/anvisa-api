@@ -1618,8 +1618,8 @@ def test_allergen_summary_rules(tmp_path):
 
 @needs_duckdb
 def test_empresas_on_the_fixtures(fake_dados, tmp_path):
-    """One row per 14-digit CNPJ across the three product tables and the measures' targets;
-    counts are products, and only a real CNPJ makes a company."""
+    """One row per 14-digit CNPJ across the three product tables, the measures' targets and
+    the food packers; counts are products, and only a real CNPJ makes a company."""
     import duckdb
 
     out = tmp_path / "dist"
@@ -1633,6 +1633,7 @@ def test_empresas_on_the_fixtures(fake_dados, tmp_path):
         "medicamentos",
         "produtos_saude",
         "produtos_irregulares",
+        "alimentos_resultado",
     ]
     assert [c["name"] for c in entry["columns"]] == list(derivar.EMPRESAS.descriptions)
     path = out / entry["path"]
@@ -1672,6 +1673,21 @@ def test_empresas_on_the_fixtures(fake_dados, tmp_path):
     )
     assert sums == (True,)
     assert q("SELECT count(*) FROM E WHERE nome IS NULL AND produtos > 0") == [(0,)]
+    # packing for other companies (alimentos_fabricacao, vinculo grupo or terceira): a packer
+    # with no product and no measure gets a row named as the packer string writes it; the
+    # holder counts distinct packers, branches of its own root included; packing for oneself
+    # counts nowhere
+    pack = "SELECT envasa_para, envasado_por, produtos, nome FROM E WHERE cnpj = "
+    assert q(pack + "'32098703000190'") == [(1, 0, 0, "GOMES SUPLEMENTOS ALIMENTARES LTDA")]
+    assert q(pack + "'57357240000165'") == [(0, 2, 2, "INTERMEDIO AGENCIA LTDa")]
+    assert q(pack + "'60409075000152'") == [(0, 2, 2, "NESTLE BRASIL LTDA")]
+    assert q(pack + "'60409075002953'") == [(1, 0, 0, "NESTLE DO BRASIL LTDA")]
+    assert q(pack + "'00669755000183'") == [(0, 0, 1, "sports nutrition tec alimentos ltda")]
+    assert q("SELECT sum(envasa_para), sum(envasado_por) FROM E") == [(14, 14)]
+    assert q(
+        "SELECT count(*), count(*) FILTER (WHERE envasa_para > 0 AND nome IS NOT NULL) "
+        "FROM E WHERE produtos = 0 AND medidas = 0"
+    ) == [(14, 14)]
 
 
 @needs_duckdb
@@ -1861,6 +1877,66 @@ def test_alimentos_por_produto_on_the_fixtures(fake_dados, tmp_path):
     assert con.execute(
         f"SELECT publicacao, inicio_analise FROM '{a}' WHERE id = '{row[0]}'"
     ).fetchone() == (row[1], row[2])
+
+
+@needs_duckdb
+def test_alimentos_fabricacao_on_the_fixtures(fake_dados, tmp_path):
+    """One row per holder and manufacturer: Brazilian packers by CNPJ, foreign manufacturers by
+    code; the holder is the product's, and apresentações without an alimentos row are dropped."""
+    import duckdb
+
+    out = tmp_path / "dist"
+    with fake_dados.client() as http:
+        manifest = build(out, http=http, now=NOW, commit="abc123")
+    entry = manifest["tables"]["alimentos_fabricacao"]
+    assert entry["fontes"] == ["alimentos", "alimentos_resultado"]
+    assert entry["sort"] == ["cnpj", "fabricante_cnpj", "fabricante_codigo", "fabricante"]
+    assert entry["rows"] == 35
+    assert [c["name"] for c in entry["columns"]] == list(derivar.ALIMENTOS_FABRICACAO.descriptions)
+    path = out / entry["path"]
+    con = duckdb.connect()
+    q = lambda sql: con.execute(sql.replace("FROM F", f"FROM '{path}'")).fetchall()  # noqa: E731
+    assert dict(q("SELECT vinculo, count(*) FROM F GROUP BY 1")) == {
+        "propria": 11,
+        "grupo": 2,
+        "terceira": 12,
+        "exterior": 10,
+    }
+    detail = "fabricante_cnpj, fabricante, cidade, pais, vinculo, produtos, produtos_ativos, "
+    detail += "apresentacoes FROM F WHERE cnpj = "
+    assert q(f"SELECT {detail}'57357240000165'") == [
+        ("05297500000150", "GSA ALIMENTOS LTDA", "OURO PRETO", "BRASIL", "terceira", 2, 2, 2),
+        ("32098703000190", "GOMES SUPLEMENTOS ALIMENTARES LTDA", "POÇOS DE CALDAS", "BRASIL")
+        + ("terceira", 2, 2, 2),
+    ]
+    nestle = q(
+        "SELECT vinculo, fabricante_cnpj, fabricante_codigo, fabricante, pais FROM F "
+        "WHERE cnpj = '60409075000152'"
+    )
+    assert Counter(r[0] for r in nestle) == {"grupo": 2, "exterior": 10}
+    assert ("exterior", None, "D000093", "NESTLÉ CHILE S.A – CHILE (CANCURA)", "CHILE") in nestle
+    assert all(r[1] is None and r[2] for r in nestle if r[0] == "exterior")
+    # a self-packer whose only product is inactive
+    assert q("SELECT vinculo, produtos, produtos_ativos FROM F WHERE cnpj = '41486715000183'") == [
+        ("propria", 1, 0)
+    ]
+    # the four apresentações of alimentos_resultado without an alimentos row leave nothing:
+    # Danone's 10055201 (two packers, twelve foreign manufacturers), Castrolanda's 2857441
+    assert q(
+        "SELECT count(*) FROM F WHERE fabricante_cnpj IN ('23643315014293', '76108349001428') "
+        "OR fabricante IN ('MILUPA GMBH', 'BLÉDINA')"
+    ) == [(0,)]
+    holders = {r[0] for r in q("SELECT cnpj FROM F")}
+    src = out / manifest["tables"]["alimentos"]["path"]
+    assert holders <= {r[0] for r in con.execute(f"SELECT nu_cnpj_empresa FROM '{src}'").fetchall()}
+    empresas = out / manifest["tables"]["empresas"]["path"]
+    packers = {r[0] for r in q("SELECT fabricante_cnpj FROM F WHERE vinculo <> 'propria'")}
+    known = {r[0] for r in con.execute(f"SELECT cnpj FROM '{empresas}'").fetchall()}
+    assert packers - {None} <= known
+    # within a holder: packers by CNPJ, then foreign manufacturers by code, then uncoded by name
+    rows = q("SELECT cnpj, fabricante_cnpj, fabricante_codigo, fabricante FROM F")
+    key = lambda r: (r[0], r[1] is None, r[1] or "", r[2] is None, r[2] or "", r[3])  # noqa: E731
+    assert rows == sorted(rows, key=key)
 
 
 @needs_duckdb
@@ -2123,6 +2199,80 @@ def test_medicamentos_eans_come_from_cmed(tmp_path):
     assert rows == 2 and columns[-1] == ("eans", "VARCHAR[]")
     got = con.execute(f"SELECT id, eans FROM '{tmp_path / 'out.parquet'}' ORDER BY id").fetchall()
     assert got == [("101810583", []), ("186200018", ["7891058001308", "7891058001407"])]
+
+
+def test_alimentos_fabricacao_parses_from_the_right(tmp_path):
+    """City and country come from the right, so a name keeps its own " - "; the CNPJ is the 14
+    digits at the end, and an entry without them is dropped; a packer listed twice in one
+    apresentação counts once; a foreign entry with an empty code is keyed by its name; a
+    product counts once, as active when any apresentação is; an apresentação without an
+    alimentos row is dropped; NULLs sort last."""
+    import duckdb
+
+    con = duckdb.connect()
+    castro = "CASTROLANDA - COOPERATIVA AGROINDUSTRIAL - CASTRO - BRASIL ; 22222222000122"
+    con.execute(
+        "COPY (SELECT * FROM (VALUES "
+        "(1, 101, '11111111000111', 'HOLDER UM', 'Ativo'), "
+        "(1, 102, '11111111000111', 'HOLDER UM', 'Inativo'), "
+        "(2, 201, '11111111000111', 'HOLDER UM', 'Inativo'), "
+        "(3, 301, '55555555000155', 'HOLDER DOIS', 'Ativo'), "
+        "(3, 302, '55555555000155', 'HOLDER DOIS', 'Ativo')"
+        ") t(co_seq_produto, co_seq_apresentacao_produto, nu_cnpj_empresa, "
+        "no_razao_social_empresa, situacao_registro)) "
+        f"TO '{tmp_path / 'alimentos.parquet'}' (FORMAT PARQUET)"
+    )
+    con.execute(
+        "COPY (SELECT * FROM (VALUES "
+        f"(101, '{castro} | FULANO LTDA - ME - CARATINGA - BRASIL ;33333333000133 | "
+        f"SEM CNPJ - CIDADE - BRASIL ; 123 | {castro}', "
+        "'ACME GMBH - ALEMANHA ; D000001 | NUTRELLA ALIMENTOS - BRASIL ; | "
+        "FÁBRICA – SUL - CHILE ; A000002'), "
+        "(102, 'HOLDER UM - SÃO PAULO - BRASIL ; 11111111000111 | "
+        "FILIAL - RECIFE - BRASIL ; 11111111000299 | DOIS - BRASIL ; 66666666000166', NULL), "
+        f"(201, '{castro}', NULL), "
+        "(301, NULL, 'SO NOME ;'), "
+        "(302, NULL, NULL), "
+        "(999, 'ORFA - X - BRASIL ; 44444444000144', 'ORFA GMBH - ALEMANHA ; D000009')"
+        ") t(co_seq_apresentacao_produto, empresas_envasadoras, empresas_internacionais)) "
+        f"TO '{tmp_path / 'alimentos_resultado.parquet'}' (FORMAT PARQUET)"
+    )
+    paths = {name: tmp_path / f"{name}.parquet" for name in ("alimentos", "alimentos_resultado")}
+    out = tmp_path / "out.parquet"
+    rows, columns = derivar.write(derivar.ALIMENTOS_FABRICACAO, paths, out, tmp_path / "spill")
+    assert columns == [
+        ("cnpj", "VARCHAR"),
+        ("empresa", "VARCHAR"),
+        ("fabricante_cnpj", "VARCHAR"),
+        ("fabricante_codigo", "VARCHAR"),
+        ("fabricante", "VARCHAR"),
+        ("cidade", "VARCHAR"),
+        ("pais", "VARCHAR"),
+        ("vinculo", "VARCHAR"),
+        ("produtos", "INTEGER"),
+        ("produtos_ativos", "INTEGER"),
+        ("apresentacoes", "INTEGER"),
+    ]
+    got = con.execute(f"SELECT * EXCLUDE (empresa) FROM '{out}'").fetchall()
+    h1, h2 = "11111111000111", "55555555000155"
+    assert got == [
+        (h1, h1, None, "HOLDER UM", "SÃO PAULO", "BRASIL", "propria", 1, 1, 1),
+        (h1, "11111111000299", None, "FILIAL", "RECIFE", "BRASIL", "grupo", 1, 1, 1),
+        (h1, "22222222000122", None, "CASTROLANDA - COOPERATIVA AGROINDUSTRIAL", "CASTRO")
+        + ("BRASIL", "terceira", 2, 1, 2),
+        (h1, "33333333000133", None, "FULANO LTDA - ME", "CARATINGA", "BRASIL", "terceira")
+        + (1, 1, 1),
+        (h1, "66666666000166", None, "DOIS", None, "BRASIL", "terceira", 1, 1, 1),
+        (h1, None, "A000002", "FÁBRICA – SUL", None, "CHILE", "exterior", 1, 1, 1),
+        (h1, None, "D000001", "ACME GMBH", None, "ALEMANHA", "exterior", 1, 1, 1),
+        (h1, None, None, "NUTRELLA ALIMENTOS", None, "BRASIL", "exterior", 1, 1, 1),
+        (h2, None, None, "SO NOME", None, None, "exterior", 1, 1, 1),
+    ]
+    assert rows == len(got)
+    assert {r[0] for r in con.execute(f"SELECT empresa FROM '{out}'").fetchall()} == {
+        "HOLDER UM",
+        "HOLDER DOIS",
+    }
 
 
 def test_missing_duckdb_is_a_clear_error(monkeypatch, tmp_path):

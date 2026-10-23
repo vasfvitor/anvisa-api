@@ -6,6 +6,28 @@ when known. The package's own `CHANGELOG.md` records the Python API; a data chan
 no package release still appears here. `schema_version` in the manifest only changes when a
 consumer must change to keep reading it; everything below has been additive, so it is still 1.
 
+## 2026-10-23
+
+- **`alimentos_fabricacao`**, who packs or makes each company's food: one row per holder CNPJ
+  and manufacturer, read from the two manufacturer columns of `alimentos_resultado` (one row
+  per apresentação). `empresas_envasadoras` gives Brazilian packers as
+  `NOME - CIDADE - PAÍS ; CNPJ` (key `fabricante_cnpj`; city and country read from the right,
+  because names contain " - "), `empresas_internacionais` foreign manufacturers as
+  `NOME - PAÍS ; CÓDIGO` (key `fabricante_codigo`, or the name when the code is empty).
+  `vinculo` is `propria` (same CNPJ), `grupo` (same 8-digit root, other branch), `terceira` or
+  `exterior`; `produtos`, `produtos_ativos` and `apresentacoes` count what names the pair. On
+  build 20261022T230331Z: 1,155 CNPJ pairs, of which 575 propria, 86 grupo and 494 terceira,
+  plus 322 foreign pairs. The 356 resultado rows without an `alimentos` row are dropped. Group
+  `alimentos`, fontes `alimentos` and `alimentos_resultado`.
+- **`empresas` changes shape**: two columns appended after `medida_ultima`, `envasa_para`
+  (distinct other CNPJs this one packs food for) and `envasado_por` (distinct other CNPJs that
+  pack its food), from the `alimentos_fabricacao` pairs with `vinculo` grupo or terceira, 0 when
+  none. A packer with no product and no measure now gets a row too (about 150, with `produtos`
+  0), named as the packer list writes it. `alimentos_resultado` joins its fontes.
+- The build pins DuckDB's `default_null_order` to `NULLS LAST`, so a sort on a nullable column
+  (`alimentos_fabricacao`'s) gives the same file on every DuckDB version; no existing table
+  sorts on one, so their files are unchanged.
+
 ## 2026-10-22
 
 - **`medicamentos_por_produto.eans`**: the distinct EAN 1 of the product's presentations in the

@@ -56,6 +56,9 @@ def connect(spill: Path):
     con.execute("SET threads = 1")
     con.execute(f"SET memory_limit = {_quote(MEMORY_LIMIT)}")
     con.execute(f"SET temp_directory = {_quote(str(spill))}")
+    # the default changed across DuckDB versions; pinned so a sort on a nullable column
+    # (alimentos_fabricacao) gives the same file on every version
+    con.execute("SET default_null_order = 'NULLS LAST'")
     return con
 
 

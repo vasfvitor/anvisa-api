@@ -446,6 +446,14 @@ DESCRICOES: dict[str, dict[str, str]] = {
             "(produtos_irregulares.nu_cnpj_empresa_investigada); 0 quando nenhum."
         ),
         "medida_ultima": "Data da publicação mais recente entre essas medidas; nulo sem medidas.",
+        "envasa_para": (
+            "Empresas (CNPJs distintos, fora o próprio) para as quais esta envasa alimentos, "
+            "pelas envasadoras das apresentações (alimentos_resultado); 0 quando nenhuma."
+        ),
+        "envasado_por": (
+            "Empresas (CNPJs distintos, fora o próprio) que envasam alimentos desta; 0 quando "
+            "nenhuma. Os pares estão em alimentos_fabricacao."
+        ),
     },
     "medidas": {
         "dossie": "Identificador do dossiê (produtos_irregulares.co_seq_dossie_investig_med).",
@@ -623,5 +631,28 @@ DESCRICOES: dict[str, dict[str, str]] = {
             "Fabricantes como 'nome (país)', sem repetição, em ordem; lista vazia sem informação."
         ),
         "linhas": "Quantas linhas a origem traz (uma por fabricante).",
+    },
+    "alimentos_fabricacao": {
+        "cnpj": _CNPJ,
+        "empresa": _RAZAO,
+        "fabricante_cnpj": (
+            "CNPJ da envasadora no Brasil, 14 dígitos (empresas_envasadoras); nulo nos "
+            "fabricantes no exterior."
+        ),
+        "fabricante_codigo": (
+            "Código do fabricante no exterior na ANVISA (letra e 6 dígitos, ex. D000038), de "
+            "empresas_internacionais; nulo nas envasadoras e quando a origem não traz código."
+        ),
+        "fabricante": "Nome do fabricante como a origem escreve.",
+        "cidade": "Cidade da envasadora; nula nos fabricantes no exterior e quando falta.",
+        "pais": "País do fabricante como a origem escreve; nulo quando falta.",
+        "vinculo": (
+            '"propria" (o próprio CNPJ), "grupo" (mesma raiz de 8 dígitos, outra filial), '
+            '"terceira" (outro CNPJ) ou "exterior" (listado em empresas_internacionais, mesmo '
+            "quando o país é Brasil)."
+        ),
+        "produtos": "Alimentos da empresa (por co_seq_produto) com este fabricante.",
+        "produtos_ativos": "Desses, quantos com regularização ativa.",
+        "apresentacoes": "Apresentações desses alimentos que citam este fabricante.",
     },
 }

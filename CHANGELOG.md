@@ -6,6 +6,9 @@
 - `medicamentos_por_produto` gains `eans` (from `cmed`, now one of its fontes) and the
   cosméticos search folder a `palavras.parquet` listed as `palavras_parquet` in `indice.json`
   (`busca.listed` includes it when present). See `CHANGELOG.dados.md`.
+- New derived table `alimentos_fabricacao` (who packs or makes each company's food) and
+  `empresas.envasa_para` / `envasado_por`; `convert.connect` pins `default_null_order`. See
+  `CHANGELOG.dados.md`.
 
 ## 0.7.0 (2026-10-22)
 
