@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import time
+from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from email.utils import parsedate_to_datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -18,6 +20,29 @@ from .catalog import BASE_URL, Dataset
 
 CHUNK = 1 << 20
 BRASILIA = ZoneInfo("America/Sao_Paulo")
+# dados.anvisa.gov.br drops connections now and then ("Server disconnected without sending a
+# response", two dados.yml runs in a row on 2026-10-23): a transport error gets these pauses and
+# another attempt. HTTP status errors and short bodies are not retried: those are answers.
+BACKOFF = (2.0, 6.0)
+_sleep: Callable[[float], None] = time.sleep
+
+T = TypeVar("T")
+
+
+def _with_retries(url: str, attempt: Callable[[], T]) -> T:
+    """Run `attempt` and, on an httpx transport error, try again after each pause in BACKOFF;
+    the last failure becomes a DadosError naming the URL and the number of attempts. Any
+    other httpx error is a DadosError at once."""
+    for n in range(len(BACKOFF) + 1):
+        try:
+            return attempt()
+        except httpx.TransportError as exc:
+            if n == len(BACKOFF):
+                raise DadosError(f"{url}: {exc} (after {n + 1} attempts)") from exc
+            _sleep(BACKOFF[n])
+        except httpx.HTTPError as exc:
+            raise DadosError(f"{url}: {exc}") from exc
+    raise AssertionError("unreachable")
 
 
 @dataclass(frozen=True)
@@ -82,7 +107,8 @@ def download_url(
         headers["If-None-Match"] = etag
     elif last_modified:
         headers["If-Modified-Since"] = last_modified
-    try:
+
+    def attempt() -> Source | None:
         with http.stream("GET", url, headers=headers) as response:
             if response.status_code == 304:
                 return None
@@ -94,16 +120,16 @@ def download_url(
             if declared is not None and not encoded and int(declared) != size:
                 dest.unlink(missing_ok=True)
                 raise DadosError(f"{url}: got {size} of {declared} bytes (truncated)")
-    except httpx.HTTPError as exc:
-        raise DadosError(f"{url}: {exc}") from exc
-    return Source(
-        name=name,
-        url=url,
-        etag=response.headers.get("ETag"),
-        last_modified=response.headers.get("Last-Modified"),
-        bytes=size,
-        sha256=sha256,
-    )
+        return Source(
+            name=name,
+            url=url,
+            etag=response.headers.get("ETag"),
+            last_modified=response.headers.get("Last-Modified"),
+            bytes=size,
+            sha256=sha256,
+        )
+
+    return _with_retries(url, attempt)
 
 
 def cmed_stamp(last_modified: str | None) -> tuple[str | None, str | None]:
@@ -190,10 +216,11 @@ def fetch_source(
 def fetch_file(http: httpx.Client, url: str, dest: Path) -> tuple[int, str]:
     """GET `url` into `dest` (which appears only once complete) and return its size and SHA-256:
     for files whose expected hash the caller already knows, such as a published Parquet."""
-    try:
+
+    def attempt() -> tuple[int, str]:
         with http.stream("GET", url) as response:
             if not response.is_success:
                 raise DadosError(f"HTTP {response.status_code} for {url}")
             return write_stream(response.iter_bytes(CHUNK), dest)
-    except httpx.HTTPError as exc:
-        raise DadosError(f"{url}: {exc}") from exc
+
+    return _with_retries(url, attempt)

@@ -19,7 +19,18 @@ from conftest import headers_only
 from typer.testing import CliRunner
 
 from anvisa import cli
-from anvisa.dados import CATALOG, DERIVADAS, Unchanged, build, busca, cmed, derivar, parse, select
+from anvisa.dados import (
+    CATALOG,
+    DERIVADAS,
+    Unchanged,
+    build,
+    busca,
+    cmed,
+    derivar,
+    fetch,
+    parse,
+    select,
+)
 from anvisa.dados.catalog import (
     ALIMENTOS,
     ALIMENTOS_RESULTADO,
@@ -420,8 +431,13 @@ def test_download_truncated_is_an_error(tmp_path):
     assert list(tmp_path.iterdir()) == []
 
 
-def test_download_http_errors_are_dados_errors(tmp_path):
+def test_download_http_errors_are_dados_errors(tmp_path, monkeypatch):
+    pauses = []
+    monkeypatch.setattr(fetch, "_sleep", pauses.append)
+    attempts = []
+
     def handler(request):
+        attempts.append(str(request.url))
         if "RESULTADO" in str(request.url):
             raise httpx.ConnectError("boom", request=request)
         return httpx.Response(503, text="down")
@@ -429,9 +445,34 @@ def test_download_http_errors_are_dados_errors(tmp_path):
     with http_client(transport=httpx.MockTransport(handler)) as http:
         with pytest.raises(DadosError, match="HTTP 503"):
             download(http, ALIMENTOS, tmp_path)
-        with pytest.raises(DadosError, match="boom"):
+        with pytest.raises(DadosError, match=r"boom \(after 3 attempts\)"):
             download(http, ALIMENTOS_RESULTADO, tmp_path)
     assert list(tmp_path.iterdir()) == []
+    # a status is an answer: one request; a dropped connection is retried after each pause
+    assert len([u for u in attempts if "RESULTADO" not in u]) == 1
+    assert len([u for u in attempts if "RESULTADO" in u]) == 3
+    assert pauses == list(fetch.BACKOFF)
+
+
+def test_download_retries_a_dropped_connection(fake_dados, tmp_path, monkeypatch):
+    # dados.anvisa.gov.br, 2026-10-23: "Server disconnected without sending a response" twice
+    # in a row, on different files, each killing a dados.yml run
+    monkeypatch.setattr(fetch, "_sleep", lambda pause: None)
+    failures = iter([True, True, False])
+    real = fake_dados.handler
+
+    def handler(request):
+        if next(failures):
+            raise httpx.RemoteProtocolError(
+                "Server disconnected without sending a response.", request=request
+            )
+        return real(request)
+
+    with http_client(transport=httpx.MockTransport(handler)) as http:
+        source = download(http, ALIMENTOS, tmp_path)
+    assert source is not None and source.bytes == len(sample(ALIMENTOS).read_bytes())
+    assert (tmp_path / ALIMENTOS.local_file).exists()
+    assert not list(tmp_path.glob("*.part"))
 
 
 # --- convert ------------------------------------------------------------------

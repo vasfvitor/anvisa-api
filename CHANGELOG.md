@@ -9,6 +9,10 @@
 - New derived table `alimentos_fabricacao` (who packs or makes each company's food) and
   `empresas.envasa_para` / `envasado_por`; `convert.connect` pins `default_null_order`. See
   `CHANGELOG.dados.md`.
+- The source downloads retry a dropped connection (httpx transport errors) twice, after 2 s and
+  6 s, before failing; HTTP status errors and truncated bodies still fail at once. Two `dados.yml`
+  runs on 2026-10-23 died on dados.anvisa.gov.br's "Server disconnected without sending a
+  response".
 
 ## 0.7.0 (2026-10-22)
 
