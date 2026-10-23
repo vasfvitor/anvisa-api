@@ -525,7 +525,8 @@ def dados_build(
         "other published tables are carried over, so the manifest stays complete; without it "
         "the manifest lists only these. Derived tables (produtos, empresas, medidas, "
         "cosmeticos_por_empresa, alimentos_por_produto, medicamentos_por_produto, "
-        "produtos_saude_por_produto, alimentos_fabricacao) cannot be selected: they are "
+        "produtos_saude_por_produto, alimentos_fabricacao, certificados, "
+        "produtos_saude_fabricacao) cannot be selected: they are "
         "rebuilt on every build from the tables present",
     ),
     skip_unchanged: str | None = typer.Option(

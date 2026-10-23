@@ -4,13 +4,14 @@ Where the library stands after 0.5.0 and what is worth doing next, in order. Eve
 touches the API follows the rule in CONTRIBUTING.md: it goes in with a recorded response, not a
 guess.
 
-## Status (2026-10-22)
+## Status (2026-10-23)
 
 All 59 endpoints of the OpenAPI document are wrapped (the 27 added on 2026-10-01 since
-2026-10-22), and `tests/test_spec.py` holds that count against the resolved spec. Seven open-data tables are live on GitHub Pages,
-cosméticos also as search files (2026-10-09), plus eight derived tables (`produtos`, `empresas`, `medidas`,
+2026-10-22), and `tests/test_spec.py` holds that count against the resolved spec. Twelve open-data tables are live on GitHub Pages,
+cosméticos also as search files (2026-10-09), plus ten derived tables (`produtos`, `empresas`, `medidas`,
 `cosmeticos_por_empresa`, `alimentos_por_produto`, `medicamentos_por_produto`,
-`produtos_saude_por_produto`, `alimentos_fabricacao`),
+`produtos_saude_por_produto`, `alimentos_fabricacao`, `certificados`,
+`produtos_saude_fabricacao`),
 a generated data dictionary and Portuguese column descriptions in the manifest (2026-10-11); the
 parser streams, so AFE is unblocked. What
 is left is verification of claims that come only from ANVISA's examples, robustness
@@ -99,8 +100,12 @@ entry in `anvisa/dados/catalog.py` plus one fixture (see CONTRIBUTING.md):
   convert, 75 of them the parser's). Next in the same folder:
   `TA_CONSULTA_FUNCIONAMENTO_EMPRESA_NACIONAL.CSV` (AFE, 314 MB: the parser streams since
   2026-10-08, so next is a profile to decide whether the whole file is small enough as Parquet
-  for a browser) and `TA_CONSULTA_CBPF.CSV` (8 MB, few food companies; it too has a requester
-  CNPJ beside the inspected one).
+  for a browser). **CBPF done 2026-10-23**: `cbpf` (`TA_CONSULTA_CBPF.CSV`, every area but
+  medicines), `cbpf_medicamentos` (`TA_CONSULTA_CBPF_MEDICAMENTO_DETALHE.CSV`, stale since
+  2025-09-08 but the only medicines file) and the derived `certificados`, one row per
+  petição with the requester, the inspected plant and `vigente`;
+  `TA_CONSULTA_CBPF_DETALHE.CSV` is stale and inconsistent with the main file, and
+  `TA_CONSULTA_CBPF_MEDICAMENTO.CSV` has 4 rows: neither is read.
 - **Cosméticos** (`TA_CONSULTA_COSMETICOS.CSV`, 228 MB). **Done 2026-10-08**: `cosmeticos`,
   1,204,980 rows, 24.2 MB of Parquet; the parser reads it in 31 s at 68 MiB, the whole
   conversion takes 30-40 s and peaks at ~700 MiB with no spill under the new 3 GB

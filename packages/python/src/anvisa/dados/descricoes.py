@@ -233,6 +233,37 @@ _CMED: dict[str, str] = {
     ),
 }
 
+# the columns cbpf and cbpf_medicamentos share, by source header
+_CBPF_COMUM = {
+    "CO_DOCUMENTO_PETICAO": (
+        "Código da petição do certificado, 7 ou 8 dígitos; identifica o certificado. Algumas "
+        "linhas repetem outra, iguais em tudo."
+    ),
+    "NU_CNPJ_SOLICITANTE": (
+        "CNPJ da empresa que pediu o certificado, 14 dígitos com zeros à esquerda. Texto."
+    ),
+    "CODIGOUNICO_INSPECIONADA": (
+        "Código da unidade inspecionada no exterior na ANVISA, letra e 6 dígitos (A e B: "
+        "medicamentos e insumos; C: produtos para saúde); vazio no Brasil e quando a origem "
+        "não traz a unidade."
+    ),
+    "NU_CNPJ_EMPRESA_INSPECIONADA": (
+        "CNPJ da unidade inspecionada, 14 dígitos, só quando está no Brasil; vazio nas demais."
+    ),
+    "NO_TIPO_CERTIFICADO": '"CBPF" (fabricação) ou "CBPDA" (distribuição e/ou armazenagem).',
+    "DT_PUBLICACAO": "Publicação do certificado no Diário Oficial da União (data, sem hora).",
+    "DS_TP_EMISSAO_CERTIFICADO": (
+        "O que embasou a emissão: análise de risco, inspeção, reconhecimento de outras "
+        "autoridades, renovação automática, aprovação tácita, outros, não informado; vazio na "
+        "maioria das linhas."
+    ),
+    "STATUS": (
+        'Situação calculada pela ANVISA no dia da carga (dt_carga_etl): "VALIDO", "VENCIDO", '
+        '"INDEFERIDO", "CANCELADO" ou vazio, também em certificados válidos. Prefira '
+        "certificados.vigente."
+    ),
+}
+
 DESCRICOES: dict[str, dict[str, str]] = {
     "alimentos": {
         "NO_PRODUTO": (
@@ -628,7 +659,16 @@ DESCRICOES: dict[str, dict[str, str]] = {
         "publicacao": "Publicação do registro ou cadastro (data); nula em parte.",
         "vencimento": "Validade do registro (data); nula nos cadastros.",
         "fabricantes": (
-            "Fabricantes como 'nome (país)', sem repetição, em ordem; lista vazia sem informação."
+            "Fabricantes como 'nome (país)', sem repetição, em ordem; lista vazia (não nula) "
+            "sem informação."
+        ),
+        "fabricantes_chaves": (
+            "A chave de cada fabricante (produtos_saude_fabricacao.chave), na mesma posição de "
+            "fabricantes; lista vazia sem informação."
+        ),
+        "fabricantes_paises": (
+            "O país de cada fabricante, na mesma posição de fabricantes; com a chave, "
+            "identifica o fabricante em produtos_saude_fabricacao. Lista vazia sem informação."
         ),
         "linhas": "Quantas linhas a origem traz (uma por fabricante).",
     },
@@ -654,5 +694,181 @@ DESCRICOES: dict[str, dict[str, str]] = {
         "produtos": "Alimentos da empresa (por co_seq_produto) com este fabricante.",
         "produtos_ativos": "Desses, quantos com regularização ativa.",
         "apresentacoes": "Apresentações desses alimentos que citam este fabricante.",
+    },
+    "cbpf": {
+        "CO_DOCUMENTO_PETICAO": _CBPF_COMUM["CO_DOCUMENTO_PETICAO"],
+        "RAZAOSOCIAL_SOLICITANTE": "Razão social da empresa que pediu o certificado (a detentora).",
+        "NU_CNPJ_SOLICITANTE": _CBPF_COMUM["NU_CNPJ_SOLICITANTE"],
+        "RAZAOSOCIAL_INSPECIONADA": (
+            "Razão social da unidade fabril inspecionada; vazia em 72% das linhas, as mais antigas."
+        ),
+        "CODIGOUNICO_INSPECIONADA": _CBPF_COMUM["CODIGOUNICO_INSPECIONADA"],
+        "NU_CNPJ_EMPRESA_INSPECIONADA": _CBPF_COMUM["NU_CNPJ_EMPRESA_INSPECIONADA"],
+        "NO_PAIS_INSPECIONADA": (
+            "País da unidade inspecionada, como a ANVISA escreve; vazio com ela."
+        ),
+        "NO_TIPO_CERTIFICADO": _CBPF_COMUM["NO_TIPO_CERTIFICADO"],
+        "ASSUNTO": (
+            "Assunto da petição: código, família (PRODUTOS PARA SAÚDE, MDSAP, INSUMOS "
+            "FARMACÊUTICOS, COSMÉTICOS..., SANEANTES, ALIMENTOS) e texto, separados por ' - '."
+        ),
+        "DT_PUBLICACAO": _CBPF_COMUM["DT_PUBLICACAO"],
+        "DT_VALIDADE": (
+            "Fim da validade do certificado (data, sem hora); vazio nos indeferidos, nos "
+            "cancelados e em parte dos deferidos."
+        ),
+        "DS_TP_EMISSAO_CERTIFICADO": _CBPF_COMUM["DS_TP_EMISSAO_CERTIFICADO"],
+        "SITUACAO": (
+            'Resultado da petição: "Publicado deferimento", "Publicado indeferimento", '
+            '"Revalidação automática", "Renovação automática" ou "Certificado emitido".'
+        ),
+        "NU_PROCESSO": _PROCESSO,
+        "STATUS": _CBPF_COMUM["STATUS"],
+        "DT_CARGA_ETL": _CARGA_ETL,
+    },
+    "cbpf_medicamentos": {
+        "CO_DOCUMENTO_PETICAO": (
+            _CBPF_COMUM["CO_DOCUMENTO_PETICAO"] + " Repete-se em cada linha certificada da petição."
+        ),
+        "EMPRESASOLICITANTE": "Razão social da empresa que pediu o certificado (a detentora).",
+        "NU_CNPJ_SOLICITANTE": _CBPF_COMUM["NU_CNPJ_SOLICITANTE"],
+        "ENDERECOSOLICITANTE": "Endereço da empresa solicitante.",
+        "CIDADESOLICITANTE": "Cidade da empresa solicitante.",
+        "UFSOLICITANTE": "UF da empresa solicitante, duas letras.",
+        "RAZAOSOCIAL": (
+            "Razão social da unidade fabril inspecionada (o dicionário da ANVISA a descreve "
+            "como a solicitante, por engano); vazia quando a origem não traz a unidade."
+        ),
+        "CODIGOUNICO_INSPECIONADA": _CBPF_COMUM["CODIGOUNICO_INSPECIONADA"],
+        "NU_CNPJ_EMPRESA_INSPECIONADA": _CBPF_COMUM["NU_CNPJ_EMPRESA_INSPECIONADA"],
+        "ENDERECO": "Endereço da unidade inspecionada; vazio quando a origem não a traz.",
+        "PAIS": "País da unidade inspecionada, como a ANVISA escreve; vazio quando falta.",
+        "CO_UF_INSPECIONADA": (
+            "UF da unidade inspecionada no Brasil, duas letras; vazia no exterior."
+        ),
+        "CIDADE_INSPECIONADA": "Cidade da unidade inspecionada; vazia quando a origem não a traz.",
+        "NO_TIPO_CERTIFICADO": _CBPF_COMUM["NO_TIPO_CERTIFICADO"],
+        "ASSUNTO": (
+            "Assunto da petição: código, família (MEDICAMENTOS, MEDICAMENTO, PRODUTOS "
+            "BIOLÓGICOS, MEDICAMENTO E INSUMOS FARMACÊUTICOS) e texto, separados por ' - ' "
+            "(ou ' – ')."
+        ),
+        "DT_PUBLICACAO": _CBPF_COMUM["DT_PUBLICACAO"],
+        "DT_VALIDADE": (
+            "Fim da validade do certificado (data, sem hora); vazio nos indeferidos e nos "
+            "cancelados."
+        ),
+        "NU_RESOLUCAO": "Nº da resolução que publicou o certificado, como escrito (1.234, 630).",
+        "DT_RESOLUCAO": "Data dessa resolução (sem hora).",
+        "NU_DOU": "Nº do Diário Oficial da União da publicação, como escrito (39, 99-A, -).",
+        "LINHACERTIFICACAO": (
+            "A linha certificada numa frase: linha fabril, classe e etapa entre parênteses, "
+            "formas farmacêuticas depois de ':'. \"Medicamentos\" nos CBPDA; vazia nas "
+            "petições mais antigas."
+        ),
+        "LINHACBPF": (
+            "Linha fabril: sólidos, líquidos e semissólidos não estéreis, produtos estéreis, "
+            'gases medicinais, líquidos criogênicos medicinais; "Medicamentos" nos CBPDA.'
+        ),
+        "CLASSECERTIFICACAO": (
+            "Classe certificada: Comum, Citotóxicos, Hormônios, Penicilínicos, "
+            'Cefalosporínicos...; "Medicamentos" nos CBPDA.'
+        ),
+        "ETAPASFABRICACAO": (
+            "Etapas de fabricação certificadas (Granel, Embalagem primária, Embalagem "
+            "secundária), separadas por vírgula."
+        ),
+        "FORMAFARMACEUTICA": "Formas farmacêuticas da linha, separadas por vírgula.",
+        "ST_LIBERACAO_PARAMETRICA": (
+            "Verdadeiro quando a linha tem liberação paramétrica certificada."
+        ),
+        "TIPOPETICAO": (
+            'Tipo de medicamento da petição: "Medicamentos sintéticos", "Medicamentos '
+            'biológicos", "Radiofármacos" ou "Não se aplica"; vazio nas mais antigas.'
+        ),
+        "DS_TP_EMISSAO_CERTIFICADO": _CBPF_COMUM["DS_TP_EMISSAO_CERTIFICADO"],
+        "DS_MOTIVO_CANCELAMENTO": (
+            "Motivo do cancelamento ou do indeferimento, quando há; a ANVISA publica os "
+            "acentos trocados por ¿ (n¿o), mantidos."
+        ),
+        "NU_PROCESSO": _PROCESSO,
+        "STATUS": _CBPF_COMUM["STATUS"],
+        "DT_CARGA_ETL": (
+            "Quando a ANVISA gerou o arquivo aberto" + _BRASILIA + ": 08/09/2025 em todas as "
+            "linhas, a última carga deste arquivo."
+        ),
+    },
+    "certificados": {
+        "id": "Código da petição (co_documento_peticao), 7 ou 8 dígitos; único.",
+        "cnpj": "CNPJ da empresa solicitante (a detentora do certificado), 14 dígitos. Texto.",
+        "empresa": "Razão social da solicitante.",
+        "inspecionada_cnpj": (
+            "CNPJ da unidade fabril inspecionada, quando está no Brasil; nulo nas demais."
+        ),
+        "inspecionada_codigo": (
+            "Código da unidade inspecionada no exterior (letra A, B ou C e 6 dígitos); nulo "
+            "nas demais."
+        ),
+        "inspecionada": "Razão social da unidade inspecionada; nula quando a origem não a traz.",
+        "pais": "País da unidade inspecionada, como a ANVISA escreve; nulo com ela.",
+        "tipo": _CBPF_COMUM["NO_TIPO_CERTIFICADO"],
+        "area": (
+            '"produtos_saude", "insumos", "medicamentos", "cosmeticos", "saneantes", '
+            '"alimentos" ou "outros", pela família do assunto.'
+        ),
+        "assunto": "Assunto da petição, inteiro: código, família e texto.",
+        "emissao": (
+            "O que embasou a emissão (análise de risco, inspeção, reconhecimento de outras "
+            "autoridades...); nulo na maioria."
+        ),
+        "situacao": (
+            'Resultado: "Publicado deferimento", "Publicado indeferimento", "Revalidação '
+            'automática", "Renovação automática" ou "Certificado emitido"; nos medicamentos, '
+            "derivado do status."
+        ),
+        "publicacao": "Publicação no Diário Oficial da União (data).",
+        "validade": (
+            "Fim da validade (data); nulo nos indeferidos, cancelados e em parte dos deferidos."
+        ),
+        "vigente": (
+            "Deferido, não cancelado e com validade igual ou posterior a dados_de; falso sem "
+            "validade."
+        ),
+        "cancelado": "Verdadeiro quando a ANVISA marcou o certificado como cancelado.",
+        "vinculo": (
+            '"propria", "grupo", "terceira", "exterior" ou "desconhecida": de quem é a unidade '
+            "inspecionada em relação à solicitante."
+        ),
+        "processo": _PROCESSO,
+        "linhas": (
+            "Nos medicamentos, as linhas certificadas (linhacertificacao), distintas e em "
+            "ordem; lista vazia nas outras áreas e nas petições de medicamentos sem linha."
+        ),
+        "dados_de": (
+            "Data da carga do arquivo de origem (dt_carga_etl), a referência de vigente; "
+            "2025-09-08 nos medicamentos."
+        ),
+    },
+    "produtos_saude_fabricacao": {
+        "cnpj": _CNPJ,
+        "empresa": _RAZAO,
+        "chave": (
+            "Nome do fabricante normalizado (minúsculas, sem acentos, só letras e dígitos): com "
+            "pais, identifica o fabricante; também em produtos_saude_por_produto."
+            "fabricantes_chaves. Para juntar, não para exibir."
+        ),
+        "fabricante": (
+            "Nome do fabricante na grafia mais frequente da origem (empate: ordem alfabética)."
+        ),
+        "pais": "País do fabricante, como a ANVISA escreve.",
+        "vinculo": (
+            '"propria" (o nome normalizado é o da própria detentora, no Brasil), "terceira" '
+            '(outro fabricante no Brasil) ou "exterior".'
+        ),
+        "registros": "Registros ou cadastros distintos da empresa com este fabricante.",
+        "registros_ativos": (
+            "Desses, quantos ativos na data do arquivo (como produtos_saude_por_produto.ativo)."
+        ),
+        "linhas": "Linhas de produtos_saude com este par.",
     },
 }

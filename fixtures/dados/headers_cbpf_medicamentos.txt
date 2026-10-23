@@ -1,0 +1,9 @@
+HTTP/2 200
+Content-Type: application/octet-stream
+Content-Length: 9844514
+Last-Modified: Fri, 15 May 2026 07:52:35 GMT
+ETag: "963722-651d67ef46fb8"
+Accept-Ranges: bytes
+Cache-Control: public
+
+body: 9,844,514 bytes (sha256 fe76df35dda0f76eb164f11a40e768441a191bbd179ec74e6303d46a318da1e5), Windows-1252 (0x96 4,662 times, 0x92 46; 749 literal `¿` standing for lost characters in DS_MOTIVO_CANCELAMENTO), 14,803 records of 32 fields, LF only, no line break or `;` inside values (not kept). One row per certified line: 13,651 petições, 25 rows exact copies of another. DT_CARGA_ETL is 09/08/2025 15:28:51 or 15:28:52 on every row although the file was republished on 2026-05-15: ANVISA stopped refreshing it. cbpf_medicamentos_head.csv is the header plus 32 of those records, cut by line, byte for byte, every row of 22 whole petições: one of six lines (INDEFERIDO, with a motivo), one of three and two of two lines (one with ST_LIBERACAO_PARAMETRICA S), two rows with the same LINHACERTIFICACAO, an exact duplicate pair, VALIDO, VENCIDO, CANCELADO (motivos with `¿` and inner quotes), STATUS empty both valid and expired by date, a VALIDO whose validade passed before the carga day, CBPDA, the MEDICAMENTOS (hyphen and en dash), MEDICAMENTO, MEDICAMENTO E INSUMOS FARMACÊUTICOS and PRODUTOS BIOLÓGICOS families, own, same-root and third-party Brazilian plants, A codes abroad, an unknown plant, a plant named abroad without code, a 16-digit processo, NU_DOU `-`, `\xa0` inside FORMAFARMACEUTICA, and petições of 44734671000151, 60318797000100 and 33247743000110 (in medicamentos_head.csv). Text is quoted, CO_DOCUMENTO_PETICAO is not. Dates are mm/dd/yyyy HH:MM:SS. Dictionary: the same PDF as TA_CONSULTA_CBPF.CSV, which describes RAZAOSOCIAL as the solicitante; it is the inspected plant.

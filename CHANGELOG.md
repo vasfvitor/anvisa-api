@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- New datasets `cbpf` and `cbpf_medicamentos` (good-practice certificates, group `cbpf`)
+  and derived tables `certificados` and `produtos_saude_fabricacao`;
+  `produtos_saude_por_produto` gains `fabricantes_chaves` and `fabricantes_paises`, and
+  its `fabricantes` is `[]` instead of NULL when the source names no manufacturer.
+  `derivar.chave_sql` is the manufacturer key, pinned by `fixtures/dados/chaves.json`, a
+  second contract with anvisa-dash beside `tokens.json`. See `CHANGELOG.dados.md`.
 - The data build writes a `404.html` beside the manifest (see `CHANGELOG.dados.md`).
 - `medicamentos_por_produto` gains `eans` (from `cmed`, now one of its fontes) and the
   cosméticos search folder a `palavras.parquet` listed as `palavras_parquet` in `indice.json`

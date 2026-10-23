@@ -8,6 +8,45 @@ consumer must change to keep reading it; everything below has been additive, so 
 
 ## 2026-10-23
 
+- **`cbpf` and `cbpf_medicamentos`**, the good manufacturing (CBPF) and distribution and
+  storage (CBPDA) practices certificates, from `CONSULTAS/EMPRESA_FISCALIZACAO_PRODUTO/`,
+  group `cbpf`. `cbpf` (`TA_CONSULTA_CBPF.CSV`, 22,039 rows on 2026-10-13) is one row per
+  petição of every area but medicines, with 80 rows that are exact copies of another
+  (21,959 petições); the inspected plant is a CNPJ in Brazil, an ANVISA code abroad, or
+  missing on the older 72%; `status` is ANVISA's verdict on the load day. Dates month
+  first; `COM&Eacute-RCIO` and `&#8203-` kept as written. `cbpf_medicamentos`
+  (`TA_CONSULTA_CBPF_MEDICAMENTO_DETALHE.CSV`, 14,803 rows, 13,651 petições) is one row
+  per certified line of a medicines' petição, and **stale**: `dt_carga_etl` is 2025-09-08
+  on every row although ANVISA republished it on 2026-05-15 (the main
+  `TA_CONSULTA_CBPF_MEDICAMENTO.CSV` has 4 rows); its notes say so.
+  `TA_CONSULTA_CBPF_DETALHE.CSV` is left out, stale and inconsistent with the main file.
+- **`certificados`**, one row per petição of both files: solicitante, inspected plant
+  (`inspecionada_cnpj` / `inspecionada_codigo`), `tipo`, `area` (`produtos_saude` incl.
+  MDSAP, `insumos`, `medicamentos`, `cosmeticos`, `saneantes`, `alimentos`, `outros`),
+  `situacao` (synthesised from `status` for medicines, whose file has none), `vigente`
+  (decided, not `cancelado`, `validade >= dados_de`: against each file's own load date,
+  never the build's), `vinculo` (`propria`, `grupo`, `terceira`, `exterior`,
+  `desconhecida`), the medicines' certified lines as the sorted list `linhas`, and
+  `dados_de`, which a consumer must show for medicines. On the files of 2026-10-13 and
+  2025-09-08: 35,610 rows (21,959 + 13,651), 3,963 + 2,484 vigentes; on the `cbpf` part
+  5,174 exterior, 1,006 propria, 20 grupo, 7 terceira and 15,752 desconhecida. Group
+  `cbpf`, fontes `cbpf` and `cbpf_medicamentos`.
+- **`produtos_saude_fabricacao`**, who makes each company's medical devices: one row per
+  holder CNPJ, manufacturer `chave` and `pais`, from `produtos_saude`'s fabricante
+  columns. ANVISA gives manufacturers no id, so the key is the name normalized
+  (`derivar.chave_sql`: five compatibility characters mapped, accents stripped, lower
+  case, only `[a-z0-9]`), never merged across countries; the rule is
+  `fixtures/dados/chaves.json`, a second contract tested on both sides like
+  `tokens.json`. `fabricante` is the commonest spelling; `vinculo` is `propria` (the
+  holder's own name, in Brazil), `terceira` or `exterior`; `registros`,
+  `registros_ativos`, `linhas`. On 2026-10-13: 16,725 rows (14,531 exterior, 2,064
+  propria, 130 terceira), 11,333 manufacturers.
+- **`produtos_saude_por_produto` changes shape**: `fabricantes_chaves` and
+  `fabricantes_paises` appended after `fabricantes`, aligned index by index with it (one
+  distinct set, one order, so the existing `fabricantes` values do not change); with
+  `cnpj` they are the key of `produtos_saude_fabricacao`. `fabricantes` is `[]` instead
+  of NULL on the registros without a manufacturer, as its note already promised.
+- 10 derived tables, 22 published.
 - **`alimentos_fabricacao`**, who packs or makes each company's food: one row per holder CNPJ
   and manufacturer, read from the two manufacturer columns of `alimentos_resultado` (one row
   per apresentação). `empresas_envasadoras` gives Brazilian packers as

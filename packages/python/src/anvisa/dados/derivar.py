@@ -11,7 +11,11 @@ Rules for a `Derivada`:
   `list(x ORDER BY x)`, `first(x ORDER BY …)`): DuckDB does not promise scan order even with
   one thread, and the build's Parquet must be byte-identical for identical inputs.
 - No column depends on the day of the build (no "vencida" flag): the site computes that when
-  the page is viewed. No search-normalized text: that is the site's concern.
+  the page is viewed. No search-normalized text: that is the site's concern. The one
+  exception is a join key for an entity ANVISA gives no id: a device manufacturer exists only
+  as a name, so `chave_sql` derives `chave` from it, with the same rule the site uses for its
+  SQL (`palavrasSql`), pinned on both sides by `fixtures/dados/chaves.json`. A chave is
+  published only as a key, never as text to show.
 - Output column names are the row's own: `cnpj`, `nome`, not ANVISA's prefixed headers.
 """
 
@@ -181,14 +185,33 @@ def _medicamentos_unicos(t: dict[str, str]) -> str:
         GROUP BY id"""
 
 
+# The site's palavrasSql maps these five before strip_accents, which drops them (measured on
+# the cosméticos names, 2026-10-09; on the 14,916 device manufacturer and holder names of
+# 2026-10-13 the result equals Python's NFKD on every name). fixtures/dados/chaves.json pins
+# the rule on both sides.
+_COMPATIVEIS = ((186, "o"), (170, "a"), (8482, "tm"), (178, "2"), (179, "3"))  # º ª ™ ² ³
+
+
+def chave_sql(expr: str) -> str:
+    """SQL for the join key of a name ANVISA gives no id: trimmed, the five compat characters
+    replaced, accents stripped, lower case, everything but [a-z0-9] removed."""
+    for code, text in _COMPATIVEIS:
+        expr = f"replace({expr}, chr({code}), '{text}')"
+    return f"regexp_replace(lower(strip_accents(trim({expr}))), '[^a-z0-9]', '', 'g')"
+
+
 def _produtos_saude_unicos(t: dict[str, str]) -> str:
     """produtos_saude as one row per registro: the source has one row per registro ×
     fabricante (116,008 rows, 100,681 registros), everything but the fabricante equal. The
     registration is in force when the source says VIGENTE (cadastros, no term) or its date is
     on or after the file's own load date (dt_atualizacao_dado): nothing here depends on the
-    day of the build."""
+    day of the build. fabricantes, fabricantes_chaves and fabricantes_paises are three lists
+    over one distinct set, all ordered by the display string, so index i of one is index i of
+    the others; that order equals list_sort's (binary), so the published fabricantes did not
+    change. A registro without a manufacturer gets three empty lists."""
     validade = "try_strptime(validade_registro_cadastro, '%d/%m/%Y')"
     fabricante = "nome_fabricante || coalesce(' (' || nome_pais_fabric || ')', '')"
+    vazia = "CAST([] AS VARCHAR[])"
     return f"""
         SELECT numero_registro_cadastro AS id,
           numero_registro_cadastro AS registro,
@@ -204,10 +227,19 @@ def _produtos_saude_unicos(t: dict[str, str]) -> str:
                   OR {validade} >= dt_atualizacao_dado) AS ativo,
           min(dt_pub_registro_cadastro) AS publicacao,
           CAST(max({validade}) AS DATE) AS vencimento,
-          list_sort(list_distinct(list({fabricante}) FILTER (WHERE nome_fabricante IS NOT NULL)))
-            AS fabricantes,
+          coalesce(min(f.fabricantes), {vazia}) AS fabricantes,
+          coalesce(min(f.fabricantes_chaves), {vazia}) AS fabricantes_chaves,
+          coalesce(min(f.fabricantes_paises), {vazia}) AS fabricantes_paises,
           CAST(count(*) AS INTEGER) AS linhas
-        FROM {t["produtos_saude"]}
+        FROM {t["produtos_saude"]} p
+        LEFT JOIN (
+          SELECT registro, list(nome ORDER BY nome) AS fabricantes,
+            list(chave ORDER BY nome) AS fabricantes_chaves,
+            list(pais ORDER BY nome) AS fabricantes_paises
+          FROM (SELECT DISTINCT numero_registro_cadastro AS registro, {fabricante} AS nome,
+                  {chave_sql("nome_fabricante")} AS chave, nome_pais_fabric AS pais
+                FROM {t["produtos_saude"]} WHERE nome_fabricante IS NOT NULL)
+          GROUP BY registro) f ON f.registro = p.numero_registro_cadastro
         GROUP BY numero_registro_cadastro"""
 
 
@@ -724,15 +756,193 @@ PRODUTOS_SAUDE_POR_PRODUTO = Derivada(
         "Registrado. ativo é verdadeiro nos cadastros (VIGENTE) e nos registros cuja validade "
         "não tinha vencido na data do arquivo (dt_atualizacao_dado); vencimento é essa "
         "validade, nula nos cadastros.",
-        "fabricantes lista cada fabricante como 'nome (país)', sem repetição, em ordem; vazia "
-        "quando a origem não informa.",
+        "fabricantes lista cada fabricante como 'nome (país)', sem repetição, em ordem; lista "
+        "vazia (não nula) quando a origem não informa.",
+        "fabricantes_chaves e fabricantes_paises trazem, na mesma posição de fabricantes, a "
+        "chave do nome (produtos_saude_fabricacao.chave) e o país de cada fabricante: o par "
+        "(chave, país) identifica o fabricante em produtos_saude_fabricacao. Duas grafias do "
+        "mesmo nome repetem a chave.",
     ),
     sql=lambda t: (
         f"""
         SELECT id, registro, processo, nome, nome_tecnico, classe_risco, cnpj, empresa, tipo,
-          ativo, publicacao, vencimento, fabricantes, linhas
+          ativo, publicacao, vencimento, fabricantes, fabricantes_chaves, fabricantes_paises,
+          linhas
         FROM ({_produtos_saude_unicos(t)})"""
     ),
+)
+
+
+def _produtos_saude_fabricacao(t: dict[str, str]) -> str:
+    # Who makes each company's devices, from the fabricante columns of produtos_saude (one row
+    # per registro × fabricante; name and country are both present or both empty, 12,733 empty
+    # rows). ANVISA gives manufacturers no id, so the key is the name's chave (chave_sql) and
+    # the country, never merged across countries: 11,333 manufacturers, 16,725 (holder, chave,
+    # país) pairs on 2026-10-13 (profiled 2026-10-23), 1,125 of the keys with more than one
+    # spelling. `fabricante` is the commonest spelling over every row of that key (ties
+    # alphabetical, as empresas.nome); the holder is its own manufacturer when its name's
+    # chave equals the manufacturer's and the country is BRASIL (2,064 pairs); other Brazilian
+    # makers are `terceira` (130 pairs); abroad is `exterior`. `ativo` is the registro's, as
+    # _produtos_saude_unicos reads it.
+    validade = "try_strptime(validade_registro_cadastro, '%d/%m/%Y')"
+    return f"""
+        WITH base AS (
+          SELECT numero_registro_cadastro AS registro,
+            cnpj_detentor_registro_cadastro AS cnpj,
+            detentor_registro_cadastro AS empresa,
+            nome_fabricante, nome_pais_fabric AS pais,
+            {chave_sql("nome_fabricante")} AS chave,
+            {chave_sql("detentor_registro_cadastro")} AS chave_empresa,
+            validade_registro_cadastro = 'VIGENTE' OR {validade} >= dt_atualizacao_dado AS ativo
+          FROM {t["produtos_saude"]} WHERE nome_fabricante IS NOT NULL),
+        grafia AS (
+          SELECT chave, pais, first(nome_fabricante ORDER BY n DESC, nome_fabricante)
+            AS fabricante
+          FROM (SELECT chave, pais, nome_fabricante, count(*) AS n FROM base GROUP BY 1, 2, 3)
+          GROUP BY 1, 2),
+        ativos AS (SELECT registro, coalesce(bool_or(ativo), false) AS ativo FROM base GROUP BY 1)
+        SELECT b.cnpj, min(b.empresa) AS empresa, b.chave, min(g.fabricante) AS fabricante,
+          b.pais,
+          CASE WHEN b.pais <> 'BRASIL' THEN 'exterior'
+               WHEN b.chave = min(b.chave_empresa) THEN 'propria'
+               ELSE 'terceira' END AS vinculo,
+          CAST(count(DISTINCT b.registro) AS INTEGER) AS registros,
+          CAST(count(DISTINCT b.registro) FILTER (WHERE a.ativo) AS INTEGER) AS registros_ativos,
+          CAST(count(*) AS INTEGER) AS linhas
+        FROM base b JOIN grafia g USING (chave, pais) JOIN ativos a USING (registro)
+        GROUP BY b.cnpj, b.chave, b.pais"""
+
+
+PRODUTOS_SAUDE_FABRICACAO = Derivada(
+    name="produtos_saude_fabricacao",
+    group="produtos_saude",
+    title="Produtos para saúde: quem fabrica para quem, uma linha por empresa e fabricante",
+    fontes=("produtos_saude",),
+    sort=("cnpj", "chave", "pais"),
+    notes=(
+        "Uma linha por empresa detentora (cnpj) e fabricante dos produtos para saúde dela, "
+        "lidos de nome_fabricante e nome_pais_fabric em produtos_saude. A ANVISA não dá "
+        "identificador ao fabricante: ele é identificado pela chave (o nome em minúsculas, "
+        "sem acentos, só letras e dígitos) e pelo país, nunca juntos entre países; fabricante "
+        "é a grafia mais frequente desse nome. Derivada a cada build.",
+        'vinculo diz quem é o fabricante: "propria" (o nome normalizado é o da própria '
+        'detentora, no Brasil), "terceira" (outro fabricante no Brasil) ou "exterior". '
+        "registros e registros_ativos contam registros ou cadastros distintos com esse "
+        "fabricante (ativo como em produtos_saude_por_produto); linhas, as linhas da origem.",
+        "Dois fabricantes diferentes com o mesmo nome normalizado no mesmo país seriam um só "
+        "(não visto nos dados); a chave serve para juntar tabelas, não para exibir.",
+        "Para ir de um produto aos seus fabricantes, produtos_saude_por_produto traz "
+        "fabricantes, fabricantes_chaves e fabricantes_paises alinhados. Os registros sem "
+        "fabricante na origem não aparecem aqui.",
+    ),
+    sql=_produtos_saude_fabricacao,
+)
+
+# Decided petições: a certificate exists only after one of these
+_DEFERIDAS = (
+    "('Publicado deferimento', 'Revalidação automática', 'Renovação automática', "
+    "'Certificado emitido')"
+)
+
+
+def _certificados(t: dict[str, str]) -> str:
+    # One row per petição of the two CBPF files. cbpf repeats 80 rows exactly (no petição has
+    # two different rows, 2026-10-13), so min() reads the one value; cbpf_medicamentos has one
+    # row per certified line, and only the line columns vary within a petição (profiled
+    # 2026-10-23), so min() reads the rest and the lines become a sorted list. The ids of the
+    # two files are disjoint (13,651 and 21,965 petições, no common one). `vigente` is decided
+    # against each file's own load date (dados_de), never the build's: deferred (or revalidated,
+    # renewed, issued), not cancelled (STATUS CANCELADO is a fact, not a date) and with a
+    # validade on or after dados_de. The medicines' file has no SITUACAO: it is synthesised from
+    # STATUS. `area` reads the assunto's family; the medicines' file is all medicines, whatever
+    # its assunto says ("MEDICAMENTO E INSUMOS FARMACÊUTICOS" included); a family nobody has
+    # seen yet is 'outros', never NULL.
+    area = """CASE WHEN familia = 'MEDICAMENTOS' THEN 'medicamentos'
+               WHEN familia LIKE '%PRODUTOS PARA SAUDE%' OR familia LIKE '%MDSAP%'
+                 THEN 'produtos_saude'
+               WHEN familia LIKE '%INSUMOS FARMACEUTICOS%' THEN 'insumos'
+               WHEN familia LIKE '%COSMETICOS%' THEN 'cosmeticos'
+               WHEN familia LIKE '%SANEANTES%' THEN 'saneantes'
+               WHEN familia LIKE '%ALIMENTOS%' THEN 'alimentos'
+               ELSE 'outros' END"""
+    vinculo = """CASE WHEN inspecionada_cnpj = cnpj THEN 'propria'
+               WHEN inspecionada_cnpj[1:8] = cnpj[1:8] THEN 'grupo'
+               WHEN inspecionada_cnpj IS NOT NULL THEN 'terceira'
+               WHEN inspecionada_codigo IS NOT NULL THEN 'exterior'
+               ELSE 'desconhecida' END"""
+    vigente = f"""situacao IN {_DEFERIDAS} AND NOT cancelado
+               AND coalesce(validade >= dados_de, false)"""
+    comuns = """
+          min(nu_cnpj_empresa_inspecionada) AS inspecionada_cnpj,
+          min(codigounico_inspecionada) AS inspecionada_codigo,
+          min(no_tipo_certificado) AS tipo,
+          min(assunto) AS assunto,
+          min(ds_tp_emissao_certificado) AS emissao,
+          CAST(min(dt_publicacao) AS DATE) AS publicacao,
+          CAST(min(dt_validade) AS DATE) AS validade,
+          coalesce(bool_or(status = 'CANCELADO'), false) AS cancelado,
+          min(nu_processo) AS processo,
+          CAST(min(dt_carga_etl) AS DATE) AS dados_de"""
+    geral = f"""
+        SELECT co_documento_peticao AS id,
+          min(nu_cnpj_solicitante) AS cnpj,
+          min(razaosocial_solicitante) AS empresa,
+          min(razaosocial_inspecionada) AS inspecionada,
+          min(no_pais_inspecionada) AS pais,
+          upper(strip_accents(min(assunto))) AS familia,
+          min(situacao) AS situacao,
+          CAST([] AS VARCHAR[]) AS linhas,{comuns}
+        FROM {t["cbpf"]} GROUP BY co_documento_peticao"""
+    medicamentos = f"""
+        SELECT co_documento_peticao AS id,
+          min(nu_cnpj_solicitante) AS cnpj,
+          min(empresasolicitante) AS empresa,
+          min(razaosocial) AS inspecionada,
+          min(pais) AS pais,
+          'MEDICAMENTOS' AS familia,
+          CASE WHEN bool_or(status = 'INDEFERIDO') THEN 'Publicado indeferimento'
+               ELSE 'Publicado deferimento' END AS situacao,
+          coalesce(list_sort(list(DISTINCT linhacertificacao)
+            FILTER (WHERE linhacertificacao IS NOT NULL)), CAST([] AS VARCHAR[])) AS linhas,{comuns}
+        FROM {t["cbpf_medicamentos"]} GROUP BY co_documento_peticao"""
+    return f"""
+        SELECT id, cnpj, empresa, inspecionada_cnpj, inspecionada_codigo, inspecionada, pais,
+          tipo, {area} AS area, assunto, emissao, situacao, publicacao, validade,
+          {vigente} AS vigente, cancelado, {vinculo} AS vinculo, processo, linhas, dados_de
+        FROM ({geral}
+        UNION ALL BY NAME
+        {medicamentos})"""
+
+
+CERTIFICADOS = Derivada(
+    name="certificados",
+    group="cbpf",
+    title="Certificados de boas práticas: uma linha por petição, todas as áreas",
+    fontes=("cbpf", "cbpf_medicamentos"),
+    sort=("cnpj", "id"),
+    notes=(
+        "Uma linha por petição de certificado de boas práticas de fabricação (CBPF) ou de "
+        "distribuição e/ou armazenagem (CBPDA): as de cbpf (produtos para saúde, insumos, "
+        "cosméticos, saneantes, alimentos; as linhas repetidas na origem contam uma) e as de "
+        "cbpf_medicamentos (uma linha por linha certificada na origem, aqui juntadas em "
+        "linhas). Derivada a cada build.",
+        "vigente é verdadeiro quando a petição foi deferida (ou revalidada, renovada, emitida), "
+        "não foi cancelada e validade é igual ou posterior a dados_de, a data da carga do "
+        "arquivo de origem: nada depende do dia do build, e sem validade é falso. Nos "
+        "medicamentos dados_de é 2025-09-08, a última carga que a ANVISA fez daquele arquivo: "
+        "mostre a data junto, porque um certificado vigente então pode ter vencido depois.",
+        'vinculo diz de quem é a unidade inspecionada: "propria" (o CNPJ solicitante), "grupo" '
+        '(mesma raiz de 8 dígitos), "terceira" (outro CNPJ no Brasil), "exterior" (código da '
+        'ANVISA, letra e 6 dígitos) ou "desconhecida" (a origem não traz CNPJ nem código, como '
+        "em 72% de cbpf, as petições mais antigas).",
+        "area resume a família do assunto: produtos_saude (inclui MDSAP), insumos (inclui os "
+        "biológicos), cosmeticos, saneantes, alimentos, medicamentos (todo o arquivo de "
+        "medicamentos) ou outros, para uma família nova.",
+        "Nos medicamentos a origem não traz situação: situacao é 'Publicado indeferimento' "
+        "quando o status é INDEFERIDO e 'Publicado deferimento' nas demais; cancelado vem do "
+        "status CANCELADO nos dois arquivos.",
+    ),
+    sql=_certificados,
 )
 
 DERIVADAS: tuple[Derivada, ...] = (
@@ -744,6 +954,8 @@ DERIVADAS: tuple[Derivada, ...] = (
     MEDICAMENTOS_POR_PRODUTO,
     PRODUTOS_SAUDE_POR_PRODUTO,
     ALIMENTOS_FABRICACAO,
+    CERTIFICADOS,
+    PRODUTOS_SAUDE_FABRICACAO,
 )
 
 

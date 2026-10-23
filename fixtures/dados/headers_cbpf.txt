@@ -1,0 +1,9 @@
+HTTP/2 200
+Content-Type: application/octet-stream
+Content-Length: 8042875
+Last-Modified: Tue, 13 Oct 2026 19:09:32 GMT
+ETag: "7ab97b-65dbd8df96825"
+Accept-Ranges: bytes
+Cache-Control: public
+
+body: 8,042,875 bytes (sha256 9ff22dcf42bd90e2fff0d9155401a6ae3dc782c13529dace690c38a202c76be5), Windows-1252 (0x96 67 times, 0x92 8), 22,039 records of 16 fields, LF only, no line break or `;` inside values (not kept); cbpf_head.csv is the header plus 41 of those records, cut by line, byte for byte: a petição listed four times and one twice, CBPDA, own-plant CNPJ, same-root and third-party CNPJs, A/B/C foreign codes, empty plant, indeferido, cancelado, revalidação sem validade, Certificado emitido, inner quotes in ASSUNTO, &#8203- and COM&Eacute-RCIO kept as written, 7/13/15/16/17-digit processos, every DS_TP_EMISSAO_CERTIFICADO family and the validade-equal-to-carga-day row ANVISA marks VENCIDO. Text is quoted, CO_DOCUMENTO_PETICAO is not. Dates are mm/dd/yyyy HH:MM:SS, always 00:00:00; DT_CARGA_ETL is 10/13/2026 00:00:01. Dictionary: Documentacao_e_Dicionario_de_Dados_Certificado_de_Boas_Praticas.pdf in the same folder.

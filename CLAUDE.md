@@ -33,7 +33,8 @@ is in `ROADMAP.md`. An untracked `NOTES.local.md` holds the running to-do list w
   gzipped bytes, and Firefox before 148 does not send `Accept-Encoding: identity` on Range
   requests, so ranged reads break there. Keep each Parquet about 15 MB or less, or publish
   `busca` files beside it (`dados/busca.py`; cosméticos does). The tokenizer there is a
-  contract with the site: `fixtures/dados/tokens.json` is tested on both sides.
+  contract with the site: `fixtures/dados/tokens.json` is tested on both sides, and so is
+  `fixtures/dados/chaves.json`, the manufacturer key (`derivar.chave_sql`).
 
 ## Open data
 
@@ -41,9 +42,10 @@ Daily `.github/workflows/dados.yml` converts the CSVs and deploys `manifest.json
 to GitHub Pages (`https://vasfvitor.github.io/anvisa-api/manifest.json`). Adding a dataset is
 mechanical once the real file is profiled; an Opus agent did cosméticos from a single brief, so
 delegate the next one the same way. Files above about 200 MB need `parse.stream`; DuckDB's
-`memory_limit` and `temp_directory` are set in `convert.py`. The eight derived tables
+`memory_limit` and `temp_directory` are set in `convert.py`. The ten derived tables
 (`produtos`, `empresas`, `medidas`, `cosmeticos_por_empresa`, `alimentos_por_produto`,
-`medicamentos_por_produto`, `produtos_saude_por_produto`, `alimentos_fabricacao`) live in
+`medicamentos_por_produto`, `produtos_saude_por_produto`, `alimentos_fabricacao`,
+`certificados`, `produtos_saude_fabricacao`) live in
 `dados/derivar.py` and are rebuilt every build with order-stable
 aggregates only; column descriptions and table `notes` are Portuguese, in `dados/descricoes.py` and the
 catalog, and feed the manifest and the Pages `dicionario.html`. Data-side changes go in

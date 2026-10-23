@@ -91,15 +91,19 @@ throttling, but the same rule holds: profile the real file before writing its ca
 
 A derived table (`anvisa/dados/derivar.py`) is Parquet built from the converted tables, not
 from an ANVISA file: `produtos`, `empresas`, `medidas`, `cosmeticos_por_empresa`,
-`alimentos_por_produto`, `medicamentos_por_produto`, `produtos_saude_por_produto` and
-`alimentos_fabricacao` are the first eight. Add a `Derivada` and put it in
+`alimentos_por_produto`, `medicamentos_por_produto`, `produtos_saude_por_produto`,
+`alimentos_fabricacao`, `certificados` and `produtos_saude_fabricacao` are the first ten. Add a `Derivada` and put it in
 `DERIVADAS`; its `sql` gets a map fonte name → `read_parquet('…')` and returns a SELECT. Rules:
 
 1. Every aggregate is order-stable (`min`, `arg_min`, `list(x ORDER BY x)`,
    `first(x ORDER BY …)`): the build must give byte-identical Parquet for identical inputs, and
    `test_partial_build_carries_published_tables` checks the sha256 across two builds.
 2. Nothing depends on the day of the build (no "vencida" flag) and nothing is
-   search-normalized text; both are the consumer's job.
+   search-normalized text; both are the consumer's job. The one exception is a join key
+   for an entity ANVISA gives no id: a device manufacturer exists only as a name, so
+   `chave_sql` derives `chave` from it with the rule the site uses, pinned on both sides
+   by `fixtures/dados/chaves.json`. A chave is published only as a key, never as text to
+   show.
 3. Describe every output column in `dados/descricoes.py` and write `notes`, Portuguese, and
    assert the column list against the built file in a fixture-level test (see
    `test_produtos_on_the_fixtures`). The fixtures are small; if the rule you are testing needs

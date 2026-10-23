@@ -34,6 +34,8 @@ from anvisa.dados import (
 from anvisa.dados.catalog import (
     ALIMENTOS,
     ALIMENTOS_RESULTADO,
+    CBPF,
+    CBPF_MEDICAMENTOS,
     CMED,
     COSMETICOS,
     MEDICAMENTOS,
@@ -68,6 +70,8 @@ SAMPLES = {
     COSMETICOS.name: "cosmeticos_head.csv",
     MEDICAMENTOS.name: "medicamentos_head.csv",
     PRODUTOS_SAUDE.name: "produtos_saude_head.csv",
+    CBPF.name: "cbpf_head.csv",
+    CBPF_MEDICAMENTOS.name: "cbpf_medicamentos_head.csv",
 }
 HEADERS = {
     ALIMENTOS.name: "headers_alimentos.txt",
@@ -79,6 +83,8 @@ HEADERS = {
     COSMETICOS.name: "headers_cosmeticos.txt",
     MEDICAMENTOS.name: "headers_medicamentos.txt",
     PRODUTOS_SAUDE.name: "headers_produtos_saude.txt",
+    CBPF.name: "headers_cbpf.txt",
+    CBPF_MEDICAMENTOS.name: "headers_cbpf_medicamentos.txt",
 }
 # the CMED pair is read by cmed.py, not the Windows-1252 parser: its samples are separate
 CMED_SAMPLES = {"pmc": "cmed_pmc_head.csv", "pmvg": "cmed_pmvg_head.csv"}
@@ -205,6 +211,11 @@ def test_catalog_is_consistent():
     with pytest.raises(ValueError, match="unknown kind"):
         dataclasses.replace(ALIMENTOS, kind="xlsx")
     assert select(["cosmeticos"]) == (COSMETICOS,)
+    # the CBPF pair shares a group and a folder
+    assert select(["cbpf"]) == (CBPF, CBPF_MEDICAMENTOS)
+    assert CBPF_MEDICAMENTOS.url == catalog_url(
+        "CONSULTAS/EMPRESA_FISCALIZACAO_PRODUTO/TA_CONSULTA_CBPF_MEDICAMENTO_DETALHE.CSV"
+    )
 
 
 def test_fixture_header_matches_catalog():
@@ -945,6 +956,180 @@ def test_convert_produtos_saude(tmp_path):
     assert q("SELECT count(*) FROM TBL WHERE dt_pub_registro_cadastro IS NULL") == [(1,)]
 
 
+@needs_duckdb
+def test_convert_cbpf(tmp_path):
+    """Exact copies of a petição kept as rows; dates month first; inner quotes, a cp1252 dash
+    and entities whose `;` became `-` kept as written; the plant is a CNPJ in Brazil, a code
+    abroad or nothing, never both."""
+    import duckdb
+
+    from anvisa.dados.convert import convert
+
+    csv = tmp_path / CBPF.file
+    csv.write_bytes(sample(CBPF).read_bytes())
+    stats = convert(CBPF, csv, tmp_path / "c.parquet")
+    assert stats.rows == 41 and stats.rejected == ()
+    assert stats.loaded_at == "2026-10-13T00:00:01"
+    assert all(v == 0 for v in stats.nulls_added.values())
+    con = duckdb.connect()
+    q = lambda sql: con.execute(re.sub(r"\bTBL\b", f"'{tmp_path}/c.parquet'", sql)).fetchall()  # noqa: E731
+    assert q("SELECT count(DISTINCT co_documento_peticao) FROM TBL") == [(37,)]
+    assert q(
+        "SELECT co_documento_peticao, count(*) FROM TBL GROUP BY 1 HAVING count(*) > 1 ORDER BY 1"
+    ) == [(32165176, 4), (34532485, 2)]
+    assert q("SELECT count(*) FROM (SELECT DISTINCT * FROM TBL)") == [(37,)]  # copies are exact
+    assert q(
+        "SELECT typeof(co_documento_peticao), min(co_documento_peticao) FROM TBL GROUP BY 1"
+    ) == [("INTEGER", 9720823)]
+    assert dict(q("SELECT no_tipo_certificado, count(*) FROM TBL GROUP BY 1")) == {
+        "CBPDA": 6,
+        "CBPF": 35,
+    }
+    assert dict(q("SELECT status, count(*) FROM TBL GROUP BY 1")) == {
+        "VALIDO": 13,
+        "VENCIDO": 15,
+        "INDEFERIDO": 6,
+        "CANCELADO": 1,
+        None: 6,
+    }
+    assert q("SELECT count(dt_validade) FROM TBL") == [(30,)]
+    # month first: 07/20/2026 is 20 July
+    assert q(
+        "SELECT dt_publicacao, dt_validade FROM TBL WHERE co_documento_peticao = 34129091"
+    ) == [(datetime(2026, 7, 20), datetime(2028, 7, 20))]
+    assert q("SELECT dt_publicacao FROM TBL WHERE co_documento_peticao = 23492834") == [
+        (datetime(2022, 10, 31),)
+    ]
+    (assunto,) = q("SELECT assunto FROM TBL WHERE co_documento_peticao = 31521226")[0]
+    assert assunto.endswith(
+        '(equipamento, materiais e produtos para diagnóstico de uso "in vitro")'
+    )
+    assert q("SELECT assunto LIKE '%&#8203-' FROM TBL WHERE co_documento_peticao = 30482180") == [
+        (True,)
+    ]
+    assert q(
+        "SELECT razaosocial_solicitante FROM TBL WHERE co_documento_peticao IN (9720823, 12189153) "
+        "ORDER BY co_documento_peticao"
+    ) == [
+        ("LABVIX - COM&Eacute-RCIO E REPRESENTA&Ccedil-&Atilde-O LTDA.",),
+        ("EPEX INDUSTRIA DE PRODUTOS PARA SAUDE LTDA – ME",),  # 0x96
+    ]
+    # 11543733's razão ends in whitespace in the source
+    assert q(
+        "SELECT count(*) FROM TBL WHERE razaosocial_solicitante <> trim(razaosocial_solicitante)"
+    ) == [(0,)]
+    assert dict(q("SELECT length(nu_processo), count(*) FROM TBL GROUP BY 1")) == {
+        17: 37,
+        16: 1,
+        15: 1,
+        13: 1,
+        7: 1,
+    }
+    plant = (
+        "SELECT count(*) FILTER (WHERE regexp_full_match(nu_cnpj_empresa_inspecionada, "
+        "'[0-9]{14}') AND no_pais_inspecionada = 'BRASIL'), "
+        "count(*) FILTER (WHERE regexp_full_match(codigounico_inspecionada, '[ABC][0-9]{6}')), "
+        "count(*) FILTER (WHERE codigounico_inspecionada IS NULL "
+        "AND nu_cnpj_empresa_inspecionada IS NULL AND razaosocial_inspecionada IS NULL), "
+        "count(*) FILTER (WHERE codigounico_inspecionada IS NOT NULL "
+        "AND nu_cnpj_empresa_inspecionada IS NOT NULL) FROM TBL"
+    )
+    assert q(plant) == [(14, 13, 14, 0)]
+    assert dict(
+        q(
+            "SELECT codigounico_inspecionada[1], count(*) FROM TBL "
+            "WHERE codigounico_inspecionada IS NOT NULL GROUP BY 1"
+        )
+    ) == {"A": 4, "B": 3, "C": 6}
+    assert dict(q("SELECT situacao, count(*) FROM TBL GROUP BY 1")) == {
+        "Publicado deferimento": 30,
+        "Publicado indeferimento": 6,
+        "Revalidação automática": 3,
+        "Renovação automática": 1,
+        "Certificado emitido": 1,
+    }
+
+
+@needs_duckdb
+def test_convert_cbpf_medicamentos(tmp_path):
+    """One row per certified line: a petição's rows differ in the line columns only (two can
+    still repeat a LINHACERTIFICACAO); S/N is a boolean; the four date columns are month first;
+    the `¿` ANVISA left in the motivos stays; no petição is also in cbpf."""
+    import duckdb
+
+    from anvisa.dados.convert import convert
+
+    csv = tmp_path / CBPF_MEDICAMENTOS.file
+    csv.write_bytes(sample(CBPF_MEDICAMENTOS).read_bytes())
+    stats = convert(CBPF_MEDICAMENTOS, csv, tmp_path / "m.parquet")
+    assert stats.rows == 32 and stats.rejected == ()
+    assert stats.loaded_at == "2025-09-08T15:28:52"  # ANVISA's last load of this file
+    assert all(v == 0 for v in stats.nulls_added.values())
+    con = duckdb.connect()
+    q = lambda sql: con.execute(re.sub(r"\bTBL\b", f"'{tmp_path}/m.parquet'", sql)).fetchall()  # noqa: E731
+    assert q("SELECT count(DISTINCT co_documento_peticao) FROM TBL") == [(22,)]
+    assert q(
+        "SELECT co_documento_peticao, count(*) FROM TBL GROUP BY 1 HAVING count(*) > 1 ORDER BY 1"
+    ) == [(12392173, 2), (13232768, 2), (26977292, 6), (30679096, 3), (32461648, 2)]
+    assert q("SELECT count(*) FROM (SELECT DISTINCT * FROM TBL)") == [(31,)]  # 12392173's copy
+    assert q(
+        "SELECT count(DISTINCT linhacertificacao) FROM TBL WHERE co_documento_peticao = 13232768"
+    ) == [(1,)]
+    assert dict(q("SELECT status, count(*) FROM TBL GROUP BY 1")) == {
+        "VALIDO": 10,
+        "VENCIDO": 12,
+        "INDEFERIDO": 6,
+        "CANCELADO": 2,
+        None: 2,
+    }
+    assert dict(q("SELECT st_liberacao_parametrica, count(*) FROM TBL GROUP BY 1")) == {
+        False: 27,
+        True: 1,
+        None: 4,
+    }
+    assert q(
+        "SELECT linhacertificacao LIKE '%(LIBERAÇÃO PARAMÉTRICA)%' FROM TBL "
+        "WHERE co_documento_peticao = 32461648 AND st_liberacao_parametrica"
+    ) == [(True,)]
+    assert q(
+        "SELECT DISTINCT dt_publicacao, dt_validade, dt_resolucao FROM TBL "
+        "WHERE co_documento_peticao = 30679096"
+    ) == [(datetime(2024, 6, 10), datetime(2026, 6, 10), datetime(2024, 6, 3))]
+    (motivo,) = q("SELECT ds_motivo_cancelamento FROM TBL WHERE co_documento_peticao = 27818097")[0]
+    assert motivo == "A empresa solicitante peticionou o Cancelamento da certifica¿¿o."
+    (motivo,) = q("SELECT ds_motivo_cancelamento FROM TBL WHERE co_documento_peticao = 32945995")[0]
+    assert 'forma farmac¿utica "emuls¿es"' in motivo
+    assert q("SELECT count(*) FROM TBL WHERE dt_validade IS NULL") == [(8,)]  # indef. + cancel.
+    assert q("SELECT formafarmaceutica FROM TBL WHERE co_documento_peticao = 12973270") == [
+        ("Pó com\xa0preparação asséptica",)
+    ]
+    assert q(
+        "SELECT nu_dou, nu_processo FROM TBL WHERE co_documento_peticao IN (14081514, 25042268) "
+        "ORDER BY co_documento_peticao"
+    ) == [("-", "25351045681201746"), ("11", "2535101369820219")]
+    # razaosocial is the inspected plant; a plant abroad may come without code
+    assert q(
+        "SELECT razaosocial, pais, codigounico_inspecionada FROM TBL "
+        "WHERE co_documento_peticao = 12458871"
+    ) == [("LEMERY, S.A. DE C.V.", "MÉXICO", None)]
+    assert q(
+        "SELECT count(*) FROM TBL WHERE nu_cnpj_empresa_inspecionada IS NOT NULL "
+        "AND (pais <> 'BRASIL' OR co_uf_inspecionada IS NULL)"
+    ) == [(0,)]
+    ids = {r[0] for r in q("SELECT co_documento_peticao FROM TBL")}
+    ids_cbpf = {int(r[0]) for r in sample_records(CBPF)[1:]}
+    assert not ids & ids_cbpf
+    # petições of companies in medicamentos_head.csv
+    medicamentos = {r[8][:14] for r in sample_records(MEDICAMENTOS)[1:]}
+    solicitantes = {r[0] for r in q("SELECT DISTINCT nu_cnpj_solicitante FROM TBL")}
+    assert solicitantes & medicamentos == {
+        "44734671000151",
+        "60318797000100",
+        "33247743000110",
+        "92265552000905",
+    }
+
+
 # --- cmed: the price list (two UTF-8 files merged by GGREM) -------------------------------
 
 PUBLICADO = "09/10/2026 12:43:03"  # the files' Last-Modified, Fri 09 Oct 2026 15:43:03 GMT
@@ -1143,6 +1328,26 @@ def test_words_matches_the_cases_shared_with_the_site():
     assert busca.words(None) == []
     for case in cases["casos"]:
         assert busca.words(case["entrada"]) == case["palavras"], case["entrada"]
+
+
+@needs_duckdb
+def test_chave_matches_the_cases_shared_with_the_site():
+    """fixtures/dados/chaves.json is the second contract with anvisa-dash: the manufacturer key
+    the data computes in SQL (derivar.chave_sql) must equal the site's, or a device page links
+    to a manufacturer that does not exist. Python's NFKD is the reference both sides check."""
+    import string
+
+    import duckdb
+
+    cases = json.loads((DADOS / "chaves.json").read_text(encoding="utf-8"))
+    assert cases["versao"] == 1 and len(cases["casos"]) == 21
+    keep = string.ascii_lowercase + string.digits
+    con = duckdb.connect()
+    sql = f"SELECT {derivar.chave_sql('CAST(? AS VARCHAR)')}"
+    for case in cases["casos"]:
+        entrada, chave = case["entrada"], case["chave"]
+        assert "".join(c for c in busca.normalize(entrada) if c in keep) == chave, entrada
+        assert con.execute(sql, [entrada]).fetchone() == (chave,), entrada
 
 
 def test_pack_fills_files_to_the_target_and_isolates_big_keys():
@@ -2094,11 +2299,213 @@ def test_produtos_saude_por_produto_on_the_fixtures(fake_dados, tmp_path):
     assert q("SELECT count(*) FROM P WHERE NOT ativo") == [(0,)]
     types = {r[0]: r[1] for r in con.execute(f"DESCRIBE SELECT * FROM '{path}'").fetchall()}
     assert types["fabricantes"] == "VARCHAR[]" and types["vencimento"] == "DATE"
+    assert types["fabricantes_chaves"] == types["fabricantes_paises"] == "VARCHAR[]"
+    # the chave and país of each fabricante, index by index
+    chaves = "SELECT fabricantes_chaves, fabricantes_paises FROM P WHERE id = "
+    assert q(chaves + "'10150470123'") == [
+        (
+            ["ruschinc", "teleflexmedicalsdnbhd", "willyruschgmbh"],
+            ["ESTADOS UNIDOS DA AMÉRICA", "MALÁSIA", "ALEMANHA"],
+        )
+    ]
+    assert q(chaves + "'10008530286'") == [(["aesculapag"], ["ALEMANHA"])]
+    # two spellings of Polar Fix: two fabricantes, one chave twice
+    assert q(chaves + "'8003400137'") == [
+        (["polarfixindustriaecomerciodeprodutoshospitalaresltda"] * 2, ["BRASIL"] * 2)
+    ]
+    (eth,) = q(
+        "SELECT fabricantes, fabricantes_chaves, fabricantes_paises FROM P WHERE id = '10132590043'"
+    )
+    assert eth[2] == [
+        "ESTADOS UNIDOS DA AMÉRICA",
+        "ESTADOS UNIDOS DA AMÉRICA",
+        "PORTO RICO (ESTADOS UNIDOS)",
+    ]
+    assert [f.endswith(f"({p})") for f, p in zip(eth[0], eth[2], strict=True)] == [True] * 3
+    assert eth[1][0] == "ethiconendosurgeryincsadecvmexicoparaethiconendosurgeryinc"
+    assert q(
+        "SELECT count(*) FROM P WHERE len(fabricantes) <> len(fabricantes_chaves) "
+        "OR len(fabricantes) <> len(fabricantes_paises) OR fabricantes_chaves IS NULL "
+        "OR fabricantes_paises IS NULL"
+    ) == [(0,)]
     prod = out / manifest["tables"]["produtos"]["path"]
     assert con.execute(
         f"SELECT tipo, categoria, desde FROM '{prod}' WHERE area = 'produtos_saude' "
         "AND id = '8003400137'"
     ).fetchone() == ("Cadastrado", "Classe I", date(2022, 1, 13))
+
+
+@needs_duckdb
+def test_produtos_saude_fabricacao_on_the_fixtures(fake_dados, tmp_path):
+    """One row per holder, manufacturer key and country: two spellings of the holder's own name
+    are one propria row, three Ethicon names are three exterior rows; every pair joins back to
+    produtos_saude_por_produto's aligned lists."""
+    import duckdb
+
+    out = tmp_path / "dist"
+    with fake_dados.client() as http:
+        manifest = build(out, http=http, now=NOW, commit="abc123")
+    entry = manifest["tables"]["produtos_saude_fabricacao"]
+    assert entry["fontes"] == ["produtos_saude"] and entry["sort"] == ["cnpj", "chave", "pais"]
+    assert entry["rows"] == 22
+    assert [c["name"] for c in entry["columns"]] == list(
+        derivar.PRODUTOS_SAUDE_FABRICACAO.descriptions
+    )
+    path = out / entry["path"]
+    con = duckdb.connect()
+    q = lambda sql: con.execute(sql.replace("FROM F", f"FROM '{path}'")).fetchall()  # noqa: E731
+    assert dict(q("SELECT vinculo, count(*) FROM F GROUP BY 1")) == {"exterior": 14, "propria": 8}
+    detail = "SELECT chave, pais, vinculo, registros, registros_ativos, linhas FROM F WHERE cnpj = "
+    assert q(detail + "'51943645000107'") == [
+        ("biomedicalequipamentoseprodutosmedicocirurgicosltda", "BRASIL", "propria", 4, 4, 4)
+    ]
+    # POLAR FIX ... and Polar Fix Indústria ..., once each: the tie goes to the first in order
+    assert q("SELECT fabricante, registros, linhas FROM F WHERE cnpj = '02881877000164'") == [
+        ("POLAR FIX INDUSTRIA E COMERCIO DE PRODUTOS HOSPITALARES LTDA", 1, 2)
+    ]
+    assert q("SELECT chave, pais, vinculo FROM F WHERE cnpj = '54516661000101'") == [
+        ("ethiconendosurgeryinc", "ESTADOS UNIDOS DA AMÉRICA", "exterior"),
+        (
+            "ethiconendosurgeryincsadecvmexicoparaethiconendosurgeryinc",
+            "ESTADOS UNIDOS DA AMÉRICA",
+            "exterior",
+        ),
+        ("ethiconendosurgeryllc", "PORTO RICO (ESTADOS UNIDOS)", "exterior"),
+    ]
+    empresas = out / manifest["tables"]["empresas"]["path"]
+    known = {r[0] for r in con.execute(f"SELECT cnpj FROM '{empresas}'").fetchall()}
+    assert {r[0] for r in q("SELECT cnpj FROM F")} <= known
+    # the pairs are exactly the (holder, chave, país) of the per-product lists
+    pspp = out / manifest["tables"]["produtos_saude_por_produto"]["path"]
+    pares = (
+        f"SELECT DISTINCT cnpj, unnest(fabricantes_chaves) AS c, unnest(fabricantes_paises) AS p "
+        f"FROM '{pspp}'"
+    )
+    assert con.execute(f"{pares} EXCEPT SELECT cnpj, chave, pais FROM '{path}'").fetchall() == []
+    assert con.execute(f"SELECT cnpj, chave, pais FROM '{path}' EXCEPT {pares}").fetchall() == []
+    # registro × manufacturer pairs: 19 registros with one (8003400137's under two spellings),
+    # 10132590043 and 10150470123 with three
+    assert q("SELECT sum(registros) FROM F") == [(25,)]
+    key = q("SELECT cnpj, chave, pais FROM F")
+    assert key == sorted(key)
+
+
+@needs_duckdb
+def test_certificados_on_the_fixtures(fake_dados, tmp_path):
+    """One row per petição of both CBPF files: copies collapse, the medicines' lines become a
+    list, vigente is read against each file's own load date, and the plant's vínculo comes from
+    the CNPJ or the code."""
+    import duckdb
+
+    out = tmp_path / "dist"
+    with fake_dados.client() as http:
+        manifest = build(out, http=http, now=NOW, commit="abc123")
+    entry = manifest["tables"]["certificados"]
+    assert entry["fontes"] == ["cbpf", "cbpf_medicamentos"] and entry["sort"] == ["cnpj", "id"]
+    assert [c["name"] for c in entry["columns"]] == list(derivar.CERTIFICADOS.descriptions)
+    assert entry["source"]["loaded_at"] == "2026-10-13T00:00:01"  # the later of the two fontes
+    assert entry["rows"] == 37 + 22
+    path = out / entry["path"]
+    con = duckdb.connect()
+    q = lambda sql: con.execute(sql.replace("FROM C", f"FROM '{path}'")).fetchall()  # noqa: E731
+    assert q("SELECT count(*), count(DISTINCT id) FROM C") == [(59, 59)]
+    geral = "FROM C WHERE area <> 'medicamentos'"
+    assert dict(q(f"SELECT vinculo, count(*) {geral} GROUP BY 1")) == {
+        "propria": 8,
+        "grupo": 1,
+        "terceira": 2,
+        "exterior": 12,
+        "desconhecida": 14,
+    }
+    assert dict(q("SELECT area, count(*) FROM C GROUP BY 1")) == {
+        "produtos_saude": 25,
+        "insumos": 8,
+        "cosmeticos": 2,
+        "saneantes": 1,
+        "alimentos": 1,
+        "medicamentos": 22,
+    }
+    assert q(f"SELECT list(id ORDER BY id) {geral} AND vigente") == [
+        (
+            sorted(
+                [
+                    33815111, 34129091, 32808049, 32266273, 32495090, 34618018, 34532485,
+                    33746047, 33712136, 31501320, 30397355, 33116746, 32752131, 34064657,
+                    32272678,
+                ]
+            ),
+        )
+    ]  # fmt: skip
+    assert q(f"SELECT id {geral} AND cancelado") == [(35417747,)]
+    assert q(f"SELECT list(id ORDER BY id) {geral} AND tipo = 'CBPDA'") == [
+        ([30397355, 32165176, 33746047],)
+    ]
+    # the copies of 34532485 are one row; 30397355 expires on the load day and is vigente
+    assert q("SELECT publicacao, validade, vigente FROM C WHERE id = 34532485") == [
+        (date(2026, 6, 1), date(2028, 6, 3), True)
+    ]
+    assert q("SELECT validade, dados_de, vigente FROM C WHERE id = 30397355") == [
+        (date(2026, 10, 13), date(2026, 10, 13), True)
+    ]
+    assert q(f"SELECT count(*) {geral} AND (len(linhas) > 0 OR dados_de <> DATE '2026-10-13')") == [
+        (0,)
+    ]
+    # the medicines: their own load date, the lines as a sorted list
+    med = "FROM C WHERE area = 'medicamentos'"
+    assert q(f"SELECT DISTINCT dados_de {med}") == [(date(2025, 9, 8),)]
+    assert dict(q(f"SELECT vinculo, count(*) {med} GROUP BY 1")) == {
+        "propria": 9,
+        "grupo": 1,
+        "terceira": 1,
+        "exterior": 9,
+        "desconhecida": 2,
+    }
+    assert q(f"SELECT list(id ORDER BY id) {med} AND vigente") == [
+        ([23716100, 30556708, 30640752, 30679096, 32448792, 32461648, 32937945],)
+    ]
+    # VALIDO for ANVISA on 2025-09-08 though its validade had passed on 2025-07-24
+    assert q("SELECT validade, vigente FROM C WHERE id = 29603099") == [(date(2025, 7, 24), False)]
+    assert q("SELECT linhas, situacao, vinculo FROM C WHERE id = 30679096") == [
+        (
+            [
+                "Produtos estéreis (Embalagem secundária)",
+                "Produtos estéreis (Granel): Pós Liofilizados",
+                "Produtos estéreis: Soluções Parenterais de Pequeno Volume com Preparação "
+                "Asséptica",
+            ],
+            "Publicado deferimento",
+            "exterior",
+        )
+    ]
+    assert q("SELECT len(linhas), situacao, vigente FROM C WHERE id = 26977292") == [
+        (6, "Publicado indeferimento", False)
+    ]
+    assert q("SELECT len(linhas) FROM C WHERE id IN (13232768, 11551882) ORDER BY id") == [
+        (0,),  # 11551882: an old petição without lines
+        (1,),  # 13232768: two rows, one line
+    ]
+    assert q(f"SELECT list(id ORDER BY id) {med} AND cancelado") == [([27818097, 32945995],)]
+    assert q("SELECT inspecionada, pais, vinculo FROM C WHERE id = 12458871") == [
+        ("LEMERY, S.A. DE C.V.", "MÉXICO", "desconhecida")
+    ]
+    assert q("SELECT inspecionada_cnpj, vinculo FROM C WHERE id = 30640752") == [
+        ("44734671000828", "grupo")
+    ]
+    # Cristália holds certificates in both files
+    assert q(
+        "SELECT area, count(*) FROM C WHERE cnpj = '44734671000151' GROUP BY 1 ORDER BY 1"
+    ) == [
+        ("insumos", 2),
+        ("medicamentos", 4),
+    ]
+    empresas = out / manifest["tables"]["empresas"]["path"]
+    known = {
+        r[0]: r[1] for r in con.execute(f"SELECT cnpj, alimentos FROM '{empresas}'").fetchall()
+    }
+    assert {"54516661000101", "21551379000106", "44734671000151"} <= known.keys()
+    assert known["60409075000152"] > 0  # Nestlé, an MDSAP certificate and foods
+    key = q("SELECT cnpj, id FROM C")
+    assert key == sorted(key)
 
 
 @needs_duckdb
@@ -2314,6 +2721,241 @@ def test_alimentos_fabricacao_parses_from_the_right(tmp_path):
         "HOLDER UM",
         "HOLDER DOIS",
     }
+
+
+@needs_duckdb
+def test_certificados_rules(tmp_path):
+    """vigente is the rule, not ANVISA's STATUS: a validade on the load day counts, one the day
+    before does not even when STATUS says VALIDO, an empty STATUS valid by date counts, no
+    validade, an indeferimento or a cancellation never does. area reads every family spelling
+    and falls back to outros; vinculo covers its five values; a medicines petição's lines
+    become one sorted list and its situação comes from STATUS."""
+    import duckdb
+
+    con = duckdb.connect()
+    um, tres, quatro = "11111111000111", "33333333000133", "44444444000144"
+    cbpf = [
+        # id, cnpj, inspecionada cnpj, código, país, tipo, assunto, situação, validade, status
+        (1, um, um, None, "BRASIL", "CBPF", "70246 - PRODUTOS PARA SAÚDE - X")
+        + ("Publicado deferimento", "2026-10-13", "VENCIDO"),
+        (1, um, um, None, "BRASIL", "CBPF", "70246 - PRODUTOS PARA SAÚDE - X")
+        + ("Publicado deferimento", "2026-10-13", "VENCIDO"),  # an exact copy
+        (2, um, "11111111000299", None, "BRASIL", "CBPF", "70530 - INSUMOS FARMACÊUTICOS – X")
+        + ("Publicado deferimento", "2026-10-12", "VALIDO"),
+        (3, um, "22222222000122", None, "BRASIL", "CBPDA", "80001 - MDSAP -PRODUTOS - X")
+        + ("Revalidação automática", "2027-01-01", None),
+        (4, um, None, "C000001", "ALEMANHA", "CBPF", "70100 - COSMÉTICOS, PERFUMES - X")
+        + ("Publicado deferimento", None, None),
+        (5, tres, None, None, None, "CBPF", "70200 - SANEANTES - X")
+        + ("Publicado indeferimento", None, "INDEFERIDO"),
+        (6, tres, None, None, None, "CBPF", "70300 - ALIMENTOS - X")
+        + ("Publicado deferimento", "2030-01-01", "CANCELADO"),
+        (7, tres, None, "B000007", "CHINA", "CBPF", "70400 - VETERINÁRIOS - X")
+        + ("Certificado emitido", "2030-01-01", "VALIDO"),
+        (8, tres, None, "A000008", "ÍNDIA", "CBPF", "70568 - INSUMOS FARMACÊUTICOS ATIVOS - X")
+        + ("Renovação automática", "2027-01-01", "VALIDO"),
+    ]
+    values = ", ".join(
+        f"({i}, '{c}', 'EMPRESA', {sql_str(ic)}, {sql_str(cod)}, {sql_str(cod or ic)}, "
+        f"{sql_str(p)}, '{t}', '{a}', 'INSPEÇÃO', '{s}', TIMESTAMP '2024-01-01', "
+        f"CAST({sql_str(v)} AS TIMESTAMP), {sql_str(st)}, '25351000000000001', "
+        "TIMESTAMP '2026-10-13 00:00:01')"
+        for i, c, ic, cod, p, t, a, s, v, st in cbpf
+    )
+    con.execute(
+        f"COPY (SELECT * FROM (VALUES {values}) t(co_documento_peticao, nu_cnpj_solicitante, "
+        "razaosocial_solicitante, nu_cnpj_empresa_inspecionada, codigounico_inspecionada, "
+        "razaosocial_inspecionada, no_pais_inspecionada, no_tipo_certificado, assunto, "
+        "ds_tp_emissao_certificado, situacao, dt_publicacao, dt_validade, status, nu_processo, "
+        f"dt_carga_etl)) TO '{tmp_path / 'cbpf.parquet'}' (FORMAT PARQUET)"
+    )
+    medicamentos = [
+        # id, inspecionada cnpj, código, validade, status, linha
+        (100, None, "A000100", "2027-01-01", "VALIDO", "Sólidos não estéreis: B"),
+        (100, None, "A000100", "2027-01-01", "VALIDO", "Produtos estéreis: A"),
+        (101, quatro, None, None, "INDEFERIDO", None),
+        (102, quatro, None, "2027-01-01", "CANCELADO", "L"),
+    ]
+    values = ", ".join(
+        f"({i}, '{quatro}', 'QUATRO', {sql_str(ic)}, {sql_str(cod)}, 'PLANTA', "
+        f"'{'BRASIL' if ic else 'SUÉCIA'}', 'CBPF', '70852 - PRODUTOS BIOLÓGICOS - X', 'INSPEÇÃO', "
+        f"TIMESTAMP '2024-01-01', CAST({sql_str(v)} AS TIMESTAMP), '{st}', '25351000000000002', "
+        f"{sql_str(linha)}, TIMESTAMP '2025-09-08 15:28:52')"
+        for i, ic, cod, v, st, linha in medicamentos
+    )
+    con.execute(
+        f"COPY (SELECT * FROM (VALUES {values}) t(co_documento_peticao, nu_cnpj_solicitante, "
+        "empresasolicitante, nu_cnpj_empresa_inspecionada, codigounico_inspecionada, "
+        "razaosocial, pais, no_tipo_certificado, assunto, ds_tp_emissao_certificado, "
+        "dt_publicacao, dt_validade, status, nu_processo, linhacertificacao, dt_carga_etl)) "
+        f"TO '{tmp_path / 'cbpf_medicamentos.parquet'}' (FORMAT PARQUET)"
+    )
+    paths = {name: tmp_path / f"{name}.parquet" for name in ("cbpf", "cbpf_medicamentos")}
+    out = tmp_path / "out.parquet"
+    rows, columns = derivar.write(derivar.CERTIFICADOS, paths, out, tmp_path / "spill")
+    assert columns == [
+        ("id", "INTEGER"),
+        ("cnpj", "VARCHAR"),
+        ("empresa", "VARCHAR"),
+        ("inspecionada_cnpj", "VARCHAR"),
+        ("inspecionada_codigo", "VARCHAR"),
+        ("inspecionada", "VARCHAR"),
+        ("pais", "VARCHAR"),
+        ("tipo", "VARCHAR"),
+        ("area", "VARCHAR"),
+        ("assunto", "VARCHAR"),
+        ("emissao", "VARCHAR"),
+        ("situacao", "VARCHAR"),
+        ("publicacao", "DATE"),
+        ("validade", "DATE"),
+        ("vigente", "BOOLEAN"),
+        ("cancelado", "BOOLEAN"),
+        ("vinculo", "VARCHAR"),
+        ("processo", "VARCHAR"),
+        ("linhas", "VARCHAR[]"),
+        ("dados_de", "DATE"),
+    ]
+    got = con.execute(
+        f"SELECT id, area, vinculo, situacao, vigente, cancelado, linhas, dados_de FROM '{out}'"
+    ).fetchall()
+    deferido, carga, med = "Publicado deferimento", date(2026, 10, 13), date(2025, 9, 8)
+    assert got == [
+        (1, "produtos_saude", "propria", deferido, True, False, [], carga),
+        (2, "insumos", "grupo", deferido, False, False, [], carga),
+        (3, "produtos_saude", "terceira", "Revalidação automática", True, False, [], carga),
+        (4, "cosmeticos", "exterior", deferido, False, False, [], carga),
+        (5, "saneantes", "desconhecida", "Publicado indeferimento", False, False, [], carga),
+        (6, "alimentos", "desconhecida", deferido, False, True, [], carga),
+        (7, "outros", "exterior", "Certificado emitido", True, False, [], carga),
+        (8, "insumos", "exterior", "Renovação automática", True, False, [], carga),
+        (100, "medicamentos", "exterior", deferido, True, False)
+        + (["Produtos estéreis: A", "Sólidos não estéreis: B"], med),
+        (101, "medicamentos", "propria", "Publicado indeferimento", False, False, [], med),
+        (102, "medicamentos", "propria", deferido, False, True, ["L"], med),
+    ]
+    assert rows == len(got)
+
+
+def sql_str(value: str | None) -> str:
+    return "NULL" if value is None else "'" + value.replace("'", "''") + "'"
+
+
+def write_produtos_saude(path: Path) -> None:
+    """A synthetic produtos_saude: holder A's own name (accents and punctuation aside) is one of
+    its manufacturers; one chave in two countries; a spelling majority and a tie; a third-party
+    Brazilian maker; two manufacturers on one registro; `ª`/`º`; a registro without any."""
+    import duckdb
+
+    a = ("11111111000111", "Fábrica São João Ltda.")
+    b = ("22222222000122", "OUTRA EMPRESA LTDA")
+    c = ("33333333000133", "SEM FABRICANTE LTDA")
+    linhas = [
+        ("10000000001", a, "FABRICA SAO JOAO LTDA", "BRASIL", "VIGENTE"),
+        ("10000000002", a, "ACME GMBH", "ALEMANHA", "01/01/2020"),
+        ("10000000002", a, "ACME GMBH", "ESTADOS UNIDOS DA AMÉRICA", "01/01/2020"),
+        ("10000000003", a, "Acme GmbH", "ALEMANHA", "01/01/2030"),
+        ("80000000004", b, "Acme GmbH", "ALEMANHA", "VIGENTE"),
+        ("80000000005", b, "Fábrica São João Ltda.", "BRASIL", "VIGENTE"),
+        ("80000000005", b, "GAMMA 3ª GERAÇÃO Nº1", "BRASIL", "VIGENTE"),
+        ("80000000006", b, "Beta Sp. z o.o.", "POLÔNIA", "VIGENTE"),
+        ("80000000006", b, "BETA SP Z OO", "POLÔNIA", "VIGENTE"),
+        ("80000000007", c, None, None, "VIGENTE"),
+    ]
+    values = ", ".join(
+        f"('{r}', '25351000000000001', 'NOME TECNICO', 'II', 'PRODUTO', '{h[0]}', '{h[1]}', "
+        f"{sql_str(f)}, {sql_str(p)}, DATE '2020-01-01', '{v}', TIMESTAMP '2026-10-12 19:00:00')"
+        for r, h, f, p, v in linhas
+    )
+    duckdb.connect().execute(
+        f"COPY (SELECT * FROM (VALUES {values}) t(numero_registro_cadastro, numero_processo, "
+        "nome_tecnico, classe_risco, nome_comercial, cnpj_detentor_registro_cadastro, "
+        "detentor_registro_cadastro, nome_fabricante, nome_pais_fabric, "
+        "dt_pub_registro_cadastro, validade_registro_cadastro, dt_atualizacao_dado)) "
+        f"TO '{path}' (FORMAT PARQUET)"
+    )
+
+
+@needs_duckdb
+def test_produtos_saude_fabricacao_rules(tmp_path):
+    """The holder is its own manufacturer when the names match once normalized; a chave never
+    merges countries; the commonest spelling names the key, ties alphabetical; registros count
+    distinct registros, the active ones by the file's own date; rows without a manufacturer
+    leave nothing."""
+    import duckdb
+
+    write_produtos_saude(tmp_path / "ps.parquet")
+    out = tmp_path / "out.parquet"
+    rows, columns = derivar.write(
+        derivar.PRODUTOS_SAUDE_FABRICACAO,
+        {"produtos_saude": tmp_path / "ps.parquet"},
+        out,
+        tmp_path / "spill",
+    )
+    assert columns == [
+        ("cnpj", "VARCHAR"),
+        ("empresa", "VARCHAR"),
+        ("chave", "VARCHAR"),
+        ("fabricante", "VARCHAR"),
+        ("pais", "VARCHAR"),
+        ("vinculo", "VARCHAR"),
+        ("registros", "INTEGER"),
+        ("registros_ativos", "INTEGER"),
+        ("linhas", "INTEGER"),
+    ]
+    got = duckdb.connect().execute(f"SELECT * EXCLUDE (empresa) FROM '{out}'").fetchall()
+    a, b = "11111111000111", "22222222000122"
+    assert got == [
+        # 'Acme GmbH' twice beats 'ACME GMBH' once, though the latter sorts first; the 2020
+        # registro is not active on 2026-10-12
+        (a, "acmegmbh", "Acme GmbH", "ALEMANHA", "exterior", 2, 1, 2),
+        (a, "acmegmbh", "ACME GMBH", "ESTADOS UNIDOS DA AMÉRICA", "exterior", 1, 0, 1),
+        (a, "fabricasaojoaoltda", "FABRICA SAO JOAO LTDA", "BRASIL", "propria", 1, 1, 1),
+        (b, "acmegmbh", "Acme GmbH", "ALEMANHA", "exterior", 1, 1, 1),
+        (b, "betaspzoo", "BETA SP Z OO", "POLÔNIA", "exterior", 1, 1, 2),  # a tie, one registro
+        (b, "fabricasaojoaoltda", "FABRICA SAO JOAO LTDA", "BRASIL", "terceira", 1, 1, 1),
+        (b, "gamma3ageracaono1", "GAMMA 3ª GERAÇÃO Nº1", "BRASIL", "terceira", 1, 1, 1),
+    ]
+    assert rows == len(got)
+
+
+@needs_duckdb
+def test_produtos_saude_fabricantes_lists_align(tmp_path):
+    """fabricantes, fabricantes_chaves and fabricantes_paises come from one distinct set in one
+    order, so index i is the same manufacturer in all three; no manufacturer gives three empty
+    lists, never NULL."""
+    import duckdb
+
+    write_produtos_saude(tmp_path / "ps.parquet")
+    out = tmp_path / "out.parquet"
+    derivar.write(
+        derivar.PRODUTOS_SAUDE_POR_PRODUTO,
+        {"produtos_saude": tmp_path / "ps.parquet"},
+        out,
+        tmp_path / "spill",
+    )
+    got = dict(
+        (r[0], r[1:])
+        for r in duckdb.connect()
+        .execute(f"SELECT id, fabricantes, fabricantes_chaves, fabricantes_paises FROM '{out}'")
+        .fetchall()
+    )
+    alemanha, eua = "ALEMANHA", "ESTADOS UNIDOS DA AMÉRICA"
+    assert got["10000000002"] == (
+        [f"ACME GMBH ({alemanha})", f"ACME GMBH ({eua})"],
+        ["acmegmbh", "acmegmbh"],
+        [alemanha, eua],
+    )
+    assert got["80000000005"] == (
+        ["Fábrica São João Ltda. (BRASIL)", "GAMMA 3ª GERAÇÃO Nº1 (BRASIL)"],
+        ["fabricasaojoaoltda", "gamma3ageracaono1"],
+        ["BRASIL", "BRASIL"],
+    )
+    assert got["80000000006"] == (
+        ["BETA SP Z OO (POLÔNIA)", "Beta Sp. z o.o. (POLÔNIA)"],
+        ["betaspzoo", "betaspzoo"],
+        ["POLÔNIA", "POLÔNIA"],
+    )
+    assert got["80000000007"] == ([], [], [])
 
 
 def test_missing_duckdb_is_a_clear_error(monkeypatch, tmp_path):

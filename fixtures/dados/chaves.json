@@ -1,0 +1,27 @@
+{
+  "versao": 1,
+  "regra": "The join key (chave) of a name ANVISA gives no id, such as a device manufacturer: trim; map º → o, ª → a, ™ → tm, ² → 2, ³ → 3 (DuckDB's strip_accents drops them); strip accents (NFKD, every combining mark of category M* dropped); lowercase; remove every character outside [a-z0-9]. Letters with no decomposition (ß, Ł, Ø, CJK) are removed, not transliterated. Known divergences between Python's NFKD and DuckDB's strip_accents left out on purpose because no real name has them: ½ (NFKD gives 12), the ﬁ ligature and full-width letters. The data side computes it with derivar.chave_sql; the site with chave() and chaveSql().",
+  "casos": [
+    { "entrada": "3M DO BRASIL LTDA.", "chave": "3mdobrasilltda" },
+    { "entrada": "  Nestlé  S/A  ", "chave": "nestlesa" },
+    { "entrada": "L'ORÉAL", "chave": "loreal" },
+    { "entrada": "FÁBRICA – SUL", "chave": "fabricasul" },
+    { "entrada": "ERVAS & ESSÊNCIAS", "chave": "ervasessencias" },
+    { "entrada": "Dr. Müller GmbH & Co. KG", "chave": "drmullergmbhcokg" },
+    { "entrada": "B.BRAUN", "chave": "bbraun" },
+    { "entrada": "Johnson’s", "chave": "johnsons" },
+    { "entrada": "ETHICON ENDO-SURGERY, INC.", "chave": "ethiconendosurgeryinc" },
+    { "entrada": "3ª Dimensão Nº 2", "chave": "3adimensaono2" },
+    { "entrada": "Vitamina C™ 2²", "chave": "vitaminactm22" },
+    { "entrada": "Ñandú", "chave": "nandu" },
+    { "entrada": "Straße", "chave": "strae" },
+    { "entrada": "ŁÓDŹ", "chave": "odz" },
+    { "entrada": "Øresund", "chave": "resund" },
+    { "entrada": "株式会社 Kabushiki", "chave": "kabushiki" },
+    { "entrada": "POLAR FIX INDUSTRIA", "chave": "polarfixindustria" },
+    { "entrada": "Polar Fix Indústria", "chave": "polarfixindustria" },
+    { "entrada": "COOK (EUROPE) A/S", "chave": "cookeuropeas" },
+    { "entrada": "Zhejiang  Orient\tGene", "chave": "zhejiangorientgene" },
+    { "entrada": "", "chave": "" }
+  ]
+}

@@ -547,6 +547,163 @@ CMED = Dataset(
     ),
 )
 
+CBPF = Dataset(
+    name="cbpf",
+    group="cbpf",
+    file="TA_CONSULTA_CBPF.CSV",
+    directory="CONSULTAS/EMPRESA_FISCALIZACAO_PRODUTO/",
+    title="Certificados de boas práticas (CBPF e CBPDA), exceto medicamentos",
+    # Profiled 2026-10-23 on the 2026-10-13 file (8,042,875 bytes): Windows-1252 (0x96 67 times,
+    # 0x92 8), LF only, 22,039 records of 16 fields, no line break or `;` inside any value. Text
+    # quoted, CO_DOCUMENTO_PETICAO bare. 80 records are exact copies of another (71 petições
+    # twice, 3 four times; no petição has two different rows). Dictionary:
+    # Documentacao_e_Dicionario_de_Dados_Certificado_de_Boas_Praticas.pdf (05/2025) beside it.
+    # The medicines' certificates are in TA_CONSULTA_CBPF_MEDICAMENTO_DETALHE.CSV
+    # (cbpf_medicamentos); TA_CONSULTA_CBPF_DETALHE.CSV is stale (DT_CARGA_ETL 2025-09-08) and
+    # inconsistent with this file, and TA_CONSULTA_CBPF_MEDICAMENTO.CSV has 4 rows: neither is read.
+    columns={
+        "CO_DOCUMENTO_PETICAO": "INTEGER",  # 7 or 8 digits (max 35,557,109); the certificate
+        "RAZAOSOCIAL_SOLICITANTE": "VARCHAR",  # 52 end in whitespace (stripped); 4 carry
+        # `COM&Eacute-RCIO`, an entity whose `;` the export turned into `-` (kept as written)
+        "NU_CNPJ_SOLICITANTE": "VARCHAR",  # always 14 digits; 3,257 distinct
+        "RAZAOSOCIAL_INSPECIONADA": "VARCHAR",  # empty on 15,808 (older rows: plant unknown)
+        # [ABC] + 6 digits on 5,189 rows, every one abroad: C = devices, A/B = APIs; never
+        # together with a CNPJ
+        "CODIGOUNICO_INSPECIONADA": "VARCHAR",
+        "NU_CNPJ_EMPRESA_INSPECIONADA": "VARCHAR",  # 14 digits on 1,042 rows, always BRASIL
+        "NO_PAIS_INSPECIONADA": "VARCHAR",  # empty with the plant; CHINA, REPÚBLICA POPULAR...
+        "NO_TIPO_CERTIFICADO": "VARCHAR",  # CBPF 21,628 / CBPDA 411
+        # `<code> - <FAMÍLIA> - <text>`, 81 values; families PRODUTOS PARA SAÚDE 12,456 (40 with a
+        # trailing space), MDSAP 4,346 (devices; one `MDSAP -PRODUTOS`), INSUMOS FARMACÊUTICOS
+        # 2,669 (9 with an en dash), INSUMOS FARMACÊUTICOS ATIVOS BIOLÓGICOS 2,269, COSMÉTICOS…
+        # 235, SANEANTES 62, ALIMENTOS 2. 12 rows carry inner quotes (`"in vitro"`), 45 end
+        # in `&#8203-`. No medicines.
+        "ASSUNTO": "VARCHAR",
+        "DT_PUBLICACAO": "TIMESTAMP",  # always 00:00:00; 13,707 rows prove month first
+        "DT_VALIDADE": "TIMESTAMP",  # empty on 789: 377 indeferidos, 7 cancelados, 405 others
+        # empty 16,353; ANÁLISE DE RISCO 2,322; INSPEÇÃO 1,720; RECONHECIMENTO DE OUTRAS
+        # AUTORIDADES 870; RENOVAÇÃO AUTOMÁTICA 404; NÃO INFORMADO 147; APROVAÇÃO TÁCITA 133;
+        # OUTROS 50; ANÁLISE DE REQUISITOS DA RDC 982/2025 22; MDSAP 11; RDC 346/2020 7
+        "DS_TP_EMISSAO_CERTIFICADO": "VARCHAR",
+        # Publicado deferimento 20,612; Revalidação automática 1,027; Publicado indeferimento
+        # 377; Renovação automática 22; Certificado emitido 1
+        "SITUACAO": "VARCHAR",
+        "NU_PROCESSO": "VARCHAR",  # digits; 17 on 21,967, 15 on 58, 13 on 10, 16 on 3, 7 on 1
+        # computed by ANVISA on the load day: VENCIDO 17,273; VALIDO (no accent) 3,348; empty
+        # 1,034 (629 of them valid by date); INDEFERIDO 377; CANCELADO 7. `certificados.vigente`
+        # recomputes it from SITUACAO, DT_VALIDADE and DT_CARGA_ETL
+        "STATUS": "VARCHAR",
+        "DT_CARGA_ETL": "TIMESTAMP",  # 10/13/2026 00:00:01 on every row
+    },
+    sort=("NU_CNPJ_SOLICITANTE", "CO_DOCUMENTO_PETICAO"),  # a petição's copies are adjacent
+    timestamp_formats=("%m/%d/%Y %H:%M:%S",),  # month first, like produtos_irregulares
+    notes=(
+        "Uma linha por petição de Certificado de Boas Práticas de Fabricação (CBPF) ou de "
+        "Distribuição e/ou Armazenagem (CBPDA) de produtos para saúde, insumos farmacêuticos, "
+        "cosméticos, saneantes e alimentos, deferida ou não; os certificados de medicamentos "
+        "estão em cbpf_medicamentos. 80 linhas repetem outra, iguais em tudo: conte "
+        "certificados com DISTINCT co_documento_peticao, ou leia certificados, que tem uma "
+        "linha por petição.",
+        "nu_cnpj_solicitante é quem pediu o certificado (o detentor); a unidade fabril "
+        "inspecionada vem em nu_cnpj_empresa_inspecionada (no Brasil) ou "
+        "codigounico_inspecionada (no exterior: letra e 6 dígitos), e fica vazia em 72% das "
+        "linhas, as mais antigas.",
+        "status é a situação calculada pela ANVISA no dia da carga (dt_carga_etl) e vem vazio "
+        "em mil linhas, inclusive válidas: para saber se um certificado vigora, compare "
+        "dt_validade com a data de referência, como certificados.vigente faz com dt_carga_etl.",
+        "assunto começa com o código e a família da petição (PRODUTOS PARA SAÚDE, MDSAP, "
+        "INSUMOS FARMACÊUTICOS...), que certificados.area resume. Entidades HTML cujo ; virou "
+        "- na origem (COM&Eacute-RCIO, &#8203-) vêm como estão.",
+    ),
+)
+
+CBPF_MEDICAMENTOS = Dataset(
+    name="cbpf_medicamentos",
+    group="cbpf",
+    file="TA_CONSULTA_CBPF_MEDICAMENTO_DETALHE.CSV",
+    directory="CONSULTAS/EMPRESA_FISCALIZACAO_PRODUTO/",
+    title="Certificados de boas práticas de medicamentos, uma linha por linha certificada",
+    # Profiled 2026-10-23 on the file of Last-Modified 2026-05-15 (9,844,514 bytes):
+    # Windows-1252 (0x96 4,662 times, 0x92 46; no undefined byte), LF only, 14,803 records of
+    # 32 fields, no line break or `;` inside any value. Text quoted, CO_DOCUMENTO_PETICAO bare.
+    # 13,651 petições, one row per certified line (1 line on 12,737, up to 6); within a
+    # petição only the line columns (LINHACERTIFICACAO, LINHACBPF, CLASSECERTIFICACAO,
+    # ETAPASFABRICACAO, FORMAFARMACEUTICA, ST_LIBERACAO_PARAMETRICA) vary. 25 rows are exact
+    # copies of another; 10 more petições repeat a LINHACERTIFICACAO with other line columns
+    # different. DT_CARGA_ETL is 09/08/2025 15:28:51 or :52 on every row: ANVISA stopped
+    # refreshing this file but republishes it (the main TA_CONSULTA_CBPF_MEDICAMENTO.CSV has 4
+    # rows); certificados.dados_de carries that date. No id in common with cbpf.
+    columns={
+        "CO_DOCUMENTO_PETICAO": "INTEGER",  # 7 or 8 digits (2,172,612 to 33,450,767)
+        "EMPRESASOLICITANTE": "VARCHAR",  # 8 end in whitespace (stripped)
+        "NU_CNPJ_SOLICITANTE": "VARCHAR",  # always 14 digits; 1,259 distinct, 622 also in cbpf
+        "ENDERECOSOLICITANTE": "VARCHAR",
+        "CIDADESOLICITANTE": "VARCHAR",
+        "UFSOLICITANTE": "VARCHAR",  # two letters, never empty
+        # the inspected plant (the PDF describes it as the solicitante, a copy-paste error);
+        # empty on 747 rows (older petições: plant unknown); one plant abroad (LEMERY, MÉXICO)
+        # has a name and country but neither code nor CNPJ
+        "RAZAOSOCIAL": "VARCHAR",
+        "CODIGOUNICO_INSPECIONADA": "VARCHAR",  # A + 6 digits on 9,650 rows, all abroad
+        "NU_CNPJ_EMPRESA_INSPECIONADA": "VARCHAR",  # 14 digits on 4,405 rows, always BRASIL
+        "ENDERECO": "VARCHAR",  # `&B,` and the like are text, not entities
+        "PAIS": "VARCHAR",  # BRASIL 4,405, ALEMANHA 1,460, ÍNDIA 1,297...; 65 values
+        "CO_UF_INSPECIONADA": "VARCHAR",  # two letters on every Brazilian plant
+        "CIDADE_INSPECIONADA": "VARCHAR",
+        "NO_TIPO_CERTIFICADO": "VARCHAR",  # CBPF 13,735 / CBPDA 1,068 rows
+        # `<code> - <FAMÍLIA> - <text>`, 54 values: MEDICAMENTOS 14,528 rows (4,248 with an en
+        # dash after it, the international renewals), PRODUTOS BIOLÓGICOS 154, MEDICAMENTO E
+        # INSUMOS FARMACÊUTICOS 100, MEDICAMENTO 21 (cancellations); no inner quote, no entity
+        "ASSUNTO": "VARCHAR",
+        "DT_PUBLICACAO": "TIMESTAMP",  # 2012-01-02 to 2025-06-02; 8,869 rows prove month first
+        "DT_VALIDADE": "TIMESTAMP",  # empty on exactly the 85 CANCELADO and 40 INDEFERIDO rows
+        "NU_RESOLUCAO": "VARCHAR",  # 1.234 (8,878), 630, 1234, 1,234...: as written
+        "DT_RESOLUCAO": "TIMESTAMP",  # month first too (8,966 rows prove it)
+        "NU_DOU": "VARCHAR",  # 1 to 3 digits; `-` 10, `99-A` 9
+        # the line as one sentence, empty on 2,111 rows (every line column empty with it:
+        # petições of 2012-2017); `Medicamentos` on the CBPDA rows
+        "LINHACERTIFICACAO": "VARCHAR",
+        "LINHACBPF": "VARCHAR",  # Sólidos não estéreis 4,867, Produtos estéreis 4,654... 7 values
+        "CLASSECERTIFICACAO": "VARCHAR",  # Comum 10,244, Citotóxicos, Hormônios... 10 values
+        "ETAPASFABRICACAO": "VARCHAR",  # comma-joined: Granel, Embalagem primária, secundária
+        # 448 values, comma-joined; 4,949 end in a space (stripped), 273 hold a \xa0 inside
+        "FORMAFARMACEUTICA": "VARCHAR",
+        "ST_LIBERACAO_PARAMETRICA": "BOOLEAN",  # N 11,606 / S 28 / empty 3,169
+        # not the petition's type: Medicamentos sintéticos 6,172, biológicos 1,606,
+        # Radiofármacos 53, Não se aplica 1,609, empty 5,363
+        "TIPOPETICAO": "VARCHAR",
+        # empty 8,419; INSPEÇÃO 2,694; ANÁLISE DE RISCO 2,061; APROVAÇÃO TÁCITA 1,176; RDC
+        # 346/2020 248; RECONHECIMENTO DE OUTRAS AUTORIDADES 99; RENOVAÇÃO AUTOMÁTICA 87...
+        "DS_TP_EMISSAO_CERTIFICADO": "VARCHAR",
+        # filled on 182 rows (CANCELADO, INDEFERIDO and some VENCIDO): 749 `¿` stand for the
+        # characters ANVISA lost upstream (n¿o, Pr¿ticas), 12 hold inner quotes; kept
+        "DS_MOTIVO_CANCELAMENTO": "VARCHAR",
+        "NU_PROCESSO": "VARCHAR",  # digits; 17 on 14,800, 16 on 3
+        # on 2025-09-08: VENCIDO 11,662; VALIDO 2,547; empty 469 (CBPDA, 435 of them valid by
+        # date); CANCELADO 85; INDEFERIDO 40. 302 VALIDO petições have a validade before the
+        # load day (renewal pending?): certificados.vigente is false on them
+        "STATUS": "VARCHAR",
+        "DT_CARGA_ETL": "TIMESTAMP",
+    },
+    sort=("NU_CNPJ_SOLICITANTE", "CO_DOCUMENTO_PETICAO", "LINHACERTIFICACAO"),
+    timestamp_formats=("%m/%d/%Y %H:%M:%S",),  # month first in all four date columns
+    notes=(
+        "Uma linha por linha certificada (linhacertificacao) de cada petição de certificado "
+        "de boas práticas de medicamentos: 14.803 linhas, 13.651 petições, 25 linhas "
+        "repetidas iguais em tudo. Conte certificados com DISTINCT co_documento_peticao, ou "
+        "leia certificados, que tem uma linha por petição.",
+        "Dados de 08/09/2025: a ANVISA deixou de atualizar este arquivo (dt_carga_etl é a data "
+        "da carga, igual em todas as linhas), embora o republique. Certificados publicados "
+        "depois não estão aqui, e status foi calculado naquele dia.",
+        "Mesmo desenho de cbpf para solicitante e unidade inspecionada (CNPJ no Brasil, "
+        "codigounico_inspecionada no exterior; razaosocial é a unidade inspecionada), mais "
+        "endereço, cidade e UF dos dois, a resolução e o DOU da publicação, e o motivo do "
+        "cancelamento ou indeferimento quando há, com acentos trocados por ¿ na origem.",
+        "tipopeticao é o tipo de medicamento (sintéticos, biológicos, radiofármacos), não o "
+        "tipo da petição; a situação da petição só aparece em status.",
+    ),
+)
+
 CATALOG: tuple[Dataset, ...] = (
     ALIMENTOS,
     ALIMENTOS_RESULTADO,
@@ -558,6 +715,8 @@ CATALOG: tuple[Dataset, ...] = (
     MEDICAMENTOS,
     PRODUTOS_SAUDE,
     CMED,
+    CBPF,
+    CBPF_MEDICAMENTOS,
 )
 
 
