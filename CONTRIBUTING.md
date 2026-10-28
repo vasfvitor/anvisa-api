@@ -81,7 +81,11 @@ throttling, but the same rule holds: profile the real file before writing its ca
 4. Cut a sample into `fixtures/dados/<name>_head.csv`: the header plus a few dozen records that
    cover the odd cases, copied **by record, byte for byte** (records contain line breaks, so not
    by line, and never re-encoded; `.gitattributes` keeps git from touching them). Save the
-   headers as `headers_<name>.txt` and add both to `fixtures/dados/manifest.json`.
+   headers as `headers_<name>.txt` and add both to `fixtures/dados/manifest.json`. An xlsx
+   (`dcb`) cannot be cut by bytes: keep the same workbook with fewer rows, every part byte for
+   byte but the sheet and the shared strings, which keep each kept row and string as it was
+   with only the string indexes renumbered (`headers_dcb.txt` says how); an HTML page the
+   source is found through keeps the byte range the parser reads.
 5. `test_fixture_header_matches_catalog` is the gate; add value tests for whatever was odd.
 6. If the Parquet comes out far above 15 MB (anvisa-dash downloads whole files), set
    `busca=True` on the entry: `dados/busca.py` then publishes the rows again as small search
@@ -92,7 +96,8 @@ throttling, but the same rule holds: profile the real file before writing its ca
 A derived table (`anvisa/dados/derivar.py`) is Parquet built from the converted tables, not
 from an ANVISA file: `produtos`, `empresas`, `medidas`, `cosmeticos_por_empresa`,
 `alimentos_por_produto`, `medicamentos_por_produto`, `produtos_saude_por_produto`,
-`alimentos_fabricacao`, `certificados` and `produtos_saude_fabricacao` are the first ten. Add a `Derivada` and put it in
+`alimentos_fabricacao`, `certificados`, `produtos_saude_fabricacao` and `substancias_dcb` are the first
+eleven. Add a `Derivada` and put it in
 `DERIVADAS`; its `sql` gets a map fonte name → `read_parquet('…')` and returns a SELECT. Rules:
 
 1. Every aggregate is order-stable (`min`, `arg_min`, `list(x ORDER BY x)`,

@@ -333,6 +333,7 @@ def build(
 
             for ds in datasets:  # every header first, so a drift fails before any Parquet
                 path = work / ds.local_file
+                # cmed.py and dcb.py write the same normalized form; its header is the columns
                 header = read_header(path) if ds.kind == "csv" else cmed.read_csv_header(path)
                 check_header(ds, header)
 

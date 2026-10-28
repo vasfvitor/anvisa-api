@@ -9,6 +9,7 @@ import importlib.util
 import json
 import re
 import sys
+import zipfile
 from collections import Counter
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -26,6 +27,7 @@ from anvisa.dados import (
     build,
     busca,
     cmed,
+    dcb,
     derivar,
     fetch,
     parse,
@@ -38,6 +40,7 @@ from anvisa.dados.catalog import (
     CBPF_MEDICAMENTOS,
     CMED,
     COSMETICOS,
+    DCB,
     MEDICAMENTOS,
     PETICOES_ALIMENTO,
     PETICOES_ALIMENTO_ANDAMENTO,
@@ -89,6 +92,14 @@ HEADERS = {
 # the CMED pair is read by cmed.py, not the Windows-1252 parser: its samples are separate
 CMED_SAMPLES = {"pmc": "cmed_pmc_head.csv", "pmvg": "cmed_pmvg_head.csv"}
 CMED_HEADERS = {"pmc": "headers_cmed_pmc.txt", "pmvg": "headers_cmed_pmvg.txt"}
+# the DCB comes from the Biblioteca Digital: collection page, item page, then the xlsx
+DCB_ITEM_URL = "https://bibliotecadigital.anvisa.gov.br/jspui/handle/anvisa/22551"
+DCB_XLSX_URL = (
+    "https://bibliotecadigital.anvisa.gov.br/jspui/bitstream/anvisa/22551/1/"
+    "3-Lista%20DCB%20consolidada%20out%202026.xlsx"
+)
+DCB_TITLE = "Lista consolidada das DCB: versão IN Anvisa n° 473, de 2 de outubro de 2026 - VIGENTE"
+DCB_SAMPLE = DADOS / "dcb_head.xlsx"
 CSV_DATASETS = tuple(ds for ds in CATALOG if ds.kind == "csv")
 NOW = datetime(2026, 10, 6, 21, 3, 12, tzinfo=timezone.utc)
 needs_duckdb = pytest.mark.skipif(
@@ -121,7 +132,9 @@ def write_dialect(path: Path, rows: list[list[str]]) -> Path:
 
 class FakeDados:
     """Serves the fixture samples at their catalog URLs with the recorded headers, honours
-    If-None-Match, and serves `manifest` (when set) at MANIFEST_URL."""
+    If-None-Match (If-Modified-Since for a file without ETag, the DCB xlsx), serves the
+    Biblioteca Digital's two pages (`pages`, not data files) and `manifest` (when set) at
+    MANIFEST_URL."""
 
     SITE_URL = "https://example.github.io/anvisa-api/"
     MANIFEST_URL = SITE_URL + "manifest.json"
@@ -140,6 +153,13 @@ class FakeDados:
             headers, _ = headers_only(DADOS / CMED_HEADERS[kind])
             headers.pop("Content-Length")
             self.files[catalog_url(file)] = (headers, (DADOS / CMED_SAMPLES[kind]).read_bytes())
+        headers, _ = headers_only(DADOS / "headers_dcb.txt")
+        headers.pop("Content-Length")
+        self.files[DCB_XLSX_URL] = (headers, DCB_SAMPLE.read_bytes())
+        self.pages = {
+            DCB.url: (DADOS / "dcb_colecao.html").read_bytes(),
+            DCB_ITEM_URL: (DADOS / "dcb_item.html").read_bytes(),
+        }
 
     def handler(self, request: httpx.Request) -> httpx.Response:
         self.requests.append(request)
@@ -153,18 +173,26 @@ class FakeDados:
             if file is None or not file.is_file():
                 return httpx.Response(404, text="not found")
             return httpx.Response(200, content=file.read_bytes())
+        if url in self.pages:
+            html_type = {"Content-Type": "text/html;charset=UTF-8"}
+            return httpx.Response(200, headers=html_type, content=self.pages[url])
         if url not in self.files:
             return httpx.Response(404, text="not found")
         headers, body = self.files[url]
-        if request.headers.get("If-None-Match") == headers["ETag"]:
+        if "ETag" in headers and request.headers.get("If-None-Match") == headers["ETag"]:
             return httpx.Response(304, headers={"ETag": headers["ETag"]})
+        if "ETag" not in headers and request.headers.get("If-Modified-Since") == headers.get(
+            "Last-Modified"
+        ):
+            return httpx.Response(304, headers={"Last-Modified": headers["Last-Modified"]})
         return httpx.Response(200, headers=headers, content=body)
 
     def client(self) -> httpx.Client:
         return http_client(transport=httpx.MockTransport(self.handler))
 
     def data_requests(self) -> list[httpx.Request]:
-        """The CSV downloads: not the manifest, not a carried-over Parquet."""
+        """The source downloads: not the manifest, not a carried-over Parquet, not the DCB's
+        HTML pages."""
         return [r for r in self.requests if str(r.url) in self.files]
 
 
@@ -183,8 +211,12 @@ def test_catalog_is_consistent():
         assert set(ds.sort) <= set(ds.columns)
         assert all(ds.columns[c] == "VARCHAR" for c in ds.unescape)
         assert all(ds.columns[c] in ("DATE", "TIMESTAMP") for c in ds.formats)
-        assert ds.url.startswith("https://dados.anvisa.gov.br/")
-        assert ds.kind == "cmed" or ds.url.endswith(ds.file)
+        assert ds.url.startswith(
+            "https://bibliotecadigital.anvisa.gov.br/"
+            if ds.kind == "dcb"
+            else "https://dados.anvisa.gov.br/"
+        )
+        assert ds.kind != "csv" or ds.url.endswith(ds.file)
         assert ds.directory == "" or ds.directory.endswith("/")
         assert not ds.directory.startswith("/") and "//" not in ds.url.split("://", 1)[1]
     # ANVISA reuses file names across folders, so the work directory is keyed by dataset
@@ -216,6 +248,10 @@ def test_catalog_is_consistent():
     assert CBPF_MEDICAMENTOS.url == catalog_url(
         "CONSULTAS/EMPRESA_FISCALIZACAO_PRODUTO/TA_CONSULTA_CBPF_MEDICAMENTO_DETALHE.CSV"
     )
+    # the DCB: its own group, found through the Biblioteca Digital collection
+    assert select(["dcb"]) == (DCB,) and DCB.url == dcb.COLLECTION_URL
+    assert DCB.local_file == "dcb.csv" and DCB.columns == dcb.COLUMNS
+    assert DCB.source_name("cas_referencia") == "Nº CAS ([Ref. n])"
 
 
 def test_fixture_header_matches_catalog():
@@ -229,6 +265,16 @@ def test_fixture_header_matches_catalog():
         mapped = [cmed.column_for(h, kind) for h in header]
         assert mapped.count(None) == 1  # DESTINAÇÃO COMERCIAL
         assert set(mapped) - {None} <= set(cmed.COLUMNS)
+    # the DCB workbook: the header row below the title, `Nº DCB ` with its trailing space
+    header = dcb.read_header(DCB_SAMPLE)
+    assert header == [
+        "Nº DCB ",
+        "DENOMINAÇÃO COMUM BRASILEIRA",
+        "Nº CAS",
+        "CLASSIFICAÇÃO",
+        "HISTÓRICO",
+    ]
+    dcb.check_header(header)
     # the `#` comment marker on the finalized-petitions header is dropped, not a schema change
     assert sample(PETICOES_ALIMENTO).read_bytes().startswith(b"#NUM_EXPEDIENTE_PETICAO;")
 
@@ -1317,6 +1363,243 @@ def test_build_cmed_conditional_on_both_files(fake_dados, tmp_path):
     assert urls == [catalog_url(cmed.FILES["pmc"]), pmvg_url, catalog_url(cmed.FILES["pmc"])]
 
 
+# --- dcb: the DCB list (an xlsx in the Biblioteca Digital) ---------------------------------
+
+
+DCB_PUBLICADO = "09/10/2026 12:31:12"  # the xlsx's Last-Modified, Fri 09 Oct 2026 15:31:12 GMT
+DCB_HEADER = ["Nº DCB ", "DENOMINAÇÃO COMUM BRASILEIRA", "Nº CAS", "CLASSIFICAÇÃO", "HISTÓRICO"]
+
+
+def tiny_xlsx(path: Path, rows: list[list]) -> Path:
+    """A minimal workbook with one sheet: text as inline strings, ints as number cells, None
+    as no cell. Only the parts dcb.py reads."""
+    main = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+    rel = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+    xml_rows = []
+    for r, row in enumerate(rows, 1):
+        cells = []
+        for i, value in enumerate(row):
+            ref = f"{chr(65 + i)}{r}"
+            if isinstance(value, int):
+                cells.append(f'<c r="{ref}"><v>{value}</v></c>')
+            elif value is not None:
+                cells.append(f'<c r="{ref}" t="inlineStr"><is><t>{html.escape(value)}</t></is></c>')
+        xml_rows.append(f'<row r="{r}">{"".join(cells)}</row>')
+    with zipfile.ZipFile(path, "w") as z:
+        z.writestr(
+            "xl/workbook.xml",
+            f'<workbook xmlns="{main}" xmlns:r="{rel}"><sheets>'
+            '<sheet name="Planilha1" sheetId="1" r:id="rId1"/></sheets></workbook>',
+        )
+        z.writestr(
+            "xl/_rels/workbook.xml.rels",
+            '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            '<Relationship Id="rId1" Target="worksheets/sheet1.xml"/></Relationships>',
+        )
+        z.writestr(
+            "xl/worksheets/sheet1.xml",
+            f'<worksheet xmlns="{main}"><sheetData>{"".join(xml_rows)}</sheetData></worksheet>',
+        )
+    return path
+
+
+def test_dcb_finds_the_current_version():
+    page = (DADOS / "dcb_colecao.html").read_text(encoding="utf-8")
+    assert dcb.current_item(page) == (DCB_TITLE, DCB_ITEM_URL)
+    # no item says VIGENTE: the first listed, the newest deposit
+    title, url = dcb.current_item(page.replace("-&#x20;VIGENTE", "-&#x20;não&#x20;vigente"))
+    assert url == DCB_ITEM_URL and title.endswith("2026 - não vigente")
+    # the collection's other item (the 2013 manual) is never a version
+    manual = '<a href="/jspui/handle/anvisa/12415">Manual&#x20;das&#x20;DCB&#x20;-&#x20;VIGENTE</a>'
+    with pytest.raises(DadosError, match="no 'Lista consolidada das DCB' item"):
+        dcb.current_item(manual)
+    item = (DADOS / "dcb_item.html").read_text(encoding="utf-8")
+    assert dcb.spreadsheet_url(item, DCB_ITEM_URL) == DCB_XLSX_URL
+    assert dcb.file_name(DCB_XLSX_URL) == "3-Lista DCB consolidada out 2026.xlsx"
+    with pytest.raises(DadosError, match="no xlsx file"):
+        dcb.spreadsheet_url(item.replace(".xlsx", ".pdf"), DCB_ITEM_URL)
+
+
+def test_dcb_reads_the_odd_cases():
+    """45 sheet rows: the title, the header, 40 entries and 3 rows merged under the entry above.
+    Every case below is a real row (fixtures/dados/headers_dcb.txt lists them)."""
+    entries = dcb.read_entries(DCB_SAMPLE, publicado_em=DCB_PUBLICADO)
+    by = {e["numero_dcb"]: e for e in entries}
+    assert len(entries) == len(by) == 40 and list(by) == sorted(by)
+    assert all(list(e) == list(dcb.COLUMNS) for e in entries)
+    assert {e["publicado_em"] for e in entries} == {DCB_PUBLICADO}
+    # salts are entries of their own; numbers have gaps (no 5)
+    assert by[1]["denominacao"] == "abacavir" and by[2]["denominacao"] == "sulfato de abacavir"
+    assert 5 not in by and by[6]["denominacao"] == "abaperidona"
+    # CAS numbers Excel stored as dates (style 14) come back as the text that was typed
+    assert by[205]["cas"] == "7758-11-4" and by[3244]["cas"] == "1972-08-3"
+    # whitespace collapsed, no-break spaces included; look-alike hyphens made `-`
+    assert (by[9663]["denominacao"], by[9663]["cas"]) == ("dronedarona", "141626-36-0")
+    assert by[10842]["denominacao"] == "Vanilla planifolia Jacks. ex Andrews"
+    assert by[11322]["denominacao"] == "cloridrato de flurazepam"
+    assert by[9771]["denominacao"] == "arcitumomabe (99m Tc)"
+    assert by[10092]["denominacao"] == "Acidum carbolicum"
+    assert by[11503]["cas"] == "1365970-03-1" and by[13041]["cas"] == "2272904-53-5"
+    assert by[11117]["cas"] == "878672-00-5"  # U+2011 in the source
+    assert by[6963]["cas"] == "9001-75-6."  # malformed: as written
+    # a reference instead of a CAS, in each spelling the list uses
+    refs = {n: (by[n]["cas"], by[n]["cas_referencia"]) for n in (10092, 11452, 11318, 12794)}
+    assert refs == {10092: (None, 8), 11452: (None, 6), 11318: (None, 8), 12794: (None, 8)}
+    assert by[13025]["cas_referencia"] == 11 and by[10877]["cas_referencia"] == 11
+    assert sum(1 for e in entries if e["cas"] is None) == 9
+    assert all((e["cas"] is None) != (e["cas_referencia"] is None) for e in entries)
+    # rich-text cells: the runs joined (superscript and italic runs)
+    assert by[1985]["denominacao"] == "cianocobalamina (57 Co)"
+    assert by[9892]["denominacao"] == "Aesculus hippocastanum L."
+    # an entry merged over two rows: the second row's HISTÓRICO appended
+    assert by[342]["historico"] == (
+        "Consolidada pela Instrução Normativa - IN nº 342, de 20 de dezembro de 2024 | "
+        'Adequação da nomenclatura de "salicilato de bismuto monobásico" para "subsalicilato '
+        'de bismuto" pela Instrução Normativa - IN n° 462, de 23 de julho de 2026'
+    )
+    assert by[4486]["historico"].endswith("IN nº 439, de 16 de abril de 2026")
+    assert sum(1 for e in entries if dcb.HISTORICO_SEP in e["historico"]) == 3
+    assert by[13017]["classificacao"] == "Outro" and "IN nº 473" in by[13055]["historico"]
+    assert {e["classificacao"] for e in entries} == {
+        "IFA",
+        "INF",
+        "BIO",
+        "HOM",
+        "PM",
+        "RAD",
+        "Outro",
+    }
+
+
+def test_dcb_drift_and_bad_values_fail(tmp_path):
+    title = ["LISTA DCB - CONSOLIDADA"]
+    ok = tiny_xlsx(
+        tmp_path / "ok.xlsx",
+        [
+            title,
+            DCB_HEADER,
+            [1, "abacavir", "136470-78-5", "IFA", "Consolidada"],
+            [None, None, None, None, "Alteração"],
+            [],
+            [3, " b ", "[Ref. 2]", "INF", "Incluída"],
+        ],
+    )
+    entries = dcb.read_entries(ok, publicado_em=None)
+    assert [(e["numero_dcb"], e["denominacao"], e["historico"]) for e in entries] == [
+        (1, "abacavir", "Consolidada | Alteração"),
+        (3, "b", "Incluída"),
+    ]
+    renamed = tiny_xlsx(
+        tmp_path / "renamed.xlsx", [title, [*DCB_HEADER[:2], "CAS", *DCB_HEADER[3:]]]
+    )
+    with pytest.raises(SchemaDriftError, match="header is"):
+        dcb.read_entries(renamed, publicado_em=None)
+    wider = tiny_xlsx(tmp_path / "wider.xlsx", [DCB_HEADER, [1, "a", "1-1-1", "IFA", "x", "?"]])
+    with pytest.raises(SchemaDriftError, match="past column 5"):
+        dcb.read_entries(wider, publicado_em=None)
+    twice = tiny_xlsx(tmp_path / "twice.xlsx", [DCB_HEADER, [1, "a", "", "", ""], [1, "b"]])
+    with pytest.raises(DadosError, match="DCB 1 on rows 2 and 3"):
+        dcb.read_entries(twice, publicado_em=None)
+    orphan = tiny_xlsx(tmp_path / "orphan.xlsx", [DCB_HEADER, [None, None, "1-1-1", None, "x"]])
+    with pytest.raises(DadosError, match="no DCB number or name"):
+        dcb.read_entries(orphan, publicado_em=None)
+    with pytest.raises(DadosError, match="no header row"):
+        dcb.read_entries(tiny_xlsx(tmp_path / "empty.xlsx", [title]), publicado_em=None)
+    assert dcb.numero("12") == 12 and dcb.numero("12.0") == 12 and dcb.numero(" ") is None
+    with pytest.raises(DadosError, match="not a whole DCB number"):
+        dcb.numero("1.5")
+    with pytest.raises(DadosError, match="not a DCB number"):
+        dcb.numero("doze")
+    assert dcb.cas("[Ref. 8.]") == (None, 8) and dcb.cas("Ref. 11") == (None, 11)
+    assert dcb.cas(None) == (None, None) and dcb.cas(date(7758, 11, 4)) == ("7758-11-4", None)
+    assert dcb.excel_date("2139900") == date(7758, 11, 4)
+    assert dcb.excel_date("0", date1904=True) == date(1904, 1, 1)
+
+
+@needs_duckdb
+def test_convert_dcb(tmp_path):
+    import duckdb
+
+    from anvisa.dados.convert import convert
+
+    entries = dcb.read_entries(DCB_SAMPLE, publicado_em=DCB_PUBLICADO)
+    csv_path = tmp_path / DCB.local_file
+    assert dcb.write_csv(entries, csv_path) == 40
+    check_header(DCB, cmed.read_csv_header(csv_path))
+    parquet = tmp_path / "dcb.parquet"
+    stats = convert(DCB, csv_path, parquet)
+    assert stats.rows == 40 and stats.rejected == ()
+    assert stats.loaded_at == "2026-10-09T12:31:12"
+    assert all(v == 0 for v in stats.nulls_added.values())
+    con = duckdb.connect()
+    cols = {r[0]: r[1] for r in con.execute(f"DESCRIBE SELECT * FROM '{parquet}'").fetchall()}
+    assert list(cols) == list(dcb.COLUMNS)
+    assert cols["numero_dcb"] == cols["cas_referencia"] == "INTEGER"
+    assert cols["publicado_em"] == "TIMESTAMP" and cols["cas"] == "VARCHAR"
+    numbers = [r[0] for r in con.execute(f"SELECT numero_dcb FROM '{parquet}'").fetchall()]
+    assert numbers == sorted(numbers) and numbers[0] == 1 and numbers[-1] == 13055
+    assert con.execute(
+        f"SELECT denominacao, cas, cas_referencia FROM '{parquet}' WHERE numero_dcb = 10092"
+    ).fetchone() == ("Acidum carbolicum", None, 8)
+
+
+@needs_duckdb
+def test_build_dcb_conditional_on_the_xlsx(fake_dados, tmp_path):
+    """Three requests: collection, item, xlsx. Unchanged xlsx (304 to If-Modified-Since: it
+    has no ETag) skips the build; a new version is a new URL, downloaded unconditionally."""
+    with fake_dados.client() as http:
+        first = build(tmp_path / "first", http=http, now=NOW, commit="c1", datasets=(DCB,))
+    assert list(first["tables"]) == ["dcb"]
+    entry = first["tables"]["dcb"]
+    assert entry["rows"] == 40 and entry["group"] == "dcb" and entry["sort"] == ["numero_dcb"]
+    source = entry["source"]
+    assert source["name"] == DCB_TITLE and source["url"] == DCB_XLSX_URL
+    assert source["etag"] is None and source["last_modified"] == "Fri, 09 Oct 2026 15:31:12 GMT"
+    assert source["bytes"] == DCB_SAMPLE.stat().st_size
+    assert source["loaded_at"] == "2026-10-09T12:31:12"
+    assert entry["columns"][1] == {
+        "name": "denominacao",
+        "type": "VARCHAR",
+        "source": "DENOMINAÇÃO COMUM BRASILEIRA",
+        "description": DCB.descriptions["denominacao"],
+    }
+    assert [str(r.url) for r in fake_dados.requests] == [DCB.url, DCB_ITEM_URL, DCB_XLSX_URL]
+    assert all(r.headers["User-Agent"].startswith("anvisa-python/") for r in fake_dados.requests)
+
+    fake_dados.manifest, fake_dados.site = first, tmp_path / "first"
+    fake_dados.requests.clear()
+    with fake_dados.client() as http:
+        again = build(
+            tmp_path / "second",
+            http=http,
+            skip_unchanged=FakeDados.MANIFEST_URL,
+            commit="c1",
+            datasets=(DCB,),
+        )
+    assert again == Unchanged(first["build_id"])
+    (xlsx,) = fake_dados.data_requests()
+    assert xlsx.headers["If-Modified-Since"] == source["last_modified"]
+
+    # a new version: the item page links another file (same Last-Modified, new URL)
+    new_url = DCB_XLSX_URL.replace("/22551/1/", "/22551/2/")
+    fake_dados.files[new_url] = fake_dados.files[DCB_XLSX_URL]
+    fake_dados.pages[DCB_ITEM_URL] = fake_dados.pages[DCB_ITEM_URL].replace(
+        b"/22551/1/", b"/22551/2/"
+    )
+    fake_dados.requests.clear()
+    with fake_dados.client() as http:
+        third = build(
+            tmp_path / "third",
+            http=http,
+            skip_unchanged=FakeDados.MANIFEST_URL,
+            commit="c1",
+            datasets=(DCB,),
+        )
+    assert third["tables"]["dcb"]["source"]["url"] == new_url
+    (xlsx,) = fake_dados.data_requests()
+    assert str(xlsx.url) == new_url and "If-Modified-Since" not in xlsx.headers
+
+
 # --- busca: the search files --------------------------------------------------
 
 
@@ -1557,8 +1840,12 @@ def test_build_rebuilds_when_one_file_changed(fake_dados, tmp_path):
         )
     assert list(result["tables"]) == PUBLISHED
     assert result["tables"]["alimentos"]["source"]["etag"] == '"new"'
-    # the unchanged files answered 304 first, then were fetched again for a complete build
-    statuses = [r.headers.get("If-None-Match") for r in fake_dados.data_requests()]
+    # the unchanged files answered 304 first, then were fetched again for a complete build (the
+    # DCB xlsx has no ETag: its condition is If-Modified-Since)
+    statuses = [
+        r.headers.get("If-None-Match") or r.headers.get("If-Modified-Since")
+        for r in fake_dados.data_requests()
+    ]
     files = sum(len(cmed.FILES) if ds.kind == "cmed" else 1 for ds in CATALOG)
     unchanged = files - 1
     assert statuses.count(None) == unchanged and len(statuses) == files + unchanged
@@ -2647,6 +2934,123 @@ def test_medicamentos_eans_come_from_cmed(tmp_path):
     assert rows == 2 and columns[-1] == ("eans", "VARCHAR[]")
     got = con.execute(f"SELECT id, eans FROM '{tmp_path / 'out.parquet'}' ORDER BY id").fetchall()
     assert got == [("101810583", []), ("186200018", ["7891058001308", "7891058001407"])]
+
+
+@needs_duckdb
+def test_substancias_dcb_on_the_fixtures(fake_dados, tmp_path):
+    """One row per distinct CMED substância; each `;` part matched to the DCB by the chave
+    rule. The DCB sample holds the DCBs of some of the CMED sample's substâncias, so the build
+    has full matches, a partial association and misses."""
+    import duckdb
+
+    out = tmp_path / "dist"
+    with fake_dados.client() as http:
+        manifest = build(out, http=http, now=NOW, commit="abc123")
+    entry = manifest["tables"]["substancias_dcb"]
+    assert entry["fontes"] == ["cmed", "dcb"] and entry["sort"] == ["substancia"]
+    assert entry["source"]["name"] == "derivada de cmed, dcb"
+    # the later of the two loads: the CMED files (12:43:03), not the DCB xlsx (12:31:12)
+    assert entry["source"]["loaded_at"] == "2026-10-09T12:43:03"
+    assert [c["name"] for c in entry["columns"]] == list(derivar.SUBSTANCIAS_DCB.descriptions)
+    types = {c["name"]: c["type"] for c in entry["columns"]}
+    assert types["partes"] == "VARCHAR[]" and types["dcb_numeros"] == "INTEGER[]"
+    assert types["dcb_denominacoes"] == "VARCHAR[]" and types["todas_na_dcb"] == "BOOLEAN"
+    assert types["apresentacoes"] == "INTEGER"
+    path = out / entry["path"]
+    con = duckdb.connect()
+    cmed_path = out / manifest["tables"]["cmed"]["path"]
+    distinct, total = con.execute(
+        f"SELECT count(DISTINCT substancia), count(*) FROM '{cmed_path}'"
+    ).fetchone()
+    assert entry["rows"] == distinct == 20
+    rows = {
+        r[0]: r[1:]
+        for r in con.execute(
+            f"SELECT substancia, apresentacoes, partes, dcb_numeros, dcb_denominacoes, "
+            f"todas_na_dcb FROM '{path}'"
+        ).fetchall()
+    }
+    assert list(rows) == sorted(rows) and sum(r[0] for r in rows.values()) == total
+    assert rows["ABATACEPTE"][1:] == (["ABATACEPTE"], [9580], ["abatacepte"], True)
+    # Latin binomial, upper case in the CMED, as written in the DCB
+    assert rows["ACTAEA RACEMOSA L."][2:] == ([10707], ["Actaea racemosa L."], True)
+    # every part of an association, in the CMED's order, hyphenated hydrate included
+    assert rows["ASCORBATO DE SÓDIO;COLECALCIFEROL;CITRATO DE ZINCO TRI-HIDRATADO"][1:] == (
+        ["ASCORBATO DE SÓDIO", "COLECALCIFEROL", "CITRATO DE ZINCO TRI-HIDRATADO"],
+        [107, 2569, 11215],
+        ["ascorbato de sódio", "colecalciferol", "citrato de zinco tri-hidratado"],
+        True,
+    )
+    # a part without DCB keeps its place as NULL
+    assert rows["21-ACETATO DE DEXAMETASONA;CLOTRIMAZOL"][2:] == (
+        [None, 2529],
+        [None, "clotrimazol"],
+        False,
+    )
+    assert rows["MONOFOSFATO DE RIBOFLAVINA"][2:] == ([None], [None], False)
+    # 24 parts; "ACETATO DE SÓDIO TRI-HIDRATADO " is trimmed; only glicose monoidratada (4486)
+    # is in the DCB sample
+    (nutricao,) = [r for s, r in rows.items() if s.startswith("ACETATO DE POTÁSSIO;")]
+    assert len(nutricao[1]) == len(nutricao[2]) == len(nutricao[3]) == 24
+    assert "ACETATO DE SÓDIO TRI-HIDRATADO" in nutricao[1]
+    assert [n for n in nutricao[2] if n is not None] == [4486]
+    assert nutricao[1][nutricao[2].index(4486)] == "GLICOSE MONOIDRATADA"
+    assert sorted(s for s, r in rows.items() if r[4]) == [
+        "ABATACEPTE",
+        "ACARBOSE",
+        "ACTAEA RACEMOSA L.",
+        "ALPRAZOLAM",
+        "ASCORBATO DE SÓDIO;COLECALCIFEROL;CITRATO DE ZINCO TRI-HIDRATADO",
+        "RISDIPLAM",
+    ]
+    docs = (out / "dicionario.html").read_text(encoding="utf-8")
+    assert '<section id="substancias_dcb">' in docs and '<section id="dcb">' in docs
+
+
+@needs_duckdb
+def test_substancias_dcb_rule(tmp_path):
+    """The chave rule on both sides (accents, case, hyphens, spaces), empty parts dropped, a
+    substância with no part kept with empty lists, NULL substância left out, and two DCB names
+    with one key resolved to the lowest number."""
+    import duckdb
+
+    con = duckdb.connect()
+    con.execute(
+        "COPY (SELECT * FROM (VALUES ('AMOXICILINA TRIHIDRATADA'), ('AMOXICILINA TRIHIDRATADA'), "
+        "('CAFEÍNA ANIDRA ; DIPIRONA;'), (';'), (NULL), ('X-1')"
+        f") t(substancia)) TO '{tmp_path / 'cmed.parquet'}' (FORMAT PARQUET)"
+    )
+    con.execute(
+        "COPY (SELECT * FROM (VALUES (736, 'amoxicilina tri-hidratada'), (1642, 'cafeína'), "
+        "(3121, 'dipirona'), (20, 'x 1'), (10, 'X-1')"
+        f") t(numero_dcb, denominacao)) TO '{tmp_path / 'dcb.parquet'}' (FORMAT PARQUET)"
+    )
+    paths = {"cmed": tmp_path / "cmed.parquet", "dcb": tmp_path / "dcb.parquet"}
+    rows, columns = derivar.write(
+        derivar.SUBSTANCIAS_DCB, paths, tmp_path / "out.parquet", tmp_path / "spill"
+    )
+    assert rows == 4 and [c[0] for c in columns] == list(derivar.SUBSTANCIAS_DCB.descriptions)
+    got = con.execute(f"SELECT * FROM '{tmp_path / 'out.parquet'}'").fetchall()
+    assert got == [
+        (";", 1, [], [], [], False),
+        (
+            "AMOXICILINA TRIHIDRATADA",
+            2,
+            ["AMOXICILINA TRIHIDRATADA"],
+            [736],
+            ["amoxicilina tri-hidratada"],
+            True,
+        ),
+        (
+            "CAFEÍNA ANIDRA ; DIPIRONA;",
+            1,
+            ["CAFEÍNA ANIDRA", "DIPIRONA"],
+            [None, 3121],
+            [None, "dipirona"],
+            False,
+        ),
+        ("X-1", 1, ["X-1"], [10], ["X-1"], True),
+    ]
 
 
 def test_alimentos_fabricacao_parses_from_the_right(tmp_path):

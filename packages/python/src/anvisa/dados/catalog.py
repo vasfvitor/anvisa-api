@@ -12,13 +12,15 @@ from collections.abc import Iterable
 from dataclasses import dataclass, field
 
 from ..errors import DadosError
-from . import cmed
+from . import cmed, dcb
 from .descricoes import DESCRICOES
 
 BASE_URL = "https://dados.anvisa.gov.br/dados/"
 TIMESTAMP_BR = ("%d/%m/%Y %H:%M:%S", "%d/%m/%Y")
 # INTEGER, not BIGINT: the ids stay below 2**31, and DuckDB-WASM hands BIGINT to JS as BigInt
 TYPES = frozenset({"VARCHAR", "INTEGER", "BOOLEAN", "DATE", "TIMESTAMP"})
+# Dataset.kind; every kind but "csv" downloads its own source and writes the normalized CSV
+KINDS = ("csv", "cmed", "dcb")
 
 
 @dataclass(frozen=True)
@@ -48,16 +50,18 @@ class Dataset:
     notes: tuple[str, ...] = ()
     # "csv": one of ANVISA's Windows-1252 `;` files at `url`, normalized by parse.py.
     # "cmed": the two monthly CMED spreadsheets, found on the page at `url` and written as an
-    # already-normalized CSV by cmed.py; `columns` are then the output names, not a source header
+    # already-normalized CSV by cmed.py; `columns` are then the output names, not a source header.
+    # "dcb": the DCB list, an xlsx in the Biblioteca Digital collection at `url` (not on
+    # dados.anvisa.gov.br), written as an already-normalized CSV by dcb.py, like cmed
     kind: str = "csv"
-    # output column -> the name it had in the source, when not the column key itself (cmed)
+    # output column -> the name it had in the source, when not the column key itself (cmed, dcb)
     source_names: dict[str, str] = field(default_factory=dict)
     # False for a "csv" file that quotes nothing: one record per line, `"` an ordinary
     # character (parse.unquoted); True is ANVISA's usual dialect (every text field quoted)
     quoted: bool = True
 
     def __post_init__(self) -> None:
-        if self.kind not in ("csv", "cmed"):
+        if self.kind not in KINDS:
             raise ValueError(f"{self.name}: unknown kind {self.kind!r}")
         if self.directory and not self.directory.endswith("/") or self.directory.startswith("/"):
             raise ValueError(f"{self.name}: directory must be '' or end in '/': {self.directory!r}")
@@ -69,9 +73,12 @@ class Dataset:
 
     @property
     def url(self) -> str:
-        """Where the file is; for `cmed`, the first of its two files (cmed.FILES)."""
+        """Where the file is; for `cmed`, the first of its two files (cmed.FILES); for `dcb`,
+        the collection page its current version is found on (dcb.COLLECTION_URL)."""
         if self.kind == "cmed":
             return BASE_URL + cmed.FILES["pmc"]
+        if self.kind == "dcb":
+            return dcb.COLLECTION_URL
         return BASE_URL + self.directory + self.file
 
     def source_name(self, column: str) -> str:
@@ -704,6 +711,73 @@ CBPF_MEDICAMENTOS = Dataset(
     ),
 )
 
+DCB = Dataset(
+    name="dcb",
+    group="dcb",
+    kind="dcb",
+    file="Lista consolidada das DCB (xlsx)",  # name varies per version: dcb.spreadsheet_url
+    directory="",
+    title="DCB: Denominações Comuns Brasileiras, lista consolidada",
+    # Profiled 2026-10-28 on "3-Lista DCB consolidada out 2026.xlsx" (579,799 bytes,
+    # Last-Modified 2026-10-09 15:31:12 GMT), the item of IN 473 of 2026-10-02 in the Biblioteca
+    # Digital (DSpace; no robots.txt, 404). One sheet with data, Planilha1 (Planilha2 is empty):
+    # row 1 the title LISTA DCB - CONSOLIDADA (merged A1:E1), row 2 the header (`Nº DCB ` with a
+    # trailing space), then 12,771 rows. No formulas; 293 shared strings are rich text (runs).
+    # 11 of those rows hold only a HISTÓRICO: ANVISA merges A:D of an entry over two rows (the
+    # sheet's mergeCells) and writes a later change in the second row ("Alteração do número de
+    # registro CAS de ... para ..."); dcb.read_entries appends it to the entry's historico. That
+    # leaves 12,760 entries, and as many distinct names, even folded (case, accents, spaces, and
+    # derivar.chave_sql): no duplicate name. Per column, on the 12,760:
+    # - Nº DCB: a number cell on every entry, always whole, unique, ascending, 1 to 13,055 with
+    #   295 gaps (no 5).
+    # - DENOMINAÇÃO: never empty; 581 end in whitespace, 72 hold a double space, 23 a no-break
+    #   space (U+00A0, inside Latin names too: Vanilla\xa0planifolia), all collapsed to one
+    #   space. 1,738 are not lower case (Latin binomials, homeopathic stocks, (131 I), III); 92
+    #   commas in all, 15 `&`, a few `[]`, `/` and `:`; none holds `;` or `+`.
+    # - Nº CAS: never empty. 10,757 `n-nn-n` strings; 198 number cells that Excel took for
+    #   dates when they were typed (2139900 with date style 14 is 7758-11-04, CAS 7758-11-4),
+    #   turned back into text (194 pass the check digit, as do 10,738 of the others); 59 have
+    #   whitespace around them (no-break spaces among it) and 2 U+2011 hyphens (cleaned); 4
+    #   malformed, kept (9001-75-6., 138660-96.5, 1119-361-12-4, 108-05-04); 23 fail the check
+    #   digit, kept. 1,801 hold a reference instead, `[Ref. 8]` and
+    #   variants ([Ref.6], [Ref 8], Ref. 11, [Ref. 8.]): cas_referencia. 7 CAS sit on several
+    #   entries (water 7732-18-5 on 4).
+    # - CLASSIFICAÇÃO: INF 9,568, HOM 1,170, IFA 642, BIO 519, EXA 380, PM 276, RAD 203, Outro 2;
+    #   the legend is in the item's abstract (Outro is not in it).
+    # - HISTÓRICO: 21 values; "Consolidada pela Instrução Normativa - IN nº 342, de 20 de
+    #   dezembro de 2024" on 12,594 (and once with a final `.`), "Incluída pela ... IN nº 473" and
+    #   the like on the rest, `nº` and `n°` both.
+    columns=dcb.COLUMNS,
+    source_names=dcb.SOURCE_NAMES,
+    sort=("numero_dcb",),
+    load_time="publicado_em",  # the xlsx's Last-Modified, stamped on every row by dcb.py
+    notes=(
+        "Uma linha por Denominação Comum Brasileira (DCB), o nome oficial em português de um "
+        "insumo farmacêutico (ativo, excipiente, biológico, planta, homeopático, radiofármaco), "
+        "identificada por numero_dcb. Sais, ésteres e hidratos têm DCB própria: abacavir (1) e "
+        "sulfato de abacavir (2) são duas linhas.",
+        "Fonte: a lista consolidada vigente na Biblioteca Digital da Anvisa (coleção da "
+        "Coordenação da Farmacopeia), atualizada a cada Instrução Normativa; publicado_em é a "
+        "data do arquivo. A Biblioteca Digital a licencia como CC BY-NC-SA 4.0: cite a Anvisa, "
+        "sem uso comercial, e redistribua sob a mesma licença.",
+        "denominacao vem como a lista escreve, em minúsculas e com acentos, exceto nomes "
+        "científicos (Plantago ovata Forssk.), homeopáticos (Acidum picricum), isótopos "
+        "((131 I)) e algarismos romanos; espaços repetidos e não separáveis viraram um espaço.",
+        "cas é o número CAS quando a lista dá um (10.955 linhas); quando ela cita uma "
+        "referência no lugar ([Ref. 8]), cas é nulo e cas_referencia traz o número (1.801 "
+        "linhas: todos os homeopáticos e as espécies vegetais, parte dos biológicos). 23 "
+        "números CAS não passam no dígito verificador e 4 não têm o formato (9001-75-6.); vêm "
+        "como estão.",
+        "classificacao: IFA (insumo farmacêutico ativo), INF (insumo não classificado no "
+        "estabelecimento da DCB), BIO (biológico), EXA (excipiente e adjuvante), HOM "
+        "(homeopático), PM (espécie vegetal), RAD (radiofármaco) e Outro. A Anvisa ressalta que "
+        "a classificação não aprova finalidade de uso.",
+        "historico diz qual Instrução Normativa consolidou ou incluiu a DCB; quando uma IN "
+        "depois mudou o nome ou o CAS, a nota vem em seguida, separada por ' | '.",
+        "numero_dcb é único mas não contínuo (falta o 5, por exemplo; vai até 13.055).",
+    ),
+)
+
 CATALOG: tuple[Dataset, ...] = (
     ALIMENTOS,
     ALIMENTOS_RESULTADO,
@@ -717,6 +791,7 @@ CATALOG: tuple[Dataset, ...] = (
     CMED,
     CBPF,
     CBPF_MEDICAMENTOS,
+    DCB,
 )
 
 

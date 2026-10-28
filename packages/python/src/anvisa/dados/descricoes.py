@@ -608,6 +608,35 @@ DESCRICOES: dict[str, dict[str, str]] = {
         "DT_ATUALIZACAO_DADO": _ATUALIZACAO,
     },
     "cmed": _CMED,
+    "dcb": {
+        "numero_dcb": "Nº da DCB na lista consolidada; único, não contínuo.",
+        "denominacao": (
+            "Denominação Comum Brasileira como a lista escreve: minúsculas e acentos (sulfato "
+            "de abacavir), nomes científicos e homeopáticos com maiúscula inicial."
+        ),
+        "cas": (
+            "Nº de registro CAS (Chemical Abstracts Service), dígitos-dígitos-dígito, como "
+            "texto; nulo quando a lista cita uma referência no lugar (cas_referencia). Alguns "
+            "não passam no dígito verificador; vêm como estão."
+        ),
+        "cas_referencia": (
+            "Nº da referência que a lista cita no lugar do CAS ([Ref. 8] = 8); nulo quando há CAS."
+        ),
+        "classificacao": (
+            '"IFA" (insumo farmacêutico ativo), "INF" (não classificado no estabelecimento da '
+            'DCB), "BIO" (biológico), "EXA" (excipiente e adjuvante), "HOM" (homeopático), '
+            '"PM" (espécie vegetal), "RAD" (radiofármaco) ou "Outro".'
+        ),
+        "historico": (
+            "Ato que consolidou ou incluiu a DCB (Instrução Normativa, nº e data) e, separadas "
+            "por ' | ', as alterações posteriores de nome ou CAS."
+        ),
+        "publicado_em": (
+            "Data do arquivo da lista na Biblioteca Digital da Anvisa (Last-Modified)"
+            + _BRASILIA
+            + "; a mesma em todas as linhas de um build."
+        ),
+    },
     "medicamentos_por_produto": {
         "id": (
             "O registro de 9 dígitos ou, sem registro na origem, 'sem-registro-' e um hash "
@@ -870,5 +899,24 @@ DESCRICOES: dict[str, dict[str, str]] = {
             "Desses, quantos ativos na data do arquivo (como produtos_saude_por_produto.ativo)."
         ),
         "linhas": "Linhas de produtos_saude com este par.",
+    },
+    "substancias_dcb": {
+        "substancia": (
+            "Substância como a CMED escreve (cmed.substancia), em maiúsculas; as associações "
+            "separam as substâncias com ;."
+        ),
+        "apresentacoes": "Quantas apresentações (ggrem) da CMED trazem esta substância.",
+        "partes": (
+            "As substâncias da associação, na ordem da CMED, sem espaços nas pontas; uma só "
+            "quando não há ;."
+        ),
+        "dcb_numeros": (
+            "Na mesma posição de partes, o numero_dcb da DCB com o mesmo nome, ou nulo quando "
+            "a lista não tem esse nome."
+        ),
+        "dcb_denominacoes": (
+            "Na mesma posição de partes, a denominação da DCB como a lista escreve, ou nulo."
+        ),
+        "todas_na_dcb": "Verdadeiro quando toda parte tem DCB.",
     },
 }

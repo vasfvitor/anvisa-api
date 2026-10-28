@@ -6,6 +6,29 @@ when known. The package's own `CHANGELOG.md` records the Python API; a data chan
 no package release still appears here. `schema_version` in the manifest only changes when a
 consumer must change to keep reading it; everything below has been additive, so it is still 1.
 
+## 2026-10-28
+
+- **`dcb`**, the Lista consolidada das DCB (Denominações Comuns Brasileiras), group `dcb`: the
+  first table not from dados.anvisa.gov.br. Each build reads the Biblioteca Digital collection
+  (`bibliotecadigital.anvisa.gov.br/jspui/handle/anvisa/11933`), takes the item titled VIGENTE
+  (IN 473 of 2026-10-02 today), its xlsx, and converts it with the standard library
+  (`anvisa.dados.dcb`). One row per DCB, keyed by `numero_dcb`: `denominacao`, `cas` (198 CAS
+  numbers Excel had stored as dates turned back into text), `cas_referencia` where the list
+  cites a reference instead of a CAS (1,801), `classificacao`, `historico` (with the later
+  name or CAS change of the 11 entries ANVISA spreads over two merged rows, after ` | `) and
+  `publicado_em`, the xlsx's Last-Modified (`source.loaded_at`). 12,760 rows, 182 KB on the
+  list of 2026-10-09. `source.name` is the version's title, `source.url` the xlsx; the xlsx
+  has no ETag, so the next build asks with If-Modified-Since, and a new version is a new URL.
+  The Biblioteca Digital licenses it **CC BY-NC-SA 4.0**; the table's notes say so.
+- **`substancias_dcb`**, one row per distinct `cmed.substancia`: `apresentacoes`, `partes`
+  (split on `;`, trimmed) and, index by index, `dcb_numeros` and `dcb_denominacoes` (NULL
+  where the DCB has no such name), and `todas_na_dcb`. The match is exact on the
+  `derivar.chave_sql` key of both names (the manufacturer key: accents, case, spaces and
+  punctuation dropped), so salts and hydrates stay distinct. On the CMED of 2026-10-09: 2,264
+  rows, 1,947 matched in every part (25,441 of 26,635 presentations), 155 in some, 162 in
+  none; 82 KB. Group `dcb`, fontes `cmed` and `dcb`.
+- 11 derived tables, 24 published.
+
 ## 2026-10-23
 
 - **`cbpf` and `cbpf_medicamentos`**, the good manufacturing (CBPF) and distribution and

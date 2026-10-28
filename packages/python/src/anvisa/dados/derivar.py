@@ -945,6 +945,77 @@ CERTIFICADOS = Derivada(
     sql=_certificados,
 )
 
+
+def _substancias_dcb(t: dict[str, str]) -> str:
+    """One row per distinct cmed.substancia, its `;`-separated parts in order, each matched to
+    the DCB whose name has the same `chave_sql` key (the manufacturer key's rule, pinned by
+    fixtures/dados/chaves.json): exact on the key, nothing approximate. On the lists of
+    2026-10-09 the DCB has no two names with one key; should it gain some, the lowest
+    numero_dcb wins. Measured 2026-10-28 on the CMED list of 2026-10-09: of 2,264 substâncias,
+    1,420 of the 1,538 single ones match and 527 of the 726 associations match in every part
+    (4,193 of 4,822 parts); 162 match in no part. The misses are mostly spelling (CMED writes
+    CLORETO DE CÁLCIO DIIDRATADO, the DCB cloreto de cálcio di-hidratado), vaccine components
+    and extracts. CMED never separates with `+`; a plain key, without the punctuation drop,
+    matched 21 fewer substâncias and merged no two DCB names either."""
+    return f"""
+        WITH substancias AS (
+          SELECT substancia, CAST(count(*) AS INTEGER) AS apresentacoes
+          FROM {t["cmed"]} WHERE substancia IS NOT NULL GROUP BY substancia),
+        partes AS (
+          SELECT substancia, i, trim(parte) AS parte
+          FROM (SELECT substancia, unnest(string_split(substancia, ';')) AS parte,
+                  generate_subscripts(string_split(substancia, ';'), 1) AS i
+                FROM substancias)
+          WHERE trim(parte) <> ''),
+        dcb AS (
+          SELECT chave, min(numero_dcb) AS numero, arg_min(denominacao, numero_dcb) AS denominacao
+          FROM (SELECT {chave_sql("denominacao")} AS chave, numero_dcb, denominacao
+                FROM {t["dcb"]} WHERE denominacao IS NOT NULL)
+          WHERE chave <> '' GROUP BY chave),
+        casadas AS (
+          SELECT p.substancia, p.i, p.parte, d.numero, d.denominacao
+          FROM partes p LEFT JOIN dcb d ON d.chave = {chave_sql("p.parte")})
+        SELECT s.substancia, s.apresentacoes,
+          coalesce(list(c.parte ORDER BY c.i) FILTER (WHERE c.i IS NOT NULL), []) AS partes,
+          coalesce(list(c.numero ORDER BY c.i) FILTER (WHERE c.i IS NOT NULL), [])
+            AS dcb_numeros,
+          coalesce(list(c.denominacao ORDER BY c.i) FILTER (WHERE c.i IS NOT NULL), [])
+            AS dcb_denominacoes,
+          coalesce(bool_and(c.numero IS NOT NULL) FILTER (WHERE c.i IS NOT NULL), false)
+            AS todas_na_dcb
+        FROM substancias s LEFT JOIN casadas c USING (substancia)
+        GROUP BY s.substancia, s.apresentacoes"""
+
+
+SUBSTANCIAS_DCB = Derivada(
+    name="substancias_dcb",
+    group="dcb",
+    title="Substâncias da CMED e suas DCBs, por substância",
+    fontes=("cmed", "dcb"),
+    sort=("substancia",),
+    notes=(
+        "Uma linha por substância distinta da lista de preços da CMED (cmed.substancia), com "
+        "a DCB de cada substância da associação. Derivada de cmed e dcb a cada build.",
+        "A CMED separa as substâncias de uma associação com ; (ETINILESTRADIOL;DROSPIRENONA): "
+        "partes traz cada uma, na ordem, e dcb_numeros e dcb_denominacoes trazem, na mesma "
+        "posição, a DCB correspondente ou nulo. todas_na_dcb é verdadeiro quando toda parte "
+        "tem DCB.",
+        "Regra: a parte e o nome da DCB casam quando são iguais depois de tirar espaços nas "
+        "pontas, trocar º ª ™ ² ³ por o a tm 2 3, tirar acentos, passar a minúsculas e manter "
+        "só letras e dígitos (a mesma chave de produtos_saude_fabricacao.chave). Só igualdade "
+        "exata dessa chave, nada aproximado: AMOXICILINA TRIHIDRATADA casa com amoxicilina "
+        "tri-hidratada, mas CLORETO DE CÁLCIO DIIDRATADO não casa com cloreto de cálcio "
+        "di-hidratado, nem CAFEÍNA ANIDRA com cafeína.",
+        "Sais, ésteres e hidratos são DCBs distintas (abacavir e sulfato de abacavir): uma "
+        "parte nunca casa com o fármaco sem o sal. Parte sem DCB não quer dizer substância "
+        "irregular; em geral é grafia diferente (DIIDRATADO, MONOHIDRATADA), uma forma que a "
+        "lista não traz à parte (CAFEÍNA ANIDRA) ou um componente de vacina ou extrato.",
+        "apresentacoes conta as apresentações (ggrem) da CMED com a substância, para ordenar "
+        "o que falta casar.",
+    ),
+    sql=_substancias_dcb,
+)
+
 DERIVADAS: tuple[Derivada, ...] = (
     PRODUTOS,
     EMPRESAS,
@@ -956,6 +1027,7 @@ DERIVADAS: tuple[Derivada, ...] = (
     ALIMENTOS_FABRICACAO,
     CERTIFICADOS,
     PRODUTOS_SAUDE_FABRICACAO,
+    SUBSTANCIAS_DCB,
 )
 
 

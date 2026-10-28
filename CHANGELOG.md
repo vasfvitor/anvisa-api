@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- New dataset `dcb` (the Lista consolidada das DCB, group `dcb`) and derived table
+  `substancias_dcb` (each CMED substância's parts matched to DCBs by `chave_sql`).
+  `anvisa.dados.dcb` reads the xlsx with the standard library and finds the current version
+  on the Biblioteca Digital (`current_item`, `spreadsheet_url`); `Dataset.kind` gains `"dcb"`
+  (`catalog.KINDS`) and `fetch.download_dcb` / `fetch.get_page`. See `CHANGELOG.dados.md`.
 - New datasets `cbpf` and `cbpf_medicamentos` (good-practice certificates, group `cbpf`)
   and derived tables `certificados` and `produtos_saude_fabricacao`;
   `produtos_saude_por_produto` gains `fabricantes_chaves` and `fabricantes_paises`, and

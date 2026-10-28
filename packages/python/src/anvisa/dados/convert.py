@@ -93,7 +93,7 @@ def convert(
     spill = Path(csv_path).with_name(".duckdb_tmp")
     con = connect(spill)  # before the parse, so a missing DuckDB fails fast
     try:
-        if ds.kind == "cmed":  # cmed.py already wrote the normalized form
+        if ds.kind != "csv":  # cmed.py or dcb.py already wrote the normalized form
             clean = Path(csv_path)
             normalized = Normalized(cmed.count_csv_rows(clean), ())
         else:

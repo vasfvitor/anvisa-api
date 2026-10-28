@@ -1,0 +1,10 @@
+HTTP/1.1 200 OK
+Date: Wed, 28 Oct 2026 18:31:59 GMT
+Content-Type: text/html;charset=UTF-8
+Transfer-Encoding: chunked
+Set-Cookie: JSESSIONID=<session id, not kept>; Path=/jspui; Secure; HttpOnly
+Content-Language: pt-BR
+cf-cache-status: DYNAMIC
+Server: cloudflare
+
+body: 127,140 bytes (sha256 21216393256cff2b84ff12cbfe7481908ac2c1e552e6df6b96702c75d4f53610), UTF-8 HTML, the DSpace (JSPUI, Tomcat 8.5) page of the collection "Lista consolidada das DCB" (not kept). It lists 12 items, newest deposit first, "1 para 12 de 12", no paging: 11 versions of the list, titled "Lista consolidada das DCB: versão IN Anvisa n° 473, de 2 de outubro de 2026 - VIGENTE" (item 22551) and "... - não vigente" (the dash is an en dash once), and the "Manual das Denominações Comuns Brasileiras" of 2013. Titles carry &#x20; entities for spaces. dcb_colecao.html is bytes 13806 to 20368 of the body, byte for byte: the <table> of items. /robots.txt on the host answers 404 (Tomcat's page), 2026-10-28.

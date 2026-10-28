@@ -1,0 +1,13 @@
+HTTP/1.1 200 OK
+Date: Wed, 28 Oct 2026 18:23:25 GMT
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+Content-Length: 579799
+Last-Modified: Fri, 09 Oct 2026 15:31:12 GMT
+Age: 6601
+Accept-Ranges: bytes
+expires: Wed, 28 Oct 2026 22:23:25 GMT
+Cache-Control: public, max-age=14400
+cf-cache-status: HIT
+Server: cloudflare
+
+body: 579,799 bytes (sha256 827a9bb632a789d6864168f4136c1b5fd085a5cf669f47e74b749a43831f1fc0), a zip (PK\x03\x04): xlsx "3-Lista DCB consolidada out 2026.xlsx", the item of IN 473 of 2026-10-02 (not kept). No ETag; If-Modified-Since with the Last-Modified answers 304 (tried 2026-10-28). Sheets Planilha1 (12,773 rows: title, header, 12,771 data rows; dimension A1:E12773) and Planilha2 (empty). dcb_head.xlsx is not a byte slice (a zip cannot be cut): it is the same workbook with 45 of those rows. Every part but two is the original's, byte for byte and in the original order; xl/worksheets/sheet1.xml keeps its bytes before <sheetData> and after </sheetData> (the dimension still says A1:E12773) and, inside, only the kept <row> elements, byte for byte except the shared-string index in each t="s" cell's <v>; <mergeCells> keeps the 13 merges of kept rows. xl/sharedStrings.xml keeps its declaration and root tag (count 167, uniqueCount 96) and the 96 <si> elements the kept rows use, byte for byte, in order of first use. Rows kept: 1-7 (title, header, DCB 1, 2, 3, 4, 6: a salt pair and the gap at 5), 18, 106, 201 (CAS as a date cell, 2139900 = 7758-11-4), 336-337, 3527-3528 and 4380-4381 (entries merged over two rows, the second holding only a HISTÓRICO), 587, 722-724 (amoxicilina, sódica, tri-hidratada), 1953 (rich text with a superscript run), 2485, 2517, 3174 (date cell with style 9, 26514 = 1972-08-3), 6759 (CAS 9001-75-6.), 9334, 9407 (no-break spaces after name and CAS), 9514 (double space), 9634 (rich text, italic run), 9828 (trailing spaces, [Ref. 8]), 10441, 10574 (no-break spaces inside), 10609 ([Ref. 11]), 10843 (U+2011 hyphens), 10941, 11042 ([Ref 8]), 11046 (a run of no-break spaces), 11175 ([Ref.6]), 11225 (leading no-break space), 12098, 12512 ([Ref. 8.]), 12735 (Outro), 12743 (Ref. 11), 12759 (IN 473), 12773 (the last, DCB 13055). The DCB rows of the CMED fixture's substâncias are among them (abatacepte, acarbose, alprazolam, risdiplam, Actaea racemosa L., clotrimazol, ascorbato de sódio, colecalciferol, citrato de zinco tri-hidratado), so substancias_dcb has matches, a partial association and misses on the fixtures.

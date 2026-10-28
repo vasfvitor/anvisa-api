@@ -15,7 +15,7 @@ import httpx
 from ..client import USER_AGENT
 from ..download import write_stream
 from ..errors import DadosError
-from . import cmed
+from . import cmed, dcb
 from .catalog import BASE_URL, Dataset
 
 CHUNK = 1 << 20
@@ -196,14 +196,56 @@ def download_cmed(
     )
 
 
+def get_page(http: httpx.Client, url: str) -> str:
+    """An HTML page as text, with the same retries as a download."""
+
+    def attempt() -> str:
+        response = http.get(url)
+        if not response.is_success:
+            raise DadosError(f"HTTP {response.status_code} for {url}")
+        return response.text
+
+    return _with_retries(url, attempt)
+
+
+def download_dcb(
+    http: httpx.Client, ds: Dataset, workdir: Path, *, previous: dict[str, Any] | None = None
+) -> Source | None:
+    """Find the DCB list's current version (the collection page at `ds.url`, then the item
+    page), download its xlsx into `workdir` and write `workdir/ds.local_file`, the normalized
+    CSV. Three requests. The download is conditional on `previous` only when the xlsx URL is
+    the one recorded there (a new version is a new item, so a new URL); None on 304. The
+    Source's `name` is the version's title ("Lista consolidada das DCB: versão IN ...")."""
+    previous = previous or {}
+    title, item_url = dcb.current_item(get_page(http, ds.url), ds.url)
+    xlsx_url = dcb.spreadsheet_url(get_page(http, item_url), item_url)
+    same = previous.get("url") == xlsx_url
+    source = download_url(
+        http,
+        xlsx_url,
+        Path(workdir) / dcb.XLSX,
+        name=title,
+        etag=previous.get("etag") if same else None,
+        last_modified=previous.get("last_modified") if same else None,
+    )
+    if source is None:
+        return None
+    _stamp, publicado_em = cmed_stamp(source.last_modified)
+    rows = dcb.read_entries(Path(workdir) / dcb.XLSX, publicado_em=publicado_em)
+    dcb.write_csv(rows, Path(workdir) / ds.local_file)
+    return source
+
+
 def fetch_source(
     http: httpx.Client, ds: Dataset, workdir: Path, previous: dict[str, Any] | None = None
 ) -> Source | None:
-    """`download` or `download_cmed` by `ds.kind`, conditional on `previous` (the published
-    manifest's `source` of this table), or unconditional without it."""
+    """`download`, `download_cmed` or `download_dcb` by `ds.kind`, conditional on `previous`
+    (the published manifest's `source` of this table), or unconditional without it."""
     previous = previous or {}
     if ds.kind == "cmed":
         return download_cmed(http, ds, workdir, previous=previous)
+    if ds.kind == "dcb":
+        return download_dcb(http, ds, workdir, previous=previous)
     return download(
         http,
         ds,
