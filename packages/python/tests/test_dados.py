@@ -3410,3 +3410,38 @@ def test_live_dados_head():
     assert response.status_code == 200
     assert response.headers.get("accept-ranges") == "bytes"
     assert response.headers.get("etag") or response.headers.get("last-modified")
+
+
+def test_newest_source_reads_every_file_including_cmed_pairs():
+    from anvisa.dados.build import newest_source
+
+    manifest = {
+        "tables": {
+            "a": {"source": {"last_modified": "Tue, 13 Oct 2026 19:09:39 GMT", "files": []}},
+            "cmed": {
+                "source": {
+                    "last_modified": None,
+                    "files": [
+                        {"last_modified": "Fri, 09 Oct 2026 15:43:03 GMT"},
+                        {"last_modified": "Tue, 27 Oct 2026 14:33:32 GMT"},
+                    ],
+                }
+            },
+            "derivada": {"fontes": ["a"]},
+        }
+    }
+    assert newest_source(manifest).isoformat() == "2026-10-27T14:33:32+00:00"
+    assert newest_source({}) is None
+
+
+def test_dados_idade_fails_above_the_limit(tmp_path):
+    from typer.testing import CliRunner
+
+    from anvisa.cli import app
+
+    path = tmp_path / "manifest.json"
+    data = {"tables": {"a": {"source": {"last_modified": "Tue, 27 Oct 2026 14:33:32 GMT"}}}}
+    path.write_text(json.dumps(data), encoding="utf-8")
+    runner = CliRunner()
+    assert runner.invoke(app, ["dados", "idade", str(path), "--max-dias", "100000"]).exit_code == 0
+    assert runner.invoke(app, ["dados", "idade", str(path), "--max-dias", "0"]).exit_code == 1

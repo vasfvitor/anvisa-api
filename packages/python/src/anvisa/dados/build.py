@@ -26,6 +26,7 @@ import tempfile
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import urljoin
@@ -63,6 +64,19 @@ class Unchanged:
 
 def build_id(now: datetime) -> str:
     return now.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+
+def newest_source(manifest: dict[str, Any]) -> datetime | None:
+    """The newest Last-Modified among the manifest's source files (both CMED files included), or
+    None when it records none. ANVISA updates some file on most weekdays, so its age says whether
+    the ETL is still running; the build's own `built_at` also moves with code pushes."""
+    dates = [
+        parsedate_to_datetime(item["last_modified"])
+        for table in (manifest.get("tables") or {}).values()
+        for item in [table.get("source") or {}, *((table.get("source") or {}).get("files") or [])]
+        if item.get("last_modified")
+    ]
+    return max(dates, default=None)
 
 
 def published_manifest(

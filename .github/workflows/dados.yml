@@ -59,10 +59,9 @@ jobs:
       # "Nothing changed" every day would keep this job green forever if ANVISA's ETL stopped.
       # ANVISA updates some file on most weekdays, so the newest source file is the signal.
       - name: Check the age of ANVISA's newest file
+        working-directory: packages/python
         env:
           PUBLISHED: ${{ steps.pages.outputs.base_url }}/manifest.json
-          MAX_DAYS: "7"
         run: |
-          if [ -f dist/manifest.json ]; then cp dist/manifest.json "$RUNNER_TEMP/manifest.json"
-          else curl -fsS "$PUBLISHED?t=$(date +%s)" -o "$RUNNER_TEMP/manifest.json"; fi
-          python3 -I .github/scripts/idade_dados.py "$RUNNER_TEMP/manifest.json" "$MAX_DAYS"
+          built="$GITHUB_WORKSPACE/dist/manifest.json"   # absent when nothing changed
+          uv run anvisa dados idade "$([ -f "$built" ] && echo "$built" || echo "$PUBLISHED")" --max-dias 7

@@ -20,6 +20,7 @@ from rich.table import Table
 
 from . import __version__, dados
 from .client import Client
+from .dados.build import MIN_ROWS_RATIO, newest_source, published_manifest
 from .dados.convert import ROW_GROUP_SIZE
 from .download import Download
 from .errors import AnvisaError, CredentialsError
@@ -546,7 +547,7 @@ def dados_build(
         ROW_GROUP_SIZE, "--row-group-size", min=1, help="DuckDB rounds it up to a multiple of 2048"
     ),
     min_rows_ratio: float = typer.Option(
-        0.9,
+        MIN_ROWS_RATIO,
         "--min-rows-ratio",
         min=0,
         max=1,
@@ -580,6 +581,28 @@ def dados_build(
             },
         }
     typer.echo(json.dumps(summary, ensure_ascii=False, indent=2))
+
+
+@dados_app.command("idade")
+def dados_idade(
+    manifest: str = typer.Argument(..., help="URL or path of a manifest.json"),
+    max_dias: int = typer.Option(7, "--max-dias", min=0, help="fail above this many days"),
+) -> None:
+    """Falha quando nenhum arquivo da ANVISA mudou há mais de --max-dias dias.
+
+    Reads the newest source Last-Modified in the manifest; exits 1 above the limit or when the
+    manifest cannot be read, so a stopped ETL turns the scheduled job red."""
+    with dados_http() as http:
+        data = published_manifest(http, manifest, log=lambda message: typer.echo(message, err=True))
+    newest = newest_source(data)
+    if newest is None:
+        typer.echo(f"::error::no source Last-Modified in {manifest}", err=True)
+        raise typer.Exit(1)
+    days = (datetime.now(newest.tzinfo) - newest).days
+    typer.echo(f"newest ANVISA file: {newest:%Y-%m-%d %H:%M} ({days} days ago)")
+    if days > max_dias:
+        typer.echo(f"::error::no ANVISA source file changed in {days} days", err=True)
+        raise typer.Exit(1)
 
 
 # --- saude ------------------------------------------------------------------
