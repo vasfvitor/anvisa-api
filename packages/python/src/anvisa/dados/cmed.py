@@ -163,8 +163,13 @@ def column_for(header: str, kind: str) -> str | None:
         block, rate, alc = m.group(1).lower(), m.group(2), m.group(3)
         if rate == "SEM IMPOSTOS":
             return f"{block}_sem_impostos"
-        name = f"{block}_{rate.rstrip('%').replace(',', '_')}"
-        return name + ("_alc" if alc else "")
+        name = f"{block}_{rate.rstrip('%').replace(',', '_')}" + ("_alc" if alc else "")
+        if name not in COLUMNS:  # a new ICMS rate: merge would drop it without a word
+            raise SchemaDriftError(
+                f"{FILES[kind]}: price column {header!r} ({name}) is not in COLUMNS; "
+                "add the rate to ALIQUOTAS in anvisa/dados/cmed.py"
+            )
+        return name
     if _COMERCIALIZACAO.match(h):
         return "comercializacao"
     raise SchemaDriftError(f"{FILES[kind]}: unknown column {header!r}; update anvisa/dados/cmed.py")

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- `dados.build` refuses a table with fewer than 90% of the rows of the published build
+  (`DadosError`; `min_rows_ratio`, CLI `--min-rows-ratio`), so a short but well-formed source
+  file no longer replaces the live table with the job green.
+- `dados.cmed.column_for` raises `SchemaDriftError` for a price column whose ICMS rate is not
+  in `ALIQUOTAS`; before, the header matched and `merge` dropped the column without a word.
 - New dataset `dcb` (the Lista consolidada das DCB, group `dcb`) and derived table
   `substancias_dcb` (each CMED substância's parts matched to DCBs by `chave_sql`).
   `anvisa.dados.dcb` reads the xlsx with the standard library and finds the current version

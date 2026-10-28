@@ -48,6 +48,9 @@ REPO = "https://github.com/vasfvitor/anvisa-api"
 PAGES_URL = "https://vasfvitor.github.io/anvisa-api/"  # where the build is deployed (README)
 CHANGELOG = f"{REPO}/blob/main/CHANGELOG.dados.md"  # the data product's own log, by build
 BY_NAME = {ds.name: ds for ds in CATALOG}
+# a table with fewer rows than this share of the published build is refused: a truncated or
+# partial file from ANVISA would otherwise replace the live table without a red run
+MIN_ROWS_RATIO = 0.9
 
 
 @dataclass(frozen=True)
@@ -293,6 +296,7 @@ def build(
     http: httpx.Client | None = None,
     now: datetime | None = None,
     row_group_size: int = ROW_GROUP_SIZE,
+    min_rows_ratio: float = MIN_ROWS_RATIO,
     log: Callable[[str], None] = lambda message: None,
 ) -> dict[str, Any] | Unchanged:
     """Build `datasets` into `out` and return the manifest written there.
@@ -301,7 +305,8 @@ def build(
     the published ETags; if nothing changed and `commit` matches the published one, nothing is
     written and `Unchanged` is returned. Published tables not in `datasets` are carried over
     unchanged, so the manifest stays complete; without a published manifest it lists only
-    `datasets`."""
+    `datasets`. A table with fewer than `min_rows_ratio` of its published rows fails the build,
+    so a short but well-formed file never replaces the live one."""
     out = Path(out)
     now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     bid = build_id(now)
@@ -343,6 +348,13 @@ def build(
                 log(f"convert {ds.file} -> {parquet.relative_to(out)}")
                 groups = ds.row_group_size or row_group_size
                 stats = convert(ds, work / ds.local_file, parquet, row_group_size=groups)
+                antes = (known.get(ds.name) or {}).get("rows")
+                if antes and stats.rows < antes * min_rows_ratio:
+                    raise DadosError(
+                        f"{ds.name}: {stats.rows} rows against {antes} in build "
+                        f"{published.get('build_id')}; refusing it (rerun with a lower "
+                        "--min-rows-ratio if the source really shrank)"
+                    )
                 source = sources[ds.name]
                 assert source is not None
                 tables[ds.name] = table_entry(ds, source, stats, parquet, out, groups)

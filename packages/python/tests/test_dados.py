@@ -1229,6 +1229,9 @@ def test_cmed_header_drift_and_bad_values_fail(tmp_path):
     assert cmed.column_for("COMERCIALIZAÇÃO 2026", "pmc") == "comercializacao"
     with pytest.raises(SchemaDriftError, match="unknown column 'PREÇO 18 %'"):
         cmed.column_for("PREÇO 18 %", "pmc")
+    # a new ICMS rate matches the price pattern but has no column: it must not vanish in merge
+    with pytest.raises(SchemaDriftError, match=r"price column 'PMC 21,5 %' \(pmc_21_5\)"):
+        cmed.column_for("PMC 21,5 %", "pmc")
     data = (DADOS / CMED_SAMPLES["pmc"]).read_bytes()
     drifted = tmp_path / "a.csv"
     drifted.write_bytes(data.replace("CÓDIGO GGREM".encode(), b"GGREM", 1))
@@ -1860,6 +1863,26 @@ def test_build_rebuilds_when_commit_changed(fake_dados, tmp_path):
         )
     assert isinstance(result, dict) and result["commit"] == "new"
     assert (tmp_path / "second" / "manifest.json").exists()
+
+
+@needs_duckdb
+def test_build_refuses_a_table_that_lost_rows(fake_dados, tmp_path):
+    # the published build says alimentos had twice the rows this file has: a short, well-formed
+    # file must not replace it without a red run
+    published(fake_dados, tmp_path, commit="old")
+    antes = fake_dados.manifest["tables"]["alimentos"]["rows"]
+    fake_dados.manifest["tables"]["alimentos"]["rows"] = antes * 2
+    with fake_dados.client() as http, pytest.raises(DadosError, match="alimentos: .* rows against"):
+        build(tmp_path / "second", http=http, skip_unchanged=FakeDados.MANIFEST_URL, commit="new")
+    with fake_dados.client() as http:  # a source that really shrank goes in with a lower ratio
+        result = build(
+            tmp_path / "third",
+            http=http,
+            skip_unchanged=FakeDados.MANIFEST_URL,
+            commit="new",
+            min_rows_ratio=0.4,
+        )
+    assert result["tables"]["alimentos"]["rows"] == antes
 
 
 @needs_duckdb

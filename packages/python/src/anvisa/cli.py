@@ -545,6 +545,13 @@ def dados_build(
     row_group_size: int = typer.Option(
         ROW_GROUP_SIZE, "--row-group-size", min=1, help="DuckDB rounds it up to a multiple of 2048"
     ),
+    min_rows_ratio: float = typer.Option(
+        0.9,
+        "--min-rows-ratio",
+        min=0,
+        max=1,
+        help="refuse a table with fewer rows than this share of the published build",
+    ),
 ) -> None:
     """Baixa os CSVs, converte para Parquet e escreve manifest.json + index.html em --out.
 
@@ -558,6 +565,7 @@ def dados_build(
             commit=commit,
             http=http,
             row_group_size=row_group_size,
+            min_rows_ratio=min_rows_ratio,
             log=lambda message: typer.echo(message, err=True),
         )
     if isinstance(result, dados.Unchanged):
