@@ -56,3 +56,13 @@ jobs:
         if: hashFiles('dist/manifest.json') != ''
         id: deploy
         uses: actions/deploy-pages@v5
+      # "Nothing changed" every day would keep this job green forever if ANVISA's ETL stopped.
+      # ANVISA updates some file on most weekdays, so the newest source file is the signal.
+      - name: Check the age of ANVISA's newest file
+        env:
+          PUBLISHED: ${{ steps.pages.outputs.base_url }}/manifest.json
+          MAX_DAYS: "7"
+        run: |
+          if [ -f dist/manifest.json ]; then cp dist/manifest.json "$RUNNER_TEMP/manifest.json"
+          else curl -fsS "$PUBLISHED?t=$(date +%s)" -o "$RUNNER_TEMP/manifest.json"; fi
+          python3 -I .github/scripts/idade_dados.py "$RUNNER_TEMP/manifest.json" "$MAX_DAYS"
