@@ -6,6 +6,14 @@ when known. The package's own `CHANGELOG.md` records the Python API; a data chan
 no package release still appears here. `schema_version` in the manifest only changes when a
 consumer must change to keep reading it; everything below has been additive, so it is still 1.
 
+## 2026-10-29
+
+- **`falhas`**, a top-level manifest key present only when a published table's source failed
+  to download: table name to the error. That table is the previous build's, carried over byte
+  for byte, and its derived tables are rebuilt from it. The first build with the `dcb` table
+  (2026-10-29, scheduled) stopped on the Biblioteca Digital answering 403 to the runner and
+  published nothing; with this, the other tables go out and the job turns red after the deploy.
+
 ## 2026-10-28
 
 - **`dcb`**, the Lista consolidada das DCB (Denominações Comuns Brasileiras), group `dcb`: the

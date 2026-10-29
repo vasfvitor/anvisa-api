@@ -320,7 +320,13 @@ def build(
     written and `Unchanged` is returned. Published tables not in `datasets` are carried over
     unchanged, so the manifest stays complete; without a published manifest it lists only
     `datasets`. A table with fewer than `min_rows_ratio` of its published rows fails the build,
-    so a short but well-formed file never replaces the live one."""
+    so a short but well-formed file never replaces the live one.
+
+    A published table whose source fails to download (the Biblioteca Digital answering 403, a
+    portal down) does not stop the others: it is carried over like a table not in `datasets`,
+    and the manifest's `falhas` names it with the error. If nothing else changed, the build
+    fails instead, since there is nothing to publish and the failure would otherwise go
+    unseen. A source never published still fails the build: there is nothing to carry."""
     out = Path(out)
     now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     bid = build_id(now)
@@ -334,30 +340,49 @@ def build(
             work.mkdir(parents=True, exist_ok=True)
 
             sources: dict[str, Source | None] = {}
+            falhas: dict[str, str] = {}  # table -> download error; the published file stays
+
+            def baixar(ds: Dataset, previous: dict[str, Any] | None) -> None:
+                try:
+                    sources[ds.name] = fetch_source(http, ds, work, previous)
+                except DadosError as exc:
+                    if ds.name not in known:
+                        raise
+                    falhas[ds.name] = str(exc)
+                    log(f"  failed: {exc}; keeping the table of build {published.get('build_id')}")
+
             for ds in datasets:
-                previous = (known.get(ds.name) or {}).get("source") or {}
                 log(f"download {ds.url}")
-                sources[ds.name] = fetch_source(http, ds, work, previous)
-                if sources[ds.name] is None:
+                baixar(ds, (known.get(ds.name) or {}).get("source") or {})
+                if ds.name not in falhas and sources[ds.name] is None:
                     log(f"  not modified since build {published.get('build_id')}")
 
-            if all(s is None for s in sources.values()):
+            if all(sources[ds.name] is None for ds in datasets if ds.name not in falhas):
                 if published.get("commit") == commit:
+                    if falhas:
+                        raise DadosError(
+                            f"nothing changed, but {', '.join(falhas)} could not be downloaded "
+                            f"({'; '.join(falhas.values())}); build {published.get('build_id')} "
+                            "stays live"
+                        )
                     log(f"unchanged: build {published.get('build_id')} is current")
                     return Unchanged(published.get("build_id"))
                 log(f"code changed ({published.get('commit')} -> {commit}): rebuilding")
             for ds in datasets:  # a partial update still publishes a complete, consistent set
-                if sources[ds.name] is None:
-                    sources[ds.name] = fetch_source(http, ds, work)
+                if ds.name not in falhas and sources[ds.name] is None:
+                    log(f"download {ds.url} (unchanged, for this build)")
+                    baixar(ds, None)
+            # a table whose download failed is carried over below, with the ones not in `datasets`
+            frescos = [ds for ds in datasets if ds.name not in falhas]
 
-            for ds in datasets:  # every header first, so a drift fails before any Parquet
+            for ds in frescos:  # every header first, so a drift fails before any Parquet
                 path = work / ds.local_file
                 # cmed.py and dcb.py write the same normalized form; its header is the columns
                 header = read_header(path) if ds.kind == "csv" else cmed.read_csv_header(path)
                 check_header(ds, header)
 
             tables = {}
-            for ds in datasets:
+            for ds in frescos:
                 parquet = out / "data" / bid / f"{ds.name}.parquet"
                 log(f"convert {ds.file} -> {parquet.relative_to(out)}")
                 groups = ds.row_group_size or row_group_size
@@ -416,6 +441,8 @@ def build(
         "docs": DOCS,
         "license": LICENSE,
         "tables": tables,
+        # only when a download failed: the table is the previous build's (see build())
+        **({"falhas": falhas} if falhas else {}),
     }
     (out / "manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"

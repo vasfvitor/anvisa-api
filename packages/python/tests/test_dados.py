@@ -134,7 +134,7 @@ class FakeDados:
     """Serves the fixture samples at their catalog URLs with the recorded headers, honours
     If-None-Match (If-Modified-Since for a file without ETag, the DCB xlsx), serves the
     Biblioteca Digital's two pages (`pages`, not data files) and `manifest` (when set) at
-    MANIFEST_URL."""
+    MANIFEST_URL. A URL in `status` answers that status instead (a source refusing the runner)."""
 
     SITE_URL = "https://example.github.io/anvisa-api/"
     MANIFEST_URL = SITE_URL + "manifest.json"
@@ -144,6 +144,7 @@ class FakeDados:
         self.manifest: dict | None = None
         self.manifest_status = 200
         self.site: Path | None = None  # a previous build's `out`, served under SITE_URL
+        self.status: dict[str, int] = {}
         self.files = {}
         for ds in CSV_DATASETS:
             headers, _ = headers_only(DADOS / HEADERS[ds.name])
@@ -164,6 +165,8 @@ class FakeDados:
     def handler(self, request: httpx.Request) -> httpx.Response:
         self.requests.append(request)
         url = str(request.url)
+        if url in self.status:
+            return httpx.Response(self.status[url], text="blocked")
         if url == self.MANIFEST_URL:
             if self.manifest is None:
                 return httpx.Response(404, text="not found")
@@ -1830,6 +1833,57 @@ def test_build_skips_when_published_matches(fake_dados, tmp_path):
     assert sent == expected
     manifest_request = fake_dados.requests[0]
     assert manifest_request.headers["Cache-Control"] == "no-cache"
+
+
+@needs_duckdb
+def test_a_failed_download_carries_the_published_table(fake_dados, tmp_path):
+    """The Biblioteca Digital answering 403 must not stop a day's data: the DCB of the
+    published build comes along, byte for byte, its derived table is rebuilt from it, and the
+    manifest's `falhas` names the table and the error."""
+    first = published(fake_dados, tmp_path)
+    headers, body = fake_dados.files[ALIMENTOS.url]
+    fake_dados.files[ALIMENTOS.url] = ({**headers, "ETag": '"new"'}, body)
+    fake_dados.status[DCB.url] = 403
+    out = tmp_path / "second"
+    with fake_dados.client() as http:
+        result = build(
+            out,
+            http=http,
+            skip_unchanged=FakeDados.MANIFEST_URL,
+            commit="abc123",
+            now=NOW + timedelta(days=1),
+        )
+    assert result["falhas"] == {"dcb": f"HTTP 403 for {DCB.url}"}
+    assert list(result["tables"]) == PUBLISHED
+    old, new = first["tables"]["dcb"], result["tables"]["dcb"]
+    assert new["path"] == f"data/{result['build_id']}/dcb.parquet"
+    assert (out / new["path"]).read_bytes() == (tmp_path / "first" / old["path"]).read_bytes()
+    assert new["source"] == old["source"]
+    assert result["tables"]["alimentos"]["source"]["etag"] == '"new"'
+    assert json.loads((out / "manifest.json").read_text())["falhas"] == result["falhas"]
+
+
+@needs_duckdb
+def test_a_failed_download_with_nothing_else_new_fails_the_build(fake_dados, tmp_path):
+    """With nothing to publish, carrying the table over would hide the failure: the build
+    fails, naming it, and writes nothing (the live build stays)."""
+    first = published(fake_dados, tmp_path)
+    fake_dados.status[DCB.url] = 403
+    with fake_dados.client() as http, pytest.raises(DadosError) as exc:
+        build(
+            tmp_path / "second", http=http, skip_unchanged=FakeDados.MANIFEST_URL, commit="abc123"
+        )
+    assert "dcb could not be downloaded" in str(exc.value)
+    assert "HTTP 403" in str(exc.value) and first["build_id"] in str(exc.value)
+    assert not (tmp_path / "second").exists()
+
+
+@needs_duckdb
+def test_a_failed_download_never_published_fails_the_build(fake_dados, tmp_path):
+    """No published table, nothing to carry: the first build still fails on the download."""
+    fake_dados.status[DCB.url] = 403
+    with fake_dados.client() as http, pytest.raises(DadosError, match="HTTP 403"):
+        build(tmp_path / "first", http=http, now=NOW)
 
 
 @needs_duckdb

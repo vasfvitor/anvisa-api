@@ -219,7 +219,10 @@ column loses more than 20%). At the top level, `docs` names the generated dictio
 `license` says whose the data is (ANVISA's) and the code's (MIT). Data paths are immutable: a new
 build gets a new directory and the previous one disappears with the next deploy. A table carried
 over from the previous build keeps its file but takes the current code's title, notes and
-descriptions.
+descriptions. When a published table's source fails to download (the Biblioteca Digital
+answering 403, a portal down), the build carries that table over and the top-level `falhas`
+names it with the error (`{"dcb": "HTTP 403 for ..."}`); the key is absent otherwise, and its
+`source` still says when the file was loaded.
 
 A table too big to download whole (`cosmeticos`) also carries a `busca` key: the same rows
 published once more under `data/<build_id>/<name>/`, re-partitioned into about 3,200 small

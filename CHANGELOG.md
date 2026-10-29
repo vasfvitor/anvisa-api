@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- `dados.build` no longer stops on a published table whose source fails to download: it
+  carries that table over and names it in the manifest's `falhas`. With nothing else changed it
+  raises `DadosError` instead, since there is nothing to publish. A source never published still
+  raises.
 - `dados.build` refuses a table with fewer than 90% of the rows of the published build
   (`DadosError`; `min_rows_ratio`, CLI `--min-rows-ratio`), so a short but well-formed source
   file no longer replaces the live table with the job green.

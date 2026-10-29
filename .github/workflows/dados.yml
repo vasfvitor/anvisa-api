@@ -65,3 +65,11 @@ jobs:
         run: |
           built="$GITHUB_WORKSPACE/dist/manifest.json"   # absent when nothing changed
           uv run anvisa dados idade "$([ -f "$built" ] && echo "$built" || echo "$PUBLISHED")" --max-dias 7
+      # A source that failed to download was carried over from the previous build (manifest
+      # `falhas`): the other tables went out above, and the run turns red so it gets seen. Last,
+      # and not skipped by a failed age check, so both alarms always report.
+      - name: Report sources that failed to download
+        if: ${{ !cancelled() && hashFiles('dist/manifest.json') != '' }}
+        run: |
+          jq -r '(.falhas // {}) | to_entries[] | "::error::\(.key): \(.value) (kept the previous build)"' dist/manifest.json
+          jq -e '(.falhas // {}) | length == 0' dist/manifest.json > /dev/null
