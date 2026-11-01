@@ -42,9 +42,10 @@ Daily `.github/workflows/dados.yml` converts the CSVs and deploys `manifest.json
 to GitHub Pages (`https://vasfvitor.github.io/anvisa-api/manifest.json`). Adding a dataset is
 mechanical once the real file is profiled; an Opus agent did cosméticos from a single brief, so
 delegate the next one the same way. Files above about 200 MB need `parse.stream`; DuckDB's
-`memory_limit` and `temp_directory` are set in `convert.py`. `dcb` is in `CATALOG` but not in
-`PADRAO`, the default build, while the Biblioteca Digital answers 403; do not work around the
-403. The eleven derived tables
+`memory_limit` and `temp_directory` are set in `convert.py`. The Biblioteca Digital blocks
+automated access, so `dcb` is built from the copy in `fontes/dcb/` (`--fontes`), replaced by hand
+on each new version (`CONTRIBUTING.md`); do not work around the 403. That list and what derives
+from it are CC BY-NC-SA 4.0, stated per table in the manifest. The eleven derived tables
 (`produtos`, `empresas`, `medidas`, `cosmeticos_por_empresa`, `alimentos_por_produto`,
 `medicamentos_por_produto`, `produtos_saude_por_produto`, `alimentos_fabricacao`,
 `certificados`, `produtos_saude_fabricacao`, `substancias_dcb`) live in

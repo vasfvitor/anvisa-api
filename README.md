@@ -216,7 +216,8 @@ to the manifest, under `data/<build_id>/`), rows, bytes, sha256, column names, t
 descriptions, `notes` for the reader, sort order, the source file's ETag and ANVISA's load time,
 and `nulls_added`, the count of values per typed column that did not parse (the build fails if a
 column loses more than 20%). At the top level, `docs` names the generated dictionary page and
-`license` says whose the data is (ANVISA's) and the code's (MIT). Data paths are immutable: a new
+`license` says whose the data is (ANVISA's) and the code's (MIT); a table with a license of its
+own has a `license` entry, `{"name", "url"}`. Data paths are immutable: a new
 build gets a new directory and the previous one disappears with the next deploy. A table carried
 over from the previous build keeps its file but takes the current code's title, notes and
 descriptions. When a published table's source fails to download (the Biblioteca Digital
@@ -312,8 +313,9 @@ the `fila`, `lista`, `udi`, `nome_tecnico` and `assunto` domains (eight file dow
 `alimentos`, `alimentos_resultado`, `saneantes`, `peticoes_alimento`,
 `peticoes_alimento_andamento`, `produtos_irregulares`, `cosmeticos`, `medicamentos`,
 `produtos_saude`, `cmed`, `cbpf` and `cbpf_medicamentos`, plus `dcb` from the Biblioteca Digital
-and eleven derived ones. `dcb` and `substancias_dcb` are not published yet: the Biblioteca Digital
-answers 403, so the default build leaves them out (`-d dcb` asks for them). The SNGPC and SNCR APIs (separate
+and eleven derived ones. The Biblioteca Digital blocks automated access, so `dcb` comes from a
+copy kept in `fontes/dcb/`, replaced by hand on each new version, and is built with `--fontes`.
+It and `substancias_dcb` are under CC BY-NC-SA 4.0, not MIT. The SNGPC and SNCR APIs (separate
 services) are out of scope; CMED's list comes from the open data, not from the SAMMED API.
 
 What comes next, and what was ruled out and why, is in [ROADMAP.md](ROADMAP.md).

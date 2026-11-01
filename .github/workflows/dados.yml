@@ -46,7 +46,9 @@ jobs:
         working-directory: packages/python
         env:
           PUBLISHED: ${{ steps.pages.outputs.base_url }}/manifest.json
-        run: uv run anvisa dados build --out "$GITHUB_WORKSPACE/dist" --skip-unchanged "$PUBLISHED"
+        run: >-
+          uv run anvisa dados build --out "$GITHUB_WORKSPACE/dist"
+          --fontes "$GITHUB_WORKSPACE/fontes" --skip-unchanged "$PUBLISHED"
       - name: Upload the site
         if: hashFiles('dist/manifest.json') != ''
         uses: actions/upload-pages-artifact@v5

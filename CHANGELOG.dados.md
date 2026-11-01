@@ -8,10 +8,15 @@ consumer must change to keep reading it; everything below has been additive, so 
 
 ## 2026-11-01
 
-- **`dcb` and `substancias_dcb` are out of the default build** while the Biblioteca Digital
-  answers 403. Neither was ever published, so the failure had nothing to carry over and
-  stopped every build from 2026-10-29 to 2026-10-31; the last one out was `20261028T000851Z`.
-  `anvisa dados build -d dcb` still asks for the source. Both enter the manifest once it answers.
+- **`dcb` and `substancias_dcb`** are published for the first time, from a copy of the list kept
+  in `fontes/dcb/` (IN 473): the Biblioteca Digital blocks automated access, which stopped every
+  build from 2026-10-29 to 2026-10-31 (the last one out was `20261028T000851Z`, and
+  `20261101T154403Z` went out without them). The copy is replaced by hand on each new Instrução
+  Normativa, so `dcb` can lag the version in force. Without `--fontes`, a default build leaves
+  both out, and `-d dcb` still asks the Biblioteca Digital.
+- **`license`**, a table-level manifest key present only on a table with its own license:
+  `{"name", "url"}`, CC BY-NC-SA 4.0 on `dcb` and `substancias_dcb`. The dictionary shows it, and
+  the top-level `license.data` no longer says everything comes from dados.anvisa.gov.br.
 
 ## 2026-10-29
 

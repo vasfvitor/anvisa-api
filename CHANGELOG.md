@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- `dados.build(fontes=)` and CLI `--fontes` read the DCB list from the copy in `fontes/dcb/`
+  (`fetch.local_dcb`), with no request. Without them, the CLI's default build is `dados.PADRAO`,
+  which leaves `dcb` out, since the Biblioteca Digital blocks automated access.
+- `Dataset.license` and `Derivada.license`: a table's own license, in its manifest entry as
+  `license` and in the dictionary. `dados.dcb.LICENSE` is CC BY-NC-SA 4.0.
 - `dados.build` no longer stops on a published table whose source fails to download: it
   carries that table over and names it in the manifest's `falhas`. With nothing else changed it
   raises `DadosError` instead, since there is nothing to publish. A source never published still
