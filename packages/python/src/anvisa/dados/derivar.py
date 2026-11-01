@@ -25,6 +25,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
+from . import dcb
 from .convert import ROW_GROUP_SIZE, _quote, connect, copy_parquet
 from .descricoes import DESCRICOES
 
@@ -40,6 +41,7 @@ class Derivada:
     sort: tuple[str, ...]  # output column names; the Parquet row order
     notes: tuple[str, ...]  # for the reader, Portuguese, like Dataset.notes
     sql: Callable[[dict[str, str]], str]  # fonte -> read_parquet() expression -> a SELECT
+    license: dict[str, str] | None = None  # as Dataset.license, for what a source's license binds
 
     @property
     def descriptions(self) -> dict[str, str]:
@@ -1012,8 +1014,11 @@ SUBSTANCIAS_DCB = Derivada(
         "lista não traz à parte (CAFEÍNA ANIDRA) ou um componente de vacina ou extrato.",
         "apresentacoes conta as apresentações (ggrem) da CMED com a substância, para ordenar "
         "o que falta casar.",
+        "Licença: CC BY-NC-SA 4.0, a da tabela dcb, de que esta deriva: cite a Anvisa, sem uso "
+        "comercial, e redistribua sob a mesma licença.",
     ),
     sql=_substancias_dcb,
+    license=dcb.LICENSE,
 )
 
 DERIVADAS: tuple[Derivada, ...] = (

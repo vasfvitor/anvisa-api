@@ -1763,7 +1763,7 @@ def test_build_end_to_end(fake_dados, tmp_path):
     assert main["notes"] == list(ALIMENTOS.notes) and main["notes"]
     assert manifest["docs"] == "dicionario.html"
     assert manifest["license"] == {
-        "data": "dados abertos da ANVISA (dados.anvisa.gov.br)",
+        "data": "dados da ANVISA; a licença própria de uma tabela vem indicada nela",
         "code": "MIT",
     }
     assert main["source"]["etag"] == '"20230eb-65d1981268f1f"'
@@ -2152,6 +2152,30 @@ def test_carry_over_refreshes_the_documentation(fake_dados, tmp_path):
     assert carried["columns"][0]["description"] == SANEANTES.descriptions["NO_PRODUTO"]
     assert carried["columns"][-1] == {"name": "gone", "type": "VARCHAR", "description": "kept"}
     assert carried["sha256"] == entry["sha256"]  # the data is still the published file
+
+
+@needs_duckdb
+def test_the_dcb_license_is_published_with_what_it_binds(fake_dados, tmp_path):
+    """The CC license reaches dcb and substancias_dcb, in the manifest and the dictionary, even
+    on a table carried over from a build that did not state it, and no other table."""
+    first = published(fake_dados, tmp_path)
+    tables = first["tables"]
+    assert tables["dcb"]["license"] == tables["substancias_dcb"]["license"] == dcb.LICENSE
+    assert [name for name, t in tables.items() if "license" in t] == ["dcb", "substancias_dcb"]
+    page = (tmp_path / "first" / "dicionario.html").read_text(encoding="utf-8")
+    assert page.count(f'Licença: <a href="{dcb.LICENSE["url"]}">CC BY-NC-SA 4.0</a>.') == 2
+
+    del fake_dados.manifest["tables"]["dcb"]["license"]
+    with fake_dados.client() as http:
+        result = build(
+            tmp_path / "second",
+            http=http,
+            datasets=(ALIMENTOS,),
+            skip_unchanged=FakeDados.MANIFEST_URL,
+            commit="docs-changed",
+            now=NOW + timedelta(days=1),
+        )
+    assert result["tables"]["dcb"]["license"] == dcb.LICENSE
 
 
 # --- derived tables (derivar.py) ------------------------------------------------------------

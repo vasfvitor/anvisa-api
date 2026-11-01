@@ -52,13 +52,17 @@ class Dataset:
     # "cmed": the two monthly CMED spreadsheets, found on the page at `url` and written as an
     # already-normalized CSV by cmed.py; `columns` are then the output names, not a source header.
     # "dcb": the DCB list, an xlsx in the Biblioteca Digital collection at `url` (not on
-    # dados.anvisa.gov.br), written as an already-normalized CSV by dcb.py, like cmed
+    # dados.anvisa.gov.br) or its copy in `fontes/dcb/`, written as an already-normalized CSV by
+    # dcb.py, like cmed
     kind: str = "csv"
     # output column -> the name it had in the source, when not the column key itself (cmed, dcb)
     source_names: dict[str, str] = field(default_factory=dict)
     # False for a "csv" file that quotes nothing: one record per line, `"` an ordinary
     # character (parse.unquoted); True is ANVISA's usual dialect (every text field quoted)
     quoted: bool = True
+    # `name` and `url` of a license the source states for this table, published in its manifest
+    # entry; None for ANVISA's open data, which declares none
+    license: dict[str, str] | None = None
 
     def __post_init__(self) -> None:
         if self.kind not in KINDS:
@@ -751,15 +755,20 @@ DCB = Dataset(
     source_names=dcb.SOURCE_NAMES,
     sort=("numero_dcb",),
     load_time="publicado_em",  # the xlsx's Last-Modified, stamped on every row by dcb.py
+    license=dcb.LICENSE,
     notes=(
         "Uma linha por Denominação Comum Brasileira (DCB), o nome oficial em português de um "
         "insumo farmacêutico (ativo, excipiente, biológico, planta, homeopático, radiofármaco), "
         "identificada por numero_dcb. Sais, ésteres e hidratos têm DCB própria: abacavir (1) e "
         "sulfato de abacavir (2) são duas linhas.",
-        "Fonte: a lista consolidada vigente na Biblioteca Digital da Anvisa (coleção da "
-        "Coordenação da Farmacopeia), atualizada a cada Instrução Normativa; publicado_em é a "
-        "data do arquivo. A Biblioteca Digital a licencia como CC BY-NC-SA 4.0: cite a Anvisa, "
-        "sem uso comercial, e redistribua sob a mesma licença.",
+        "Fonte: a lista consolidada da Biblioteca Digital da Anvisa (coleção da Coordenação da "
+        "Farmacopeia). A Biblioteca bloqueia acesso automatizado, então o build lê uma cópia da "
+        "planilha guardada no repositório, trocada à mão a cada Instrução Normativa: a tabela "
+        "pode atrasar em relação à versão vigente. publicado_em é a data do arquivo.",
+        "Licença: CC BY-NC-SA 4.0, declarada pela Biblioteca Digital: cite a Anvisa, sem uso "
+        "comercial, e redistribua sob a mesma licença. Esta tabela adapta a planilha: uma linha "
+        "por DCB, espaços normalizados, referência separada do CAS e CAS que o Excel converteu "
+        "em data devolvido a texto.",
         "denominacao vem como a lista escreve, em minúsculas e com acentos, exceto nomes "
         "científicos (Plantago ovata Forssk.), homeopáticos (Acidum picricum), isótopos "
         "((131 I)) e algarismos romanos; espaços repetidos e não separáveis viraram um espaço.",

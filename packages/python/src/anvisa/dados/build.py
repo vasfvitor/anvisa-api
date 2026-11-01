@@ -44,7 +44,10 @@ from .parse import check_header, read_header
 SCHEMA_VERSION = 1
 TIMEZONE = "America/Sao_Paulo"  # TIMESTAMP columns are naive local time, as ANVISA writes them
 DOCS = "dicionario.html"  # the data dictionary, generated beside the manifest
-LICENSE = {"data": "dados abertos da ANVISA (dados.anvisa.gov.br)", "code": "MIT"}
+LICENSE = {
+    "data": "dados da ANVISA; a licença própria de uma tabela vem indicada nela",
+    "code": "MIT",
+}
 REPO = "https://github.com/vasfvitor/anvisa-api"
 PAGES_URL = "https://vasfvitor.github.io/anvisa-api/"  # where the build is deployed (README)
 CHANGELOG = f"{REPO}/blob/main/CHANGELOG.dados.md"  # the data product's own log, by build
@@ -220,6 +223,7 @@ def _entry(
         "source": source,
         "nulls_added": nulls_added,
         "rejected_records": rejected_records,
+        **({"license": ds.license} if ds.license else {}),
     }
 
 
@@ -259,7 +263,8 @@ def refresh_metadata(entry: dict[str, Any], ds: Dataset) -> dict[str, Any]:
         {**column, "description": texts[column["name"]]} if column["name"] in texts else column
         for column in entry.get("columns", [])
     ]
-    return {**entry, "title": ds.title, "notes": list(ds.notes), "columns": columns}
+    license = {"license": ds.license} if ds.license else {}
+    return {**entry, "title": ds.title, "notes": list(ds.notes), "columns": columns, **license}
 
 
 def derived_entry(
@@ -539,6 +544,13 @@ def _fontes(t: dict[str, Any]) -> str:
     return f" Derivada de {links}, refeita a cada build."
 
 
+def _licenca(t: dict[str, Any]) -> str:
+    if not t.get("license"):
+        return ""
+    url, name = html.escape(t["license"]["url"]), html.escape(t["license"]["name"])
+    return f' Licença: <a href="{url}">{name}</a>.'
+
+
 def _table_section(name: str, t: dict[str, Any]) -> str:
     e = html.escape
     notes = "".join(f"<li>{e(note)}</li>" for note in t.get("notes", []))
@@ -566,7 +578,8 @@ def _table_section(name: str, t: dict[str, Any]) -> str:
 <h2><a href="{e(t["path"])}">{e(name)}</a></h2>
 <p>{e(t["title"])}. {_n(t["rows"])} linhas, {_n(t["bytes"])} bytes, ordenado por {sort}.
 Origem: <a href="{e(t["source"]["url"])}">{e(t["source"]["name"])}</a>
-(carga da ANVISA: {e(t["source"].get("loaded_at") or "não informada")}).{_fontes(t)}</p>
+(carga da ANVISA: {e(t["source"].get("loaded_at") or "não informada")}).{_fontes(t)}
+{_licenca(t)}</p>
 {f"<ul>{notes}</ul>" if notes else ""}
 {search}
 <table>
