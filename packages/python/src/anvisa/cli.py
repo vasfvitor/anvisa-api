@@ -522,7 +522,8 @@ def dados_build(
         None,
         "--dataset",
         "-d",
-        help="a table name or group; repeat for more (default: all). With --skip-unchanged the "
+        help="a table name or group; repeat for more (default: all but dcb, whose source answers "
+        "403). With --skip-unchanged the "
         "other published tables are carried over, so the manifest stays complete; without it "
         "the manifest lists only these. Derived tables (produtos, empresas, medidas, "
         "cosmeticos_por_empresa, alimentos_por_produto, medicamentos_por_produto, "
@@ -560,7 +561,7 @@ def dados_build(
     with handle_errors(), dados_http() as http:
         result = dados.build(
             out,
-            datasets=dados.select(dataset) if dataset else dados.CATALOG,
+            datasets=dados.select(dataset) if dataset else dados.PADRAO,
             workdir=workdir,
             skip_unchanged=skip_unchanged,
             commit=commit,

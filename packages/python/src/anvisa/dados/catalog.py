@@ -794,6 +794,11 @@ CATALOG: tuple[Dataset, ...] = (
     DCB,
 )
 
+# What `anvisa dados build` asks for without `-d`. DCB stays out while the Biblioteca Digital
+# answers 403 (since 2026-10-29): it was never published, so there is nothing to carry over and
+# its failure would stop every other table. Put it back here, with `-d dcb`, once it answers.
+PADRAO: tuple[Dataset, ...] = tuple(ds for ds in CATALOG if ds is not DCB)
+
 
 def select(names: Iterable[str], catalog: tuple[Dataset, ...] = CATALOG) -> tuple[Dataset, ...]:
     """The datasets matching any of `names` (a dataset name or a group), in catalog order."""

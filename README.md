@@ -312,7 +312,8 @@ the `fila`, `lista`, `udi`, `nome_tecnico` and `assunto` domains (eight file dow
 `alimentos`, `alimentos_resultado`, `saneantes`, `peticoes_alimento`,
 `peticoes_alimento_andamento`, `produtos_irregulares`, `cosmeticos`, `medicamentos`,
 `produtos_saude`, `cmed`, `cbpf` and `cbpf_medicamentos`, plus `dcb` from the Biblioteca Digital
-and eleven derived ones. The SNGPC and SNCR APIs (separate
+and eleven derived ones. `dcb` and `substancias_dcb` are not published yet: the Biblioteca Digital
+answers 403, so the default build leaves them out (`-d dcb` asks for them). The SNGPC and SNCR APIs (separate
 services) are out of scope; CMED's list comes from the open data, not from the SAMMED API.
 
 What comes next, and what was ruled out and why, is in [ROADMAP.md](ROADMAP.md).

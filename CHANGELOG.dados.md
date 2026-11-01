@@ -6,6 +6,13 @@ when known. The package's own `CHANGELOG.md` records the Python API; a data chan
 no package release still appears here. `schema_version` in the manifest only changes when a
 consumer must change to keep reading it; everything below has been additive, so it is still 1.
 
+## 2026-11-01
+
+- **`dcb` and `substancias_dcb` are out of the default build** while the Biblioteca Digital
+  answers 403. Neither was ever published, so the failure had nothing to carry over and
+  stopped every build from 2026-10-29 to 2026-10-31; the last one out was `20261028T000851Z`.
+  `anvisa dados build -d dcb` still asks for the source. Both enter the manifest once it answers.
+
 ## 2026-10-29
 
 - **`falhas`**, a top-level manifest key present only when a published table's source failed

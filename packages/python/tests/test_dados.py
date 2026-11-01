@@ -2978,6 +2978,26 @@ def test_cli_list_and_build(fake_dados, monkeypatch, tmp_path):
     assert result.exit_code == 1 and "unknown dataset" in result.stderr
 
 
+@needs_duckdb
+def test_cli_default_build_leaves_out_the_dcb(fake_dados, monkeypatch, tmp_path):
+    """The Biblioteca Digital answering 403 cannot stop the default build: DCB was never
+    published, so its failure has nothing to carry. `-d dcb` still asks for it, and fails."""
+    monkeypatch.setattr(cli, "dados_http", fake_dados.client)
+    fake_dados.status[DCB.url] = 403
+    out = tmp_path / "dist"
+    result = runner.invoke(cli.app, ["dados", "build", "-o", str(out)])
+    assert result.exit_code == 0, result.output
+    assert "skipping substancias_dcb: dcb not in this build" in result.stderr
+    manifest = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
+    assert list(manifest["tables"]) == [
+        name for name in PUBLISHED if name not in ("dcb", "substancias_dcb")
+    ]
+    assert "falhas" not in manifest
+
+    result = runner.invoke(cli.app, ["dados", "build", "-o", str(tmp_path / "x"), "-d", "dcb"])
+    assert result.exit_code == 1 and "HTTP 403" in result.stderr
+
+
 def test_medicamentos_eans_come_from_cmed(tmp_path):
     """eans is the sorted distinct EAN 1 of the CMED presentations with the product's registro;
     a product outside the CMED gets an empty list, and a CMED row without registro is ignored."""
