@@ -91,6 +91,20 @@ throttling, but the same rule holds: profile the real file before writing its ca
    `busca=True` on the entry: `dados/busca.py` then publishes the rows again as small search
    files. Today it expects cosméticos' column names; generalize it before reusing it.
 
+## Updating the DCB list
+
+The Biblioteca Digital blocks automated access with a security rule, so the build reads the copy
+in `fontes/dcb/` and never asks that host. Do not work around the rule. When a new Instrução
+Normativa comes out:
+
+1. Download the current xlsx in a browser, from the
+   [collection](https://bibliotecadigital.anvisa.gov.br/jspui/handle/anvisa/11933).
+2. Replace `fontes/dcb/dcb.xlsx` with it, byte for byte, and update `fontes/dcb/dcb.json`
+   (`title` and `url` from the item page, `last_modified` with the file's date as an HTTP date)
+   and the version named in `fontes/dcb/LICENSE.md`.
+3. Commit. The next build sees the new sha256 and publishes the table. If the header changed,
+   the build fails with `SchemaDriftError`, as it does for any other source.
+
 ## Adding a derived table
 
 A derived table (`anvisa/dados/derivar.py`) is Parquet built from the converted tables, not

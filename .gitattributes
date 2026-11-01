@@ -3,3 +3,4 @@ fixtures/dados/*.csv -text
 # byte ranges of the Biblioteca Digital's pages, and the DCB workbook (binary)
 fixtures/dados/*.html -text
 fixtures/dados/*.xlsx binary
+fontes/**/*.xlsx binary

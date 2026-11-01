@@ -8,6 +8,7 @@ import html
 import importlib.util
 import json
 import re
+import shutil
 import sys
 import zipfile
 from collections import Counter
@@ -50,7 +51,7 @@ from anvisa.dados.catalog import (
     TYPES,
 )
 from anvisa.dados.descricoes import DESCRICOES
-from anvisa.dados.fetch import download, http_client
+from anvisa.dados.fetch import cmed_stamp, download, fetch_source, http_client, local_dcb
 from anvisa.dados.parse import (
     check_header,
     decode,
@@ -1863,6 +1864,124 @@ def test_a_failed_download_carries_the_published_table(fake_dados, tmp_path):
     assert json.loads((out / "manifest.json").read_text())["falhas"] == result["falhas"]
 
 
+def copia_dcb(tmp_path: Path) -> Path:
+    """A `fontes` directory with the DCB sample, as `fontes/dcb/` holds the real list."""
+    fontes = tmp_path / "fontes"
+    (fontes / "dcb").mkdir(parents=True)
+    shutil.copyfile(DCB_SAMPLE, fontes / "dcb" / dcb.XLSX)
+    meta = {
+        "title": DCB_TITLE,
+        "url": DCB_XLSX_URL,
+        "last_modified": "Fri, 09 Oct 2026 15:31:12 GMT",
+    }
+    (fontes / "dcb" / dcb.META).write_text(json.dumps(meta), encoding="utf-8")
+    return fontes
+
+
+def test_local_dcb_writes_what_the_download_writes(fake_dados, tmp_path):
+    """Same spreadsheet, same CSV and the same `source`, whichever way it arrived."""
+    baixado, local = tmp_path / "baixado", tmp_path / "local"
+    baixado.mkdir()
+    local.mkdir()
+    with fake_dados.client() as http:
+        online = fetch_source(http, DCB, baixado)
+        copia = fetch_source(http, DCB, local, fontes=copia_dcb(tmp_path))
+    assert copia == online
+    assert (local / DCB.local_file).read_bytes() == (baixado / DCB.local_file).read_bytes()
+
+
+def test_local_dcb_is_unchanged_on_the_same_file(fake_dados, tmp_path):
+    fontes = copia_dcb(tmp_path)
+    fetched = local_dcb(DCB, tmp_path, fontes)
+    assert fetched is not None
+    assert local_dcb(DCB, tmp_path, fontes, previous={"sha256": fetched.sha256}) is None
+    assert local_dcb(DCB, tmp_path, fontes, previous={"sha256": "other"}) == fetched
+
+
+@pytest.mark.parametrize("gone", [dcb.XLSX, dcb.META])
+def test_local_dcb_names_what_is_missing(tmp_path, gone):
+    fontes = copia_dcb(tmp_path)
+    (fontes / "dcb" / gone).unlink()
+    with pytest.raises(DadosError, match="cannot read the DCB copy"):
+        local_dcb(DCB, tmp_path, fontes)
+
+
+def test_local_dcb_needs_every_field(tmp_path):
+    fontes = copia_dcb(tmp_path)
+    (fontes / "dcb" / dcb.META).write_text('{"title": "x"}', encoding="utf-8")
+    with pytest.raises(DadosError, match="cannot read the DCB copy"):
+        local_dcb(DCB, tmp_path, fontes)
+
+
+def test_the_kept_copy_of_the_dcb_is_coherent():
+    """fontes/dcb/ is replaced by hand on each new version: the file must be readable, and
+    dcb.json must describe a version of the list with a date the table can use."""
+    folder = DADOS.parents[1] / "fontes" / "dcb"
+    meta = json.loads((folder / dcb.META).read_text(encoding="utf-8"))
+    assert meta["title"].lower().startswith(dcb.TITLE_PREFIX)
+    assert meta["url"].startswith("https://bibliotecadigital.anvisa.gov.br/")
+    publicado_em = cmed_stamp(meta["last_modified"])[1]
+    assert publicado_em is not None
+    entries = dcb.read_entries(folder / dcb.XLSX, publicado_em=publicado_em)
+    assert len(entries) > 12_000 and all(e["publicado_em"] == publicado_em for e in entries)
+
+
+@needs_duckdb
+def test_build_republishes_the_dcb_only_when_the_copy_changes(fake_dados, tmp_path):
+    fontes = copia_dcb(tmp_path)
+    with fake_dados.client() as http:
+        first = build(tmp_path / "first", http=http, now=NOW, commit="abc123", fontes=fontes)
+    assert list(first["tables"]) == PUBLISHED
+    fake_dados.manifest, fake_dados.site = first, tmp_path / "first"
+    with fake_dados.client() as http:
+        again = build(
+            tmp_path / "again",
+            http=http,
+            skip_unchanged=FakeDados.MANIFEST_URL,
+            commit="abc123",
+            fontes=fontes,
+        )
+    assert isinstance(again, Unchanged)
+
+    fake_dados.status[DCB.url] = 403  # nothing may ask for it, even for a new version
+    with zipfile.ZipFile(fontes / "dcb" / dcb.XLSX, "a") as book:
+        book.writestr("docProps/nova.txt", "nova versão")
+    with fake_dados.client() as http:
+        second = build(
+            tmp_path / "second",
+            http=http,
+            skip_unchanged=FakeDados.MANIFEST_URL,
+            commit="abc123",
+            now=NOW + timedelta(days=1),
+            fontes=fontes,
+        )
+    assert second["tables"]["dcb"]["source"]["sha256"] != first["tables"]["dcb"]["source"]["sha256"]
+    assert "falhas" not in second
+
+
+@needs_duckdb
+def test_a_broken_copy_of_a_published_dcb_is_carried_and_named(fake_dados, tmp_path):
+    fontes = copia_dcb(tmp_path)
+    with fake_dados.client() as http:
+        first = build(tmp_path / "first", http=http, now=NOW, commit="abc123", fontes=fontes)
+    fake_dados.manifest, fake_dados.site = first, tmp_path / "first"
+    headers, body = fake_dados.files[ALIMENTOS.url]
+    fake_dados.files[ALIMENTOS.url] = ({**headers, "ETag": '"new"'}, body)
+    (fontes / "dcb" / dcb.XLSX).unlink()
+    with fake_dados.client() as http:
+        result = build(
+            tmp_path / "second",
+            http=http,
+            skip_unchanged=FakeDados.MANIFEST_URL,
+            commit="abc123",
+            now=NOW + timedelta(days=1),
+            fontes=fontes,
+        )
+    assert list(result["falhas"]) == ["dcb"]
+    assert "cannot read the DCB copy" in result["falhas"]["dcb"]
+    assert result["tables"]["dcb"]["source"] == first["tables"]["dcb"]["source"]
+
+
 @needs_duckdb
 def test_a_failed_download_with_nothing_else_new_fails_the_build(fake_dados, tmp_path):
     """With nothing to publish, carrying the table over would hide the failure: the build
@@ -2979,9 +3098,23 @@ def test_cli_list_and_build(fake_dados, monkeypatch, tmp_path):
 
 
 @needs_duckdb
+def test_cli_with_fontes_builds_the_dcb_from_the_copy(fake_dados, monkeypatch, tmp_path):
+    """With --fontes the default build has every table, and the blocked host gets no request."""
+    monkeypatch.setattr(cli, "dados_http", fake_dados.client)
+    fake_dados.status[DCB.url] = 403
+    args = ["dados", "build", "-o", str(tmp_path / "dist")]
+    args += ["--fontes", str(copia_dcb(tmp_path))]
+    result = runner.invoke(cli.app, args)
+    assert result.exit_code == 0, result.output
+    manifest = json.loads((tmp_path / "dist" / "manifest.json").read_text(encoding="utf-8"))
+    assert list(manifest["tables"]) == PUBLISHED and "falhas" not in manifest
+    assert not any(r.url.host == "bibliotecadigital.anvisa.gov.br" for r in fake_dados.requests)
+
+
+@needs_duckdb
 def test_cli_default_build_leaves_out_the_dcb(fake_dados, monkeypatch, tmp_path):
-    """The Biblioteca Digital answering 403 cannot stop the default build: DCB was never
-    published, so its failure has nothing to carry. `-d dcb` still asks for it, and fails."""
+    """Without --fontes the Biblioteca Digital answering 403 cannot stop the default build: DCB
+    is not asked for. `-d dcb` still asks for it, and fails."""
     monkeypatch.setattr(cli, "dados_http", fake_dados.client)
     fake_dados.status[DCB.url] = 403
     out = tmp_path / "dist"

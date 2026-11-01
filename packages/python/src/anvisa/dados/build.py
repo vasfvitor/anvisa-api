@@ -309,6 +309,7 @@ def build(
     commit: str | None = None,
     http: httpx.Client | None = None,
     now: datetime | None = None,
+    fontes: Path | None = None,
     row_group_size: int = ROW_GROUP_SIZE,
     min_rows_ratio: float = MIN_ROWS_RATIO,
     log: Callable[[str], None] = lambda message: None,
@@ -326,7 +327,10 @@ def build(
     portal down) does not stop the others: it is carried over like a table not in `datasets`,
     and the manifest's `falhas` names it with the error. If nothing else changed, the build
     fails instead, since there is nothing to publish and the failure would otherwise go
-    unseen. A source never published still fails the build: there is nothing to carry."""
+    unseen. A source never published still fails the build: there is nothing to carry.
+
+    With `fontes`, the DCB list comes from the copy in `fontes/dcb/` (fetch.local_dcb) instead
+    of the Biblioteca Digital."""
     out = Path(out)
     now = (now or datetime.now(timezone.utc)).astimezone(timezone.utc)
     bid = build_id(now)
@@ -344,7 +348,7 @@ def build(
 
             def baixar(ds: Dataset, previous: dict[str, Any] | None) -> None:
                 try:
-                    sources[ds.name] = fetch_source(http, ds, work, previous)
+                    sources[ds.name] = fetch_source(http, ds, work, previous, fontes=fontes)
                 except DadosError as exc:
                     if ds.name not in known:
                         raise

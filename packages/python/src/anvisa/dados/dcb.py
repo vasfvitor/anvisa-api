@@ -30,7 +30,8 @@ from xml.etree import ElementTree as ET
 from ..errors import DadosError, SchemaDriftError
 
 COLLECTION_URL = "https://bibliotecadigital.anvisa.gov.br/jspui/handle/anvisa/11933"
-XLSX = "dcb.xlsx"  # the downloaded spreadsheet's name in the work directory
+XLSX = "dcb.xlsx"  # the spreadsheet's name in the work directory and in `fontes/dcb/`
+META = "dcb.json"  # beside it in `fontes/dcb/`: what a browser download does not keep
 # the items of the collection that are versions of the list (it also holds the 2013 manual)
 TITLE_PREFIX = "lista consolidada das dcb"
 

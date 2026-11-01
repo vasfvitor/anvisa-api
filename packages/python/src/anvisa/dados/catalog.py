@@ -794,9 +794,9 @@ CATALOG: tuple[Dataset, ...] = (
     DCB,
 )
 
-# What `anvisa dados build` asks for without `-d`. DCB stays out while the Biblioteca Digital
-# answers 403 (since 2026-10-29): it was never published, so there is nothing to carry over and
-# its failure would stop every other table. Put it back here, with `-d dcb`, once it answers.
+# What `anvisa dados build` asks for with neither `-d` nor `--fontes`. The Biblioteca Digital
+# blocks automated access (403 since 2026-10-29), so without the copy in `fontes/dcb/` DCB stays
+# out instead of failing the build.
 PADRAO: tuple[Dataset, ...] = tuple(ds for ds in CATALOG if ds is not DCB)
 
 

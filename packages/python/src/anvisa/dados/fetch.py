@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import time
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
@@ -230,20 +232,56 @@ def download_dcb(
     )
     if source is None:
         return None
-    _stamp, publicado_em = cmed_stamp(source.last_modified)
-    rows = dcb.read_entries(Path(workdir) / dcb.XLSX, publicado_em=publicado_em)
-    dcb.write_csv(rows, Path(workdir) / ds.local_file)
+    _write_dcb(ds, workdir, source.last_modified)
     return source
 
 
-def fetch_source(
-    http: httpx.Client, ds: Dataset, workdir: Path, previous: dict[str, Any] | None = None
+def local_dcb(
+    ds: Dataset, workdir: Path, fontes: Path, *, previous: dict[str, Any] | None = None
 ) -> Source | None:
-    """`download`, `download_cmed` or `download_dcb` by `ds.kind`, conditional on `previous`
-    (the published manifest's `source` of this table), or unconditional without it."""
+    """The DCB list from the copy kept in `fontes/dcb/`, with no request: the Biblioteca Digital
+    blocks automated access, so a person downloads each version in a browser. `dcb.json` holds
+    what the download does not keep (`title`, `url`, `last_modified`). None when the file is the
+    one recorded in `previous`; otherwise like `download_dcb`."""
+    folder = Path(fontes) / ds.name
+    try:
+        meta = json.loads((folder / dcb.META).read_text(encoding="utf-8"))
+        title, url, last_modified = meta["title"], meta["url"], meta["last_modified"]
+        data = (folder / dcb.XLSX).read_bytes()
+    except (OSError, ValueError, KeyError) as exc:
+        raise DadosError(f"{folder}: cannot read the DCB copy: {exc!r}") from exc
+    sha256 = hashlib.sha256(data).hexdigest()
+    if (previous or {}).get("sha256") == sha256:
+        return None
+    (Path(workdir) / dcb.XLSX).write_bytes(data)
+    _write_dcb(ds, workdir, last_modified)
+    return Source(
+        name=title, url=url, etag=None, last_modified=last_modified, bytes=len(data), sha256=sha256
+    )
+
+
+def _write_dcb(ds: Dataset, workdir: Path, last_modified: str | None) -> None:
+    _stamp, publicado_em = cmed_stamp(last_modified)
+    rows = dcb.read_entries(Path(workdir) / dcb.XLSX, publicado_em=publicado_em)
+    dcb.write_csv(rows, Path(workdir) / ds.local_file)
+
+
+def fetch_source(
+    http: httpx.Client,
+    ds: Dataset,
+    workdir: Path,
+    previous: dict[str, Any] | None = None,
+    *,
+    fontes: Path | None = None,
+) -> Source | None:
+    """`download`, `download_cmed`, or for the DCB `local_dcb` with `fontes` and `download_dcb`
+    without it, by `ds.kind`, conditional on `previous` (the published manifest's `source` of
+    this table), or unconditional without it."""
     previous = previous or {}
     if ds.kind == "cmed":
         return download_cmed(http, ds, workdir, previous=previous)
+    if ds.kind == "dcb" and fontes:
+        return local_dcb(ds, workdir, fontes, previous=previous)
     if ds.kind == "dcb":
         return download_dcb(http, ds, workdir, previous=previous)
     return download(

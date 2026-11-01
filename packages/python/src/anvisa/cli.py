@@ -522,8 +522,8 @@ def dados_build(
         None,
         "--dataset",
         "-d",
-        help="a table name or group; repeat for more (default: all but dcb, whose source answers "
-        "403). With --skip-unchanged the "
+        help="a table name or group; repeat for more (default: all, but dcb only with --fontes, "
+        "since the Biblioteca Digital blocks automated access). With --skip-unchanged the "
         "other published tables are carried over, so the manifest stays complete; without it "
         "the manifest lists only these. Derived tables (produtos, empresas, medidas, "
         "cosmeticos_por_empresa, alimentos_por_produto, medicamentos_por_produto, "
@@ -544,6 +544,9 @@ def dados_build(
     workdir: Path | None = typer.Option(
         None, "--workdir", help="keep the downloaded CSVs here (default: a temporary directory)"
     ),
+    fontes: Path | None = typer.Option(
+        None, "--fontes", help="read the DCB list from dcb/ in this directory, with no request"
+    ),
     row_group_size: int = typer.Option(
         ROW_GROUP_SIZE, "--row-group-size", min=1, help="DuckDB rounds it up to a multiple of 2048"
     ),
@@ -558,11 +561,13 @@ def dados_build(
     """Baixa os CSVs, converte para Parquet e escreve manifest.json + index.html em --out.
 
     Progress goes to stderr; stdout gets one JSON object (the build, or `skipped`)."""
+    padrao = dados.CATALOG if fontes else dados.PADRAO
     with handle_errors(), dados_http() as http:
         result = dados.build(
             out,
-            datasets=dados.select(dataset) if dataset else dados.PADRAO,
+            datasets=dados.select(dataset) if dataset else padrao,
             workdir=workdir,
+            fontes=fontes,
             skip_unchanged=skip_unchanged,
             commit=commit,
             http=http,
