@@ -30,8 +30,10 @@ jobs:
           python-version: "3.12"
           # setup-uv leaves the cache off on tag pushes (cache-poisoning guard); a release
           # is rare and small enough that a cold install is the right trade.
+      # with the dados extra, as in ci.yml: the tests below then cover what the wheel ships
+      # (v0.8.0 failed here on two dados tests that lacked the needs_duckdb skip)
       - name: Sync from the lockfile
-        run: uv sync --locked
+        run: uv sync --locked --extra dados
       - name: Check the tag matches the package version
         run: |
           version=$(uv run python -c 'import anvisa; print(anvisa.__version__)')

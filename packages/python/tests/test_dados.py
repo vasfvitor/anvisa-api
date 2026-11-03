@@ -3155,6 +3155,7 @@ def test_cli_default_build_leaves_out_the_dcb(fake_dados, monkeypatch, tmp_path)
     assert result.exit_code == 1 and "HTTP 403" in result.stderr
 
 
+@needs_duckdb
 def test_medicamentos_eans_come_from_cmed(tmp_path):
     """eans is the sorted distinct EAN 1 of the CMED presentations with the product's registro;
     a product outside the CMED gets an empty list, and a CMED row without registro is ignored."""
@@ -3307,6 +3308,7 @@ def test_substancias_dcb_rule(tmp_path):
     ]
 
 
+@needs_duckdb
 def test_alimentos_fabricacao_parses_from_the_right(tmp_path):
     """City and country come from the right, so a name keeps its own " - "; the CNPJ is the 14
     digits at the end, and an entry without them is dropped; a packer listed twice in one
