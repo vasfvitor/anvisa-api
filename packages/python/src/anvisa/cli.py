@@ -7,7 +7,7 @@ import json
 import sys
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -20,7 +20,7 @@ from rich.table import Table
 
 from . import __version__, dados
 from .client import Client
-from .dados.build import MIN_ROWS_RATIO, newest_source, published_manifest
+from .dados.build import MIN_ROWS_RATIO, catalog_limits, published_manifest, source_ages
 from .dados.convert import ROW_GROUP_SIZE
 from .download import Download
 from .errors import AnvisaError, CredentialsError
@@ -592,22 +592,41 @@ def dados_build(
 @dados_app.command("idade")
 def dados_idade(
     manifest: str = typer.Argument(..., help="URL or path of a manifest.json"),
-    max_dias: int = typer.Option(7, "--max-dias", min=0, help="fail above this many days"),
+    max_dias: int | None = typer.Option(
+        None,
+        "--max-dias",
+        min=0,
+        help="one limit for every table that has one, instead of each table's max_age_days",
+    ),
 ) -> None:
-    """Falha quando nenhum arquivo da ANVISA mudou há mais de --max-dias dias.
+    """Falha quando a fonte de alguma tabela passou do seu limite de dias sem mudar.
 
-    Reads the newest source Last-Modified in the manifest; exits 1 above the limit or when the
-    manifest cannot be read, so a stopped ETL turns the scheduled job red."""
+    Each table's limit is its catalog `max_age_days`: 7 for the files ANVISA rewrites on
+    weekdays, 45 for the monthly CMED list, none for a file no longer refreshed or kept by hand.
+    Exits 1 naming every table over its limit, or when the manifest cannot be read or records no
+    Last-Modified, so a stopped ETL turns the scheduled job red even while another file moves."""
     with dados_http() as http:
         data = published_manifest(http, manifest, log=lambda message: typer.echo(message, err=True))
-    newest = newest_source(data)
-    if newest is None:
+    limits = catalog_limits()
+    if max_dias is not None:
+        limits = {name: max_dias for name, limit in limits.items() if limit is not None}
+    ages = source_ages(data, datetime.now(timezone.utc), limits)
+    if not ages:
         typer.echo(f"::error::no source Last-Modified in {manifest}", err=True)
         raise typer.Exit(1)
-    days = (datetime.now(newest.tzinfo) - newest).days
-    typer.echo(f"newest ANVISA file: {newest:%Y-%m-%d %H:%M} ({days} days ago)")
-    if days > max_dias:
-        typer.echo(f"::error::no ANVISA source file changed in {days} days", err=True)
+    for age in ages:
+        typer.echo(
+            f"{age.table}: {age.last_modified:%Y-%m-%d %H:%M} ({age.days} days ago, "
+            f"limit {age.limit})"
+        )
+    stale = [age for age in ages if age.stale]
+    for age in stale:
+        typer.echo(
+            f"::error::{age.table}: ANVISA's file unchanged for {age.days} days "
+            f"(since {age.last_modified:%Y-%m-%d}, limit {age.limit})",
+            err=True,
+        )
+    if stale:
         raise typer.Exit(1)
 
 

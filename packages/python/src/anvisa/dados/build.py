@@ -69,17 +69,48 @@ def build_id(now: datetime) -> str:
     return now.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
 
 
-def newest_source(manifest: dict[str, Any]) -> datetime | None:
-    """The newest Last-Modified among the manifest's source files (both CMED files included), or
-    None when it records none. ANVISA updates some file on most weekdays, so its age says whether
-    the ETL is still running; the build's own `built_at` also moves with code pushes."""
-    dates = [
-        parsedate_to_datetime(item["last_modified"])
-        for table in (manifest.get("tables") or {}).values()
-        for item in [table.get("source") or {}, *((table.get("source") or {}).get("files") or [])]
-        if item.get("last_modified")
-    ]
-    return max(dates, default=None)
+@dataclass(frozen=True)
+class SourceAge:
+    """How long a table's source file has gone unchanged, against its limit (`max_age_days`)."""
+
+    table: str
+    last_modified: datetime
+    days: int
+    limit: int
+
+    @property
+    def stale(self) -> bool:
+        return self.days > self.limit
+
+
+def catalog_limits() -> dict[str, int | None]:
+    return {ds.name: ds.max_age_days for ds in CATALOG}
+
+
+def source_ages(
+    manifest: dict[str, Any], now: datetime, limits: dict[str, int | None] | None = None
+) -> list[SourceAge]:
+    """The age of each table's source in the manifest (the newest Last-Modified of its files, so
+    both CMED files count), by table name, for the tables with a limit in `limits` (the
+    catalog's by default). Derived tables, tables without a limit and tables that recorded no
+    Last-Modified are left out. Per table and not the newest file overall: on 2026-11-03 eight
+    files had not changed since 2026-10-13 while the petições files still moved every day."""
+    limits = catalog_limits() if limits is None else limits
+    ages = []
+    for name, table in sorted((manifest.get("tables") or {}).items()):
+        limit = limits.get(name)
+        if limit is None:
+            continue
+        source = table.get("source") or {}
+        dates = [
+            parsedate_to_datetime(item["last_modified"])
+            for item in [source, *(source.get("files") or [])]
+            if item.get("last_modified")
+        ]
+        if dates:
+            newest = max(dates)
+            ages.append(SourceAge(name, newest, (now - newest).days, limit))
+    return ages
 
 
 def published_manifest(

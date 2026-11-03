@@ -63,6 +63,10 @@ class Dataset:
     # `name` and `url` of a license the source states for this table, published in its manifest
     # entry; None for ANVISA's open data, which declares none
     license: dict[str, str] | None = None
+    # days the source file may go unchanged before `anvisa dados idade` turns the data job red.
+    # ANVISA rewrites most files on weekdays; None for a file it no longer refreshes or a copy
+    # kept by hand. Per table, since one file still moving must not hide the others stalled
+    max_age_days: int | None = 7
 
     def __post_init__(self) -> None:
         if self.kind not in KINDS:
@@ -541,6 +545,7 @@ CMED = Dataset(
     source_names=cmed.SOURCE_NAMES,
     sort=("ggrem",),
     load_time="publicado_em",  # the files' Last-Modified, stamped on every row by cmed.py
+    max_age_days=45,  # a monthly list
     notes=(
         "Uma linha por apresentação de medicamento com preço regulado ou liberado pela CMED, "
         "identificada pelo ggrem (15 dígitos); registro é a apresentação na ANVISA (13 "
@@ -633,6 +638,7 @@ CBPF_MEDICAMENTOS = Dataset(
     group="cbpf",
     file="TA_CONSULTA_CBPF_MEDICAMENTO_DETALHE.CSV",
     directory="CONSULTAS/EMPRESA_FISCALIZACAO_PRODUTO/",
+    max_age_days=None,  # loaded on 2025-09-08 and rewritten only once since (2026-05-15)
     title="Certificados de boas práticas de medicamentos, uma linha por linha certificada",
     # Profiled 2026-10-23 on the file of Last-Modified 2026-05-15 (9,844,514 bytes):
     # Windows-1252 (0x96 4,662 times, 0x92 46; no undefined byte), LF only, 14,803 records of
@@ -721,6 +727,7 @@ DCB = Dataset(
     kind="dcb",
     file="Lista consolidada das DCB (xlsx)",  # name varies per version: dcb.spreadsheet_url
     directory="",
+    max_age_days=None,  # built from the copy kept by hand in fontes/dcb/
     title="DCB: Denominações Comuns Brasileiras, lista consolidada",
     # Profiled 2026-10-28 on "3-Lista DCB consolidada out 2026.xlsx" (579,799 bytes,
     # Last-Modified 2026-10-09 15:31:12 GMT), the item of IN 473 of 2026-10-02 in the Biblioteca

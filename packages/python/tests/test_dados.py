@@ -3643,36 +3643,57 @@ def test_live_dados_head():
     assert response.headers.get("etag") or response.headers.get("last-modified")
 
 
-def test_newest_source_reads_every_file_including_cmed_pairs():
-    from anvisa.dados.build import newest_source
-
-    manifest = {
-        "tables": {
-            "a": {"source": {"last_modified": "Tue, 13 Oct 2026 19:09:39 GMT", "files": []}},
-            "cmed": {
-                "source": {
-                    "last_modified": None,
-                    "files": [
-                        {"last_modified": "Fri, 09 Oct 2026 15:43:03 GMT"},
-                        {"last_modified": "Tue, 27 Oct 2026 14:33:32 GMT"},
-                    ],
-                }
-            },
-            "derivada": {"fontes": ["a"]},
-        }
+# The build of 2026-11-03: eight files unchanged since 2026-10-13 while the petições still moved
+STALL = {
+    "tables": {
+        "alimentos": {"source": {"last_modified": "Tue, 13 Oct 2026 19:09:39 GMT", "files": []}},
+        "peticoes_alimento": {"source": {"last_modified": "Mon, 02 Nov 2026 13:33:34 GMT"}},
+        "cmed": {
+            "source": {
+                "last_modified": None,
+                "files": [
+                    {"last_modified": "Fri, 09 Oct 2026 15:43:03 GMT"},
+                    {"last_modified": "Fri, 09 Oct 2026 15:43:26 GMT"},
+                ],
+            }
+        },
+        "cbpf_medicamentos": {"source": {"last_modified": "Fri, 15 May 2026 07:52:35 GMT"}},
+        "dcb": {"source": {"last_modified": "Fri, 09 Oct 2026 15:31:12 GMT"}},
+        "produtos": {"source": {"name": "derivar.py", "last_modified": None}},
     }
-    assert newest_source(manifest).isoformat() == "2026-10-27T14:33:32+00:00"
-    assert newest_source({}) is None
+}
 
 
-def test_dados_idade_fails_above_the_limit(tmp_path):
+def test_source_ages_hold_each_table_to_its_own_limit():
+    from anvisa.dados.build import source_ages
+
+    now = datetime(2026, 11, 3, 12, 0, tzinfo=timezone.utc)
+    ages = {age.table: age for age in source_ages(STALL, now)}
+    # no limit (cbpf_medicamentos, dcb) or not a source (the derived produtos): left out
+    assert sorted(ages) == ["alimentos", "cmed", "peticoes_alimento"]
+    alimentos = ages["alimentos"]
+    assert (alimentos.days, alimentos.limit, alimentos.stale) == (20, 7, True)
+    assert not ages["peticoes_alimento"].stale
+    # the newer of the two CMED files counts, against the monthly limit
+    assert ages["cmed"].last_modified.isoformat() == "2026-10-09T15:43:26+00:00"
+    assert (ages["cmed"].limit, ages["cmed"].stale) == (45, False)
+    assert source_ages({}, now) == []
+    assert source_ages(STALL, now, {"alimentos": 30})[0].stale is False
+
+
+def test_dados_idade_names_each_stale_table(tmp_path):
     from typer.testing import CliRunner
 
     from anvisa.cli import app
 
     path = tmp_path / "manifest.json"
-    data = {"tables": {"a": {"source": {"last_modified": "Tue, 27 Oct 2026 14:33:32 GMT"}}}}
-    path.write_text(json.dumps(data), encoding="utf-8")
+    path.write_text(json.dumps(STALL), encoding="utf-8")
     runner = CliRunner()
+    result = runner.invoke(app, ["dados", "idade", str(path)])
+    assert result.exit_code == 1
+    assert "::error::alimentos: ANVISA's file unchanged" in result.output
+    assert "::error::peticoes_alimento" not in result.output
     assert runner.invoke(app, ["dados", "idade", str(path), "--max-dias", "100000"]).exit_code == 0
-    assert runner.invoke(app, ["dados", "idade", str(path), "--max-dias", "0"]).exit_code == 1
+    empty = tmp_path / "empty.json"
+    empty.write_text(json.dumps({"tables": {"produtos": {"source": {}}}}), encoding="utf-8")
+    assert runner.invoke(app, ["dados", "idade", str(empty)]).exit_code == 1

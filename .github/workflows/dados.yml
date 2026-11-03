@@ -59,14 +59,15 @@ jobs:
         id: deploy
         uses: actions/deploy-pages@v5
       # "Nothing changed" every day would keep this job green forever if ANVISA's ETL stopped.
-      # ANVISA updates some file on most weekdays, so the newest source file is the signal.
-      - name: Check the age of ANVISA's newest file
+      # Each source is held to its own limit (catalog max_age_days: 7 days for the weekday files,
+      # 45 for CMED), since one file still moving hid eight others stalled from 2026-10-13.
+      - name: Check the age of each ANVISA source
         working-directory: packages/python
         env:
           PUBLISHED: ${{ steps.pages.outputs.base_url }}/manifest.json
         run: |
           built="$GITHUB_WORKSPACE/dist/manifest.json"   # absent when nothing changed
-          uv run anvisa dados idade "$([ -f "$built" ] && echo "$built" || echo "$PUBLISHED")" --max-dias 7
+          uv run anvisa dados idade "$([ -f "$built" ] && echo "$built" || echo "$PUBLISHED")"
       # A source that failed to download was carried over from the previous build (manifest
       # `falhas`): the other tables went out above, and the run turns red so it gets seen. Last,
       # and not skipped by a failed age check, so both alarms always report.
