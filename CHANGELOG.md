@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.8.0 (2026-11-03)
 
 - `anvisa dados idade` holds each table's source to its own limit, `Dataset.max_age_days` (7
   days by default, 45 for `cmed`, none for `cbpf_medicamentos` and `dcb`), and names every
@@ -8,9 +8,6 @@
   changed since 2026-10-13 while the petições files still moved daily, and the old check stayed
   green. `--max-dias` is now optional and replaces every limit when given.
   `dados.build.newest_source` is replaced by `source_ages` (and `SourceAge`, `catalog_limits`).
-
-## 0.8.0 (2026-11-03)
-
 - `dados.build(fontes=)` and CLI `--fontes` read the DCB list from the copy in `fontes/dcb/`
   (`fetch.local_dcb`), with no request. Without them, the CLI's default build is `dados.PADRAO`,
   which leaves `dcb` out, since the Biblioteca Digital blocks automated access.
