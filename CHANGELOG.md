@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.8.0 (2026-11-03)
 
 - `dados.build(fontes=)` and CLI `--fontes` read the DCB list from the copy in `fontes/dcb/`
   (`fetch.local_dcb`), with no request. Without them, the CLI's default build is `dados.PADRAO`,
