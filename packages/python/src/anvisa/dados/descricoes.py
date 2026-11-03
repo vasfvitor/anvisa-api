@@ -680,10 +680,14 @@ DESCRICOES: dict[str, dict[str, str]] = {
         "classe_risco": "Classe de risco: I, II, III ou IV.",
         "cnpj": _CNPJ,
         "empresa": _RAZAO,
-        "tipo": '"Cadastrado" (registro começa com 8, sem prazo) ou "Registrado".',
+        "tipo": (
+            '"Cadastrado" quando o número começa com 8, "Registrado" nos demais. Não acompanha '
+            "a classe de risco nem o prazo (há números com 8 de classe IV com vencimento): para "
+            "isso, veja classe_risco e vencimento."
+        ),
         "ativo": (
-            "Verdadeiro nos cadastros (VIGENTE) e nos registros cuja validade não tinha "
-            "vencido na data do arquivo."
+            "Verdadeiro quando a validade é VIGENTE (sem data) ou uma data que não tinha "
+            "passado na data do arquivo."
         ),
         "publicacao": "Publicação do registro ou cadastro (data); nula em parte.",
         "vencimento": "Validade do registro (data); nula nos cadastros.",

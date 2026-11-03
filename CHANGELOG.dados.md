@@ -6,6 +6,13 @@ when known. The package's own `CHANGELOG.md` records the Python API; a data chan
 no package release still appears here. `schema_version` in the manifest only changes when a
 consumer must change to keep reading it; everything below has been additive, so it is still 1.
 
+## 2026-11-03
+
+- **`produtos_saude_por_produto`**: the descriptions of `tipo` and `ativo` no longer say that a
+  cadastro (number starting with 8) has no expiry. `tipo` is still read from the first digit, but
+  12,009 such rows are class III or IV with a `vencimento`, so the dictionary now points to
+  `classe_risco` and `vencimento` instead. No column changed.
+
 ## 2026-11-01
 
 - **`dcb` and `substancias_dcb`** are published for the first time, from a copy of the list kept
