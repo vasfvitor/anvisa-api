@@ -135,6 +135,9 @@ make snapshot             # re-download the spec and portal docs; a diff means A
 
 ## Dados abertos: Parquet on GitHub Pages
 
+When one of this repo's workflows turns red, [RUNBOOK.md](RUNBOOK.md) (in Portuguese) says what
+the message means, whether the site was affected and what to do.
+
 The Consultas Externas API has no food products. ANVISA publishes them as bulk CSV on
 [dados.anvisa.gov.br](https://dados.anvisa.gov.br/dados/CONSULTAS/PRODUTOS/), refreshed on
 weekdays, with no CORS headers, so a browser cannot read them; the analysis cycle of every

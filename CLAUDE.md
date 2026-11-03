@@ -23,6 +23,10 @@ is in `ROADMAP.md`. An untracked `NOTES.local.md` holds the running to-do list w
   needs: `git commit -a` never stages new files (0.5.0 shipped without `tests/test_spec.py`).
 - Commit on your own when a unit of work is complete (one subject per commit, no attribution
   trailers); do not ask first. Pushing is the user's.
+- **`RUNBOOK.md`** (Portuguese, for the user, not for an agent) explains every way a workflow here
+  turns red. Adding or changing an alarm (`::error::`, `::warning::`, an `exit 1` or a raise that
+  ends a workflow) or an error message means updating its entry in the same commit, quoting the
+  message exactly as the log prints it.
 
 ## Sibling repos
 
