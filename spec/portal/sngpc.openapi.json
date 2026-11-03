@@ -5,27 +5,6 @@
     "version": "v1"
   },
   "paths": {
-    "/api/Auth/ObterTokenKeycloak": {
-      "get": {
-        "tags": [
-          "Auth"
-        ],
-        "parameters": [
-          {
-            "name": "code",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/v1/Authentication/GetToken": {
       "post": {
         "tags": [
