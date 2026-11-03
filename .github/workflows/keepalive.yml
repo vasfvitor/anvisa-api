@@ -25,6 +25,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
+          # without pipefail a failed list call feeds the loop nothing and the step still exits 0
+          set -o pipefail
           gh api "repos/$REPO/actions/workflows" \
             --jq '.workflows[] | select(.state != "disabled_manually") | "\(.id) \(.path)"' |
             while read -r id path; do

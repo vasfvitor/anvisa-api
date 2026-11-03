@@ -260,9 +260,8 @@ Roda quando uma tag `v*` é enviada. Publica a biblioteca no PyPI. Não mexe no 
 Roda no dia 1 de cada mês, às 07:41 UTC. Reativa os workflows deste repo, para o GitHub não desligar os
 crons depois de 60 dias sem atividade.
 
-- **Vermelho:** uma chamada à API do GitHub falhou. Rodar de novo.
-- **Verde:** abrir o log e conferir que há linhas `enabled .github/workflows/...`. Se não houver nenhuma,
-  ele não fez nada (ver [Problemas conhecidos](#problemas-conhecidos)).
+- **Vermelho:** uma chamada à API do GitHub falhou (a mensagem do `gh` diz qual). Rodar de novo.
+- **Verde:** reativou os workflows. O log tem uma linha `enabled .github/workflows/...` para cada um.
 
 ## Procedimento manual
 
@@ -284,8 +283,6 @@ Achados em 2026-11-03, ainda sem correção. Cada um diz o efeito e o que fazer 
 
 - **medicamentos pode dar alarme falso todo mês.** O catálogo diz que a ANVISA atualiza esse arquivo uma
   vez por mês, mas o limite dele é de 7 dias. A confirmar quando a ANVISA voltar a publicar. Fase 2.
-- **keepalive verde sem ter feito nada.** Se a primeira chamada à API falhar, o passo sai verde mesmo
-  assim. Por isso vale conferir as linhas `enabled` no log. Fase 2.
 - **DCB sem alarme de versão nova.** Ver [Nova versão da DCB](#nova-versão-da-dcb).
 - **Perda de linhas aos poucos.** O limite de 90% compara só com o build anterior. Várias quedas
   pequenas seguidas passam. Fase 3.
