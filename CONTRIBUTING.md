@@ -102,8 +102,11 @@ Normativa comes out:
 2. Replace `fontes/dcb/dcb.xlsx` with it, byte for byte, and update `fontes/dcb/dcb.json`
    (`title` and `url` from the item page, `last_modified` with the file's date as an HTTP date)
    and the version named in `fontes/dcb/LICENSE.md`.
-3. Commit. The next build sees the new sha256 and publishes the table. If the header changed,
-   the build fails with `SchemaDriftError`, as it does for any other source.
+3. Commit. CI reads the copy on that push (`test_the_kept_copy_of_the_dcb_is_coherent`) and
+   goes red if it cannot. The next build sees the new sha256 and publishes the table. If the
+   header changed, `dcb.py` raises `SchemaDriftError` while the copy is read, so the build keeps
+   the previous `dcb` table, as for a failed download, and its last step goes red with
+   `update anvisa/dados/dcb.py`. A CSV source whose header changed stops the whole build instead.
 
 ## Adding a derived table
 
