@@ -3684,12 +3684,19 @@ def test_source_ages_hold_each_table_to_its_own_limit():
 
 
 def test_dados_idade_names_each_stale_table(tmp_path):
+    from email.utils import format_datetime
+
     from typer.testing import CliRunner
 
     from anvisa.cli import app
 
+    # the command reads the real clock: the petições file is made a day old from now, or this test
+    # would fail from 2026-11-10, a week after the date written in STALL
+    ontem = format_datetime(datetime.now(timezone.utc) - timedelta(days=1), usegmt=True)
+    manifest = json.loads(json.dumps(STALL))
+    manifest["tables"]["peticoes_alimento"]["source"]["last_modified"] = ontem
     path = tmp_path / "manifest.json"
-    path.write_text(json.dumps(STALL), encoding="utf-8")
+    path.write_text(json.dumps(manifest), encoding="utf-8")
     runner = CliRunner()
     result = runner.invoke(app, ["dados", "idade", str(path)])
     assert result.exit_code == 1

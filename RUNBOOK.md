@@ -236,8 +236,7 @@ Roda em push no `main` e em pull request. Não publica nada.
   cd ../.. && make spec models   # commitar o diff, se houver
   ```
 
-- **Pedir ajuda quando:** um teste falha sem que ninguém tenha mudado o código. Pode ser um teste preso a
-  uma data (ver [Problemas conhecidos](#problemas-conhecidos)).
+- **Pedir ajuda quando:** um teste falha sem que ninguém tenha mudado o código.
 
 ## release
 
@@ -283,10 +282,6 @@ Nenhum alarme avisa de versão nova. Vale olhar a página da coleção de vez em
 
 Achados em 2026-11-03, ainda sem correção. Cada um diz o efeito e o que fazer enquanto isso.
 
-- **Teste preso a uma data (a partir de 10/11/2026, 13:33 UTC).** `test_dados_idade_names_each_stale_table`
-  usa um `Last-Modified` fixo de 02/11/2026 e compara com o relógio de verdade. A partir dessa hora, `ci`
-  e `release` ficam vermelhos com `AssertionError` nesse teste. O site não é afetado, porque o `dados`
-  não roda testes. Enquanto isso, não dá para lançar versão. Correção prevista na fase 3.
 - **medicamentos pode dar alarme falso todo mês.** O catálogo diz que a ANVISA atualiza esse arquivo uma
   vez por mês, mas o limite dele é de 7 dias. A confirmar quando a ANVISA voltar a publicar. Fase 2.
 - **keepalive verde sem ter feito nada.** Se a primeira chamada à API falhar, o passo sai verde mesmo
