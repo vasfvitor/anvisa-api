@@ -13,9 +13,9 @@ Quem cria ou muda um alarme ou uma mensagem de erro atualiza este arquivo no mes
 
 | Workflow | Trecho da mensagem | Entrada |
 |---|---|---|
-| dados | `ANVISA's file unchanged for` | [Fonte parada na ANVISA](#fonte-parada-na-anvisa) |
+| dados | issue "ANVISA parada", `ANVISA's file unchanged for` | [Fonte parada na ANVISA](#fonte-parada-na-anvisa) |
 | dados | `no source Last-Modified in` | [Manifest publicado ilegível](#manifest-publicado-ilegível) |
-| dados | `(kept the previous build)`, `nothing changed, but` | [Download falhou, tabela anterior mantida](#download-falhou-tabela-anterior-mantida) |
+| dados | issue "Download da ANVISA falhou", `(kept the previous build)` | [Download falhou, tabela anterior mantida](#download-falhou-tabela-anterior-mantida) |
 | dados | `error: HTTP 403 for`, no passo Build | [Tabela nova não baixou](#tabela-nova-não-baixou) |
 | dados | `header changed`, `unparseable CSV`, `wrong number of fields`, `do not parse as` | [A ANVISA mudou o formato de um arquivo](#a-anvisa-mudou-o-formato-de-um-arquivo) |
 | dados | `update anvisa/dados/cmed.py`, `update anvisa/dados/dcb.py`, `cannot read the DCB copy` | [CMED mudou ou a cópia da DCB está errada](#cmed-mudou-ou-a-cópia-da-dcb-está-errada) |
@@ -36,13 +36,19 @@ Parquet e publica no Pages com o `manifest.json`. Quando nada mudou, não public
 continua no ar.
 
 A ordem dos passos importa: Build, Upload, Deploy, idade das fontes, downloads que falharam. Os dois
-últimos rodam **depois** do deploy. Então um vermelho neles não quer dizer que nada foi publicado. E
-quando o Build falha, o passo da idade não roda: o alarme de fonte parada some naquele dia.
+últimos rodam **depois** do deploy. Então um vermelho neles não quer dizer que nada foi publicado.
+
+Fonte parada e download que falhou não deixam o run vermelho: cada um abre uma issue com o label
+`alerta`, que fecha sozinha quando a situação normaliza (ver o RUNBOOK do hub, "Issues de alerta"). O
+GitHub manda e-mail quando ela abre e quando fecha. O run fica verde, com um aviso amarelo. Quando o
+Build falha, o passo da idade não roda, e a issue não muda naquele dia.
 
 ### Fonte parada na ANVISA
 
-- **Onde aparece:** passo "Check the age of each ANVISA source".
-- **Mensagem:** `::error::<tabela>: ANVISA's file unchanged for N days (since AAAA-MM-DD, limit L)`
+- **Onde aparece:** a issue "ANVISA parada: N arquivos sem atualizar além do limite", aberta pelo passo
+  "Alarm issue for the stalled sources". O run fica verde.
+- **Mensagem**, na issue e no log do passo "Check the age of each ANVISA source":
+  `<tabela>: ANVISA's file unchanged for N days (since AAAA-MM-DD, limit L)`
 - **O que quer dizer:** o arquivo da ANVISA dessa tabela não muda há mais dias que o limite dela. O
   limite é 7 dias para os arquivos que a ANVISA reescreve nos dias úteis e 45 para a lista da CMED.
 - **O site foi afetado?** Não quebrou. Continua com o último dado que a ANVISA publicou, só que velho.
@@ -51,7 +57,8 @@ quando o Build falha, o passo da idade não roda: o alarme de fonte parada some 
   1. Ver a idade de cada tabela:
      `cd packages/python && uv run anvisa dados idade https://vasfvitor.github.io/anvisa-api/manifest.json`
   2. Se quiser, avisar a ANVISA pelo Fala.BR.
-  3. O run fica vermelho todo dia até a ANVISA voltar a publicar.
+  3. A issue fica aberta, e é atualizada em silêncio, até a ANVISA voltar a publicar. Aí ela fecha
+     sozinha, com um comentário.
 - **Pedir ajuda quando:** a ANVISA voltou a publicar (a data no comando acima mudou) e o alarme
   continua. Ou o alarme aparece todo mês para uma tabela que a ANVISA só atualiza uma vez por mês (ver
   [Problemas conhecidos](#problemas-conhecidos)).
@@ -68,11 +75,11 @@ quando o Build falha, o passo da idade não roda: o alarme de fonte parada some 
 
 ### Download falhou, tabela anterior mantida
 
-- **Onde aparece:** passo "Report sources that failed to download". Ou no passo Build, quando nada mais
-  mudou.
-- **Mensagens:**
-  - `::error::<tabela>: <erro> (kept the previous build)`
-  - `error: nothing changed, but <tabelas> could not be downloaded (<erros>); build <id> stays live`
+- **Onde aparece:** a issue "Download da ANVISA falhou: N tabelas com o arquivo anterior", aberta pelo
+  passo "Alarm issue for the downloads that failed". O run fica verde.
+- **Mensagem**, na issue e no log do passo "Report sources that failed to download":
+  `<tabela>: <erro> (kept the previous build)`. Num dia em que nada mais mudou, o log do Build diz
+  também `unchanged, but <tabelas> could not be downloaded; build <id> stays live`.
 - O `<erro>` costuma ser um destes:
   - `HTTP 403 for <url>` ou `HTTP 5xx for <url>`;
   - `<url>: got N of M bytes (truncated)`;
@@ -80,8 +87,9 @@ quando o Build falha, o passo da idade não roda: o alarme de fonte parada some 
 - **O que quer dizer:** a ANVISA não entregou o arquivo dessa tabela, mesmo com três tentativas. A tabela
   ficou com o arquivo do build anterior, byte por byte, e aparece em `falhas` no manifest.
 - **O site foi afetado?** As outras tabelas saíram normais. A que falhou continua com o dado anterior.
-  Com `nothing changed, but`, nada foi publicado e o site anterior segue igual.
-- **Agir ou esperar:** esperar. O próximo run tenta de novo.
+  Num dia em que nada mais mudou, nada foi publicado e o site anterior segue igual.
+- **Agir ou esperar:** esperar. O próximo run tenta de novo, e a issue fecha sozinha quando o download
+  voltar a funcionar.
 - **O que fazer:** ver se o erro é 5xx ou timeout (servidor instável, passa sozinho) ou 403 (bloqueio).
   Um 403 que se repete na mesma URL quer dizer que a ANVISA bloqueou o acesso automático. **Não contornar
   o bloqueio.**
@@ -150,9 +158,12 @@ quando o Build falha, o passo da idade não roda: o alarme de fonte parada some 
   enquanto isso durar.
 - **Agir ou esperar:** esperar um run. Se a ANVISA publicou um arquivo incompleto, o problema some
   quando ela corrigir.
-- **Pedir ajuda quando:** repetir. Se a tabela encolheu de verdade, o limite precisa baixar por um
-  build. A mensagem cita a opção `--min-rows-ratio`, mas o workflow não deixa passar essa opção: é
-  preciso mudar o código.
+- **Se a tabela encolheu de verdade** (a ANVISA tirou registros), aceite o arquivo novo num build só:
+  1. confira na ANVISA que o arquivo novo está certo, por exemplo pelo tamanho ou pela contagem;
+  2. Actions → dados → "Run workflow", com `min_rows_ratio` menor que a proporção da mensagem (N
+     dividido por M). Por exemplo, 880 contra 1000 dá 0,88: use `0.85`;
+  3. o limite vale para todas as tabelas desse run. O run seguinte, agendado, volta ao padrão (0.9).
+- **Pedir ajuda quando:** não tiver certeza de que o arquivo novo está certo.
 
 ### Arquivo publicado não confere
 

@@ -5,16 +5,28 @@ name: dados
 # with the ETags of the published manifest; when ANVISA changed nothing and the commit is the one
 # that built the live site, nothing is uploaded and the previous deploy stays live. No secrets.
 # One-time setup: Settings → Pages → Source: GitHub Actions.
+#
+# Red is for what needs a change here (a format ANVISA changed, a broken build or deploy). A cause
+# outside the code, a source ANVISA stopped refreshing or a download that failed, opens an issue
+# instead (the alerta action from anvisa-hub) and closes it when it clears: see RUNBOOK.md.
 
 on:
   schedule:
     - cron: "0 21 * * *"   # 18:00 America/Sao_Paulo; ANVISA's ETL lands around 15:30 UTC on weekdays
   workflow_dispatch:
+    inputs:
+      min_rows_ratio:
+        description: >-
+          Only when a table really shrank at ANVISA: accept it with fewer rows than this share of
+          the published one, 0 to 1 (empty keeps the default, 0.9). RUNBOOK.md, "Tabela encolheu".
+        type: string
+        default: ""
 
 permissions:
   contents: read
   pages: write      # deploy-pages
   id-token: write   # deploy-pages proves the deployment came from this workflow
+  issues: write     # the alarm issues (alerta)
 
 # Never cancel a deploy halfway; a second run waits for the first.
 concurrency:
@@ -42,13 +54,19 @@ jobs:
       - name: Read the Pages URL   # also fails early if Pages is not enabled
         id: pages
         uses: actions/configure-pages@v6
+      # The summary (stdout) is kept for the report below: on a day nothing else changed it is the
+      # only place that names a download that failed.
       - name: Build (skipped when nothing changed)
+        id: build
         working-directory: packages/python
         env:
           PUBLISHED: ${{ steps.pages.outputs.base_url }}/manifest.json
-        run: >-
-          uv run anvisa dados build --out "$GITHUB_WORKSPACE/dist"
-          --fontes "$GITHUB_WORKSPACE/fontes" --skip-unchanged "$PUBLISHED"
+          MIN_ROWS: ${{ inputs.min_rows_ratio }}
+        run: |
+          uv run anvisa dados build --out "$GITHUB_WORKSPACE/dist" \
+            --fontes "$GITHUB_WORKSPACE/fontes" --skip-unchanged "$PUBLISHED" \
+            ${MIN_ROWS:+--min-rows-ratio "$MIN_ROWS"} > "$RUNNER_TEMP/build.json"
+          cat "$RUNNER_TEMP/build.json"
       - name: Upload the site
         if: hashFiles('dist/manifest.json') != ''
         uses: actions/upload-pages-artifact@v5
@@ -60,19 +78,95 @@ jobs:
         uses: actions/deploy-pages@v5
       # "Nothing changed" every day would keep this job green forever if ANVISA's ETL stopped.
       # Each source is held to its own limit (catalog max_age_days: 7 days for the weekday files,
-      # 45 for CMED), since one file still moving hid eight others stalled from 2026-10-13.
+      # 45 for CMED), since one file still moving hid eight others stalled from 2026-10-13. A
+      # stalled source opens the "ANVISA parada" issue; a manifest that cannot be read stays red.
       - name: Check the age of each ANVISA source
+        id: idade
         working-directory: packages/python
         env:
           PUBLISHED: ${{ steps.pages.outputs.base_url }}/manifest.json
         run: |
           built="$GITHUB_WORKSPACE/dist/manifest.json"   # absent when nothing changed
-          uv run anvisa dados idade "$([ -f "$built" ] && echo "$built" || echo "$PUBLISHED")"
+          alvo=$([ -f "$built" ] && echo "$built" || echo "$PUBLISHED")
+          if saida=$(uv run anvisa dados idade "$alvo" 2>&1); then
+            estado=normal
+          elif grep -q "ANVISA's file unchanged" <<<"$saida"; then
+            estado=ativo
+          else
+            printf '%s\n' "$saida"
+            exit 1
+          fi
+          # without the ::error:: prefix: a stalled source is the issue's business, not a red mark
+          printf '%s\n' "$saida" | sed 's/^::error:://'
+          parados=$(grep "ANVISA's file unchanged" <<<"$saida" | sed 's/^::error::/- /' || true)
+          n=$(grep -c . <<<"$parados" || true)
+          if [ "$n" -eq 1 ]; then
+            titulo="ANVISA parada: 1 arquivo sem atualizar além do limite"
+          else
+            titulo="ANVISA parada: $n arquivos sem atualizar além do limite"
+          fi
+          {
+            echo "estado=$estado"
+            echo "titulo=$titulo"
+            echo "corpo<<FIM_DO_CORPO"
+            echo "Arquivos da ANVISA que não mudam há mais dias que o limite da tabela. O site segue com o último dado que a ANVISA publicou."
+            echo
+            printf '%s\n' "$parados"
+            echo "FIM_DO_CORPO"
+          } >> "$GITHUB_OUTPUT"
+      - name: Alarm issue for the stalled sources
+        if: ${{ !cancelled() }}
+        uses: vasfvitor/anvisa-hub/.github/actions/alerta@main
+        with:
+          chave: anvisa-fonte-parada
+          titulo: ${{ steps.idade.outputs.titulo }}
+          estado: ${{ steps.idade.outputs.estado }}
+          corpo: ${{ steps.idade.outputs.corpo }}
+          runbook: https://github.com/vasfvitor/anvisa-api/blob/main/RUNBOOK.md#fonte-parada-na-anvisa
       # A source that failed to download was carried over from the previous build (manifest
-      # `falhas`): the other tables went out above, and the run turns red so it gets seen. Last,
-      # and not skipped by a failed age check, so both alarms always report.
+      # `falhas`), or, on a day nothing else changed, nothing was published (the summary's
+      # `falhas`). A download error opens the "Download da ANVISA falhou" issue; an error that asks
+      # for a change in anvisa/dados/ (a changed format) stays red. Not skipped by a failed age
+      # check, so both always report.
       - name: Report sources that failed to download
-        if: ${{ !cancelled() && hashFiles('dist/manifest.json') != '' }}
+        id: falhas
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
-          jq -r '(.falhas // {}) | to_entries[] | "::error::\(.key): \(.value) (kept the previous build)"' dist/manifest.json
-          jq -e '(.falhas // {}) | length == 0' dist/manifest.json > /dev/null
+          f=dist/manifest.json
+          [ -f "$f" ] || f="$RUNNER_TEMP/build.json"
+          lista() {  # $1 true: errors that ask for a code change; false: download errors
+            jq -r --argjson c "$1" --arg p "$2" '(.falhas // {}) | to_entries[]
+              | select((.value | contains("update anvisa/dados/")) == $c)
+              | "\($p)\(.key): \(.value) (kept the previous build)"' "$f"
+          }
+          downloads=$(lista false "- ")
+          codigo=$(lista true "::error::")
+          n=$(grep -c . <<<"$downloads" || true)
+          if [ "$n" -eq 1 ]; then
+            titulo="Download da ANVISA falhou: 1 tabela com o arquivo anterior"
+          else
+            titulo="Download da ANVISA falhou: $n tabelas com o arquivo anterior"
+          fi
+          printf '%s\n' "${downloads:-no download failed}"
+          {
+            echo "estado=$([ "$n" -gt 0 ] && echo ativo || echo normal)"
+            echo "titulo=$titulo"
+            echo "corpo<<FIM_DO_CORPO"
+            echo "A ANVISA não entregou o arquivo destas tabelas, mesmo com três tentativas. Cada uma ficou com o arquivo do build anterior."
+            echo
+            printf '%s\n' "$downloads"
+            echo "FIM_DO_CORPO"
+          } >> "$GITHUB_OUTPUT"
+          if [ -n "$codigo" ]; then
+            printf '%s\n' "$codigo"
+            exit 1
+          fi
+      - name: Alarm issue for the downloads that failed
+        if: ${{ !cancelled() }}
+        uses: vasfvitor/anvisa-hub/.github/actions/alerta@main
+        with:
+          chave: anvisa-download-falhou
+          titulo: ${{ steps.falhas.outputs.titulo }}
+          estado: ${{ steps.falhas.outputs.estado }}
+          corpo: ${{ steps.falhas.outputs.corpo }}
+          runbook: https://github.com/vasfvitor/anvisa-api/blob/main/RUNBOOK.md#download-falhou-tabela-anterior-mantida
