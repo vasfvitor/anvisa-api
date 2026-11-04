@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- `dados.build` no longer fails when nothing changed but a published table's download failed:
+  it writes nothing and returns `Unchanged`, whose new `falhas` names each table and its error,
+  and `anvisa dados build` exits 0 with `falhas` in its `skipped` summary. dados.yml turns that
+  into an alarm issue instead of a red run.
+
 ## 0.8.0 (2026-11-03)
 
 - `anvisa dados idade` holds each table's source to its own limit, `Dataset.max_age_days` (7

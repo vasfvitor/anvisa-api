@@ -577,6 +577,8 @@ def dados_build(
         )
     if isinstance(result, dados.Unchanged):
         summary = {"skipped": True, "reason": "unchanged", "published_build_id": result.build_id}
+        if result.falhas:
+            summary["falhas"] = result.falhas
     else:
         summary = {
             "build_id": result["build_id"],

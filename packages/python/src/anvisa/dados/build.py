@@ -24,7 +24,7 @@ import posixpath
 import shutil
 import tempfile
 from collections.abc import Callable
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
@@ -59,10 +59,13 @@ MIN_ROWS_RATIO = 0.9
 
 @dataclass(frozen=True)
 class Unchanged:
-    """`build` skipped: every source answered 304 and the published build came from the same
-    commit, so the published files are still current."""
+    """`build` skipped: every source answered 304 (or failed to download, see `falhas`) and the
+    published build came from the same commit, so the published files are still current."""
 
     build_id: str | None
+    # table -> download error, for a source that failed on a day nothing else changed: the
+    # published table stays, and the caller reports it (dados.yml opens an alarm issue)
+    falhas: dict[str, str] = field(default_factory=dict)
 
 
 def build_id(now: datetime) -> str:
@@ -361,9 +364,9 @@ def build(
 
     A published table whose source fails to download (the Biblioteca Digital answering 403, a
     portal down) does not stop the others: it is carried over like a table not in `datasets`,
-    and the manifest's `falhas` names it with the error. If nothing else changed, the build
-    fails instead, since there is nothing to publish and the failure would otherwise go
-    unseen. A source never published still fails the build: there is nothing to carry.
+    and the manifest's `falhas` names it with the error. If nothing else changed, nothing is
+    written and `Unchanged.falhas` names it instead, for the caller to report. A source never
+    published still fails the build: there is nothing to carry.
 
     With `fontes`, the DCB list comes from the copy in `fontes/dcb/` (fetch.local_dcb) instead
     of the Biblioteca Digital."""
@@ -400,13 +403,13 @@ def build(
             if all(sources[ds.name] is None for ds in datasets if ds.name not in falhas):
                 if published.get("commit") == commit:
                     if falhas:
-                        raise DadosError(
-                            f"nothing changed, but {', '.join(falhas)} could not be downloaded "
-                            f"({'; '.join(falhas.values())}); build {published.get('build_id')} "
-                            "stays live"
+                        log(
+                            f"unchanged, but {', '.join(falhas)} could not be downloaded; build "
+                            f"{published.get('build_id')} stays live"
                         )
-                    log(f"unchanged: build {published.get('build_id')} is current")
-                    return Unchanged(published.get("build_id"))
+                    else:
+                        log(f"unchanged: build {published.get('build_id')} is current")
+                    return Unchanged(published.get("build_id"), falhas)
                 log(f"code changed ({published.get('commit')} -> {commit}): rebuilding")
             for ds in datasets:  # a partial update still publishes a complete, consistent set
                 if ds.name not in falhas and sources[ds.name] is None:

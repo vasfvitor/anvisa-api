@@ -1983,18 +1983,29 @@ def test_a_broken_copy_of_a_published_dcb_is_carried_and_named(fake_dados, tmp_p
 
 
 @needs_duckdb
-def test_a_failed_download_with_nothing_else_new_fails_the_build(fake_dados, tmp_path):
-    """With nothing to publish, carrying the table over would hide the failure: the build
-    fails, naming it, and writes nothing (the live build stays)."""
+def test_a_failed_download_with_nothing_else_new_is_reported_and_writes_nothing(
+    fake_dados, tmp_path, monkeypatch
+):
+    """With nothing to publish, the build writes nothing (the live build stays) and names the
+    failure in `Unchanged.falhas`, which dados.yml turns into an alarm issue; the CLI's summary
+    carries it too."""
     first = published(fake_dados, tmp_path)
     fake_dados.status[DCB.url] = 403
-    with fake_dados.client() as http, pytest.raises(DadosError) as exc:
-        build(
+    with fake_dados.client() as http:
+        result = build(
             tmp_path / "second", http=http, skip_unchanged=FakeDados.MANIFEST_URL, commit="abc123"
         )
-    assert "dcb could not be downloaded" in str(exc.value)
-    assert "HTTP 403" in str(exc.value) and first["build_id"] in str(exc.value)
+    assert result == Unchanged(first["build_id"], {"dcb": f"HTTP 403 for {DCB.url}"})
     assert not (tmp_path / "second").exists()
+
+    monkeypatch.setattr(cli, "dados_http", fake_dados.client)
+    args = ["dados", "build", "-o", str(tmp_path / "cli"), "-d", "dcb"]
+    args += ["--skip-unchanged", FakeDados.MANIFEST_URL]
+    ran = CliRunner().invoke(cli.app, args, env={"GITHUB_SHA": "abc123"})
+    assert ran.exit_code == 0, ran.output
+    assert json.loads(ran.stdout)["falhas"] == {"dcb": f"HTTP 403 for {DCB.url}"}
+    assert "could not be downloaded" in ran.stderr
+    assert not (tmp_path / "cli").exists()
 
 
 @needs_duckdb
