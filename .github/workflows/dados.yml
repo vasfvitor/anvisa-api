@@ -55,7 +55,8 @@ jobs:
         id: pages
         uses: actions/configure-pages@v6
       # The summary (stdout) is kept for the report below: on a day nothing else changed it is the
-      # only place that names a download that failed.
+      # only place that names a download that failed. tee, not a redirect, so whatever a failing build
+      # printed still reaches the log; pipefail keeps the build's exit code.
       - name: Build (skipped when nothing changed)
         id: build
         working-directory: packages/python
@@ -63,10 +64,10 @@ jobs:
           PUBLISHED: ${{ steps.pages.outputs.base_url }}/manifest.json
           MIN_ROWS: ${{ inputs.min_rows_ratio }}
         run: |
+          set -o pipefail
           uv run anvisa dados build --out "$GITHUB_WORKSPACE/dist" \
             --fontes "$GITHUB_WORKSPACE/fontes" --skip-unchanged "$PUBLISHED" \
-            ${MIN_ROWS:+--min-rows-ratio "$MIN_ROWS"} > "$RUNNER_TEMP/build.json"
-          cat "$RUNNER_TEMP/build.json"
+            ${MIN_ROWS:+--min-rows-ratio "$MIN_ROWS"} | tee "$RUNNER_TEMP/build.json"
       - name: Upload the site
         if: hashFiles('dist/manifest.json') != ''
         uses: actions/upload-pages-artifact@v5
