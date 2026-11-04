@@ -206,7 +206,8 @@ Roda nos dias 1 e 15, às 09:17 UTC. Baixa de novo a descrição da API da ANVIS
 documentação do portal e compara com o que está em `spec/`. Se algo mudou, abre uma issue e o run fica
 verde. Não publica nada. As APIs do SNGPC e do SNCR estão fora do escopo da biblioteca: os arquivos delas
 continuam sendo baixados, mas ficam fora da comparação. Elas deram três vermelhos à toa em outubro de
-2026.
+2026. O `menus.json` ainda lista as páginas delas: se a ANVISA mexer nessas entradas do menu, a issue
+abre, e basta seguir o roteiro abaixo.
 
 ### A ANVISA mudou a documentação da API
 

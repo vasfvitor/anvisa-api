@@ -5,9 +5,10 @@ name: drift
 # documentação da API" (the alerta action from anvisa-hub) and the run stays green; the issue
 # closes on the first run that finds nothing new, that is, once the new snapshot is committed (look
 # at the diff, re-record affected fixtures: RUNBOOK.md). SNGPC and SNCR, separate services outside
-# the library's scope, are still written by the snapshot but left out of the comparison. Kept out
-# of ci.yml so unrelated PRs don't go red because of an upstream change. No credentials are used;
-# the requests are unauthenticated.
+# the library's scope, are still written by the snapshot, but their own files are left out of the
+# comparison; spec/portal/menus.json still lists their pages, so a change to those menu entries
+# still opens the issue (rare, and harmless to commit). Kept out of ci.yml so unrelated PRs don't
+# go red because of an upstream change. No credentials are used; the requests are unauthenticated.
 
 on:
   schedule:
@@ -33,7 +34,7 @@ jobs:
           fora=(':(exclude)spec/portal/sngpc*' ':(exclude)spec/portal/sncr*')
           mudou=$(git status --porcelain -- spec/ "${fora[@]}")
           if [ -z "$mudou" ]; then
-            echo "nothing changed under spec/ (SNGPC and SNCR not compared)"
+            echo "nothing changed under spec/ (the SNGPC and SNCR files are not compared)"
             echo "estado=normal" >> "$GITHUB_OUTPUT"
             exit 0
           fi
