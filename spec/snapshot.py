@@ -34,7 +34,8 @@ import urllib.request
 from pathlib import Path
 
 GATEWAY = "https://api-gateway.prd.apps.anvisa.gov.br"
-SNGPC_SPEC = "https://sngpc-api.anvisa.gov.br/swagger/v1/swagger.json"  # separate service, watched only
+# separate service, outside the library: snapshotted, but drift.yml leaves it out of the comparison
+SNGPC_SPEC = "https://sngpc-api.anvisa.gov.br/swagger/v1/swagger.json"
 PORTAL = f"{GATEWAY}/portal-apis"
 USER_AGENT = "anvisa-api spec snapshot (+https://github.com/vasfvitor/anvisa-api)"
 SPEC_DIR = Path(__file__).resolve().parent

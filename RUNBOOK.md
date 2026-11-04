@@ -23,7 +23,7 @@ Quem cria ou muda um alarme ou uma mensagem de erro atualiza este arquivo no mes
 | dados | `does not match its manifest entry` | [Arquivo publicado não confere](#arquivo-publicado-não-confere) |
 | dados | `Traceback`, `which this build lacks`, `needs DuckDB` | [Erro de código no build](#erro-de-código-no-build) |
 | dados | `uv sync`, Pages, timeout, deploy | [Instalação, Pages, timeout e deploy](#instalação-pages-timeout-e-deploy) |
-| drift | `git diff --exit-code --stat -- spec/` | [A ANVISA mudou a documentação da API](#a-anvisa-mudou-a-documentação-da-api) |
+| drift | issue "A ANVISA mudou a documentação da API" | [A ANVISA mudou a documentação da API](#a-anvisa-mudou-a-documentação-da-api) |
 | drift | `Traceback` no passo Snapshot | [O snapshot da documentação falhou](#o-snapshot-da-documentação-falhou) |
 | ci | ruff, pytest, `spec-drift` | [Lint, formato ou testes](#lint-formato-ou-testes) |
 | release | `tag v... != version`, PyPI | [Release falhou](#release-falhou) |
@@ -203,24 +203,26 @@ Build falha, o passo da idade não roda, e a issue não muda naquele dia.
 ## drift
 
 Roda nos dias 1 e 15, às 09:17 UTC. Baixa de novo a descrição da API da ANVISA e as páginas de
-documentação do portal, e fica vermelho se algo mudou em relação ao que está em `spec/`. Não publica
-nada.
+documentação do portal e compara com o que está em `spec/`. Se algo mudou, abre uma issue e o run fica
+verde. Não publica nada. As APIs do SNGPC e do SNCR estão fora do escopo da biblioteca: os arquivos delas
+continuam sendo baixados, mas ficam fora da comparação. Elas deram três vermelhos à toa em outubro de
+2026.
 
 ### A ANVISA mudou a documentação da API
 
-- **Onde aparece:** passo "Fail if ANVISA changed anything".
-- **Mensagem:** linhas como ` spec/<arquivo> | N +++---`, depois `Process completed with exit code 1`.
-- **O que quer dizer:** a ANVISA mudou a descrição da API ou uma página de documentação.
+- **Onde aparece:** a issue "A ANVISA mudou a documentação da API", aberta pelo passo "Alarm issue for
+  the changed documentation". O run fica verde.
+- **Mensagem:** a issue lista os arquivos de `spec/` que mudaram (`M`), os novos (`??`) e os removidos
+  (`D`).
+- **O que quer dizer:** a ANVISA mudou a descrição da API, uma página de documentação, ou pôs ou tirou uma
+  página do menu do portal.
 - **O site foi afetado?** Não. A biblioteca e os dados seguem funcionando.
+- **Agir ou esperar:** agir quando puder. Não tem pressa.
 - **O que fazer:** depende do arquivo.
-  - **Só `spec/portal/sngpc.openapi.json` (ou outro de SNGPC/SNCR):** essas APIs estão fora do escopo da
-    biblioteca, então a mudança não afeta nada. Foi o que aconteceu em 1º/10, 15/10 e 1º/11/2026. Para o
-    próximo run ficar verde:
+  - **Páginas do portal (`spec/portal/*-doc.json`, tutoriais, `menus.json`):** costuma ser texto.
     1. na raiz do repo, `make snapshot` e depois `make spec models`;
-    2. `git diff --stat` deve mostrar só esse arquivo;
-    3. commit.
-  - **Páginas do portal (`spec/portal/*-doc.json`, tutoriais):** ler o diff. Costuma ser texto. Mesmo
-    roteiro: `make snapshot`, `make spec models`, commit.
+    2. ler o `git diff`, e o arquivo novo se houver;
+    3. commit. A issue fecha sozinha no próximo `drift` (dia 1 ou 15, ou "Run workflow").
   - **`spec/consultas-externas.openapi.json`:** a própria API mudou. Se apareceram endpoints novos,
     `test_spec.py` falha até eles serem tratados. Pedir ajuda.
 
@@ -300,7 +302,5 @@ Achados em 2026-11-03, ainda sem correção. Cada um diz o efeito e o que fazer 
 - **Coluna de preço da CMED inteira vazia passa sem alarme.** Fase 3.
 - **`falhas` antigo no manifest.** Depois de uma falha, se no dia seguinte nada mudar, o run fica verde,
   mas o manifest publicado ainda lista a falha antiga. Fase 2.
-- **Página nova do portal quase não aparece.** O `git diff` do `drift` não vê arquivos novos. Uma página
-  nova só se nota pela mudança em `spec/portal/menus.json`. Fase 2.
 - **Idade lida só do cabeçalho HTTP.** Se a ANVISA publicar de novo um arquivo antigo, ele parece novo.
   Fase 3.

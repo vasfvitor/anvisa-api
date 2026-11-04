@@ -1,10 +1,13 @@
 name: drift
 
-# Every two weeks: re-download ANVISA's OpenAPI document and the portal documentation pages and fail
-# if anything changed relative to what is committed under spec/. A red run here means ANVISA
-# changed the API surface or its docs; the fix is to look at the diff, re-record affected
-# fixtures, and commit the new snapshot. Kept out of ci.yml so unrelated PRs don't go red
-# because of an upstream change. No credentials are used; the requests are unauthenticated.
+# Every two weeks: re-download ANVISA's OpenAPI document and the portal documentation pages and
+# compare them with what is committed under spec/. A change opens the issue "A ANVISA mudou a
+# documentação da API" (the alerta action from anvisa-hub) and the run stays green; the issue
+# closes on the first run that finds nothing new, that is, once the new snapshot is committed (look
+# at the diff, re-record affected fixtures: RUNBOOK.md). SNGPC and SNCR, separate services outside
+# the library's scope, are still written by the snapshot but left out of the comparison. Kept out
+# of ci.yml so unrelated PRs don't go red because of an upstream change. No credentials are used;
+# the requests are unauthenticated.
 
 on:
   schedule:
@@ -13,6 +16,7 @@ on:
 
 permissions:
   contents: read
+  issues: write   # the alarm issue (alerta)
 
 jobs:
   snapshot:
@@ -22,6 +26,35 @@ jobs:
       - uses: actions/checkout@v7
       - name: Snapshot the spec and the portal pages
         run: python3 spec/snapshot.py
-      - name: Fail if ANVISA changed anything
+      # porcelain also lists new and removed files: `git diff` missed a page new in the portal menu
+      - name: Compare with what is committed
+        id: diff
         run: |
-          git diff --exit-code --stat -- spec/
+          fora=(':(exclude)spec/portal/sngpc*' ':(exclude)spec/portal/sncr*')
+          mudou=$(git status --porcelain -- spec/ "${fora[@]}")
+          if [ -z "$mudou" ]; then
+            echo "nothing changed under spec/ (SNGPC and SNCR not compared)"
+            echo "estado=normal" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          printf '%s\n' "$mudou"
+          git diff --stat -- spec/ "${fora[@]}"
+          {
+            echo "estado=ativo"
+            echo "corpo<<FIM_DO_CORPO"
+            echo "A ANVISA mudou a descrição da API ou páginas da documentação do portal. A biblioteca e os dados seguem funcionando. Arquivos que mudaram (M), novos (??) e removidos (D):"
+            echo
+            echo '```text'
+            printf '%s\n' "$mudou"
+            echo '```'
+            echo "FIM_DO_CORPO"
+          } >> "$GITHUB_OUTPUT"
+      - name: Alarm issue for the changed documentation
+        if: ${{ !cancelled() }}
+        uses: vasfvitor/anvisa-hub/.github/actions/alerta@main
+        with:
+          chave: anvisa-drift
+          titulo: A ANVISA mudou a documentação da API
+          estado: ${{ steps.diff.outputs.estado }}
+          corpo: ${{ steps.diff.outputs.corpo }}
+          runbook: https://github.com/vasfvitor/anvisa-api/blob/main/RUNBOOK.md#a-anvisa-mudou-a-documentação-da-api
