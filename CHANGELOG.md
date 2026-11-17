@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.9.0 (2026-11-16)
 
 - The throttle counts every response against its estimate of the bucket and takes a 429 as an
   empty bucket. Since about 2026-11-10 the gateway sends no `X-RateLimit-*` header, and the
