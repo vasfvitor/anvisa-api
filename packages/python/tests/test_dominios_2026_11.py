@@ -53,6 +53,12 @@ def test_bulario_search_and_get(client, fake_api):
     # page and size go as separate query parameters, not as the JSON `filtro` the spec declares
     assert query_of(fake_api, "/bulario/3551564") == {"page": "1", "size": "10"}
 
+    # recorded with size=1 as a separate parameter: honoured, unlike the JSON filtro
+    one = client.bulario.get(1299498, size=1)
+    assert one.historico.size == 1 and len(one.historico.content) == 1
+    assert one.historico.totalElements == 7
+    assert query_of(fake_api, "/bulario/1299498") == {"page": "1", "size": "1"}
+
 
 # --- medicamento ------------------------------------------------------------
 

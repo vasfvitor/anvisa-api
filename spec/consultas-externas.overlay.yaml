@@ -659,7 +659,8 @@ actions:
   #     it as separate parameters instead (`page`, `size`, `filter[<key>]`): substâncias answers
   #     MSG-011 to the JSON form and a page to filter[nome]=dipirona (fixtures
   #     err_msg011_substancias, medicamento_substancias); the bulário detail kept its default
-  #     size 10 under a JSON filtro asking 5 (bulario_detail_3551564).
+  #     size 10 under a JSON filtro asking 5 (bulario_detail_3551564) and honoured size=1 sent as
+  #     a separate parameter (bulario_detail_1299498).
   - target: $.paths['/api/v1/medicamento/filtros/substancias'].get
     update:
       description: >-
@@ -679,8 +680,8 @@ actions:
     update:
       description: >-
         One product's bulário: `bulaAtual` and the paginated `historico` of its leaflets.
-        `page` and `size` are read as separate query parameters; a JSON `filtro` is ignored
-        (the historico kept size 10). The id*Protegido fields are JWTs valid 5 minutes.
+        `page` and `size` are read as separate query parameters (size=1 gave 1 historico row of
+        7); a JSON `filtro` is ignored (the historico kept size 10). The id*Protegido fields are JWTs valid 5 minutes.
       x-query-filter: flattened
 
   # 43. GET /medicamento/filtros/tipos-priorizacao: without showEmpty the server dereferences a

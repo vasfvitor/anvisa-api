@@ -11593,7 +11593,7 @@
             }
           }
         },
-        "description": "One product's bulário: `bulaAtual` and the paginated `historico` of its leaflets. `page` and `size` are read as separate query parameters; a JSON `filtro` is ignored (the historico kept size 10). The id*Protegido fields are JWTs valid 5 minutes.",
+        "description": "One product's bulário: `bulaAtual` and the paginated `historico` of its leaflets. `page` and `size` are read as separate query parameters (size=1 gave 1 historico row of 7); a JSON `filtro` is ignored (the historico kept size 10). The id*Protegido fields are JWTs valid 5 minutes.",
         "x-query-filter": "flattened"
       }
     },
