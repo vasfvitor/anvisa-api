@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.10.0 (2026-11-16)
 
 - CLI: `--all` pages at 100 rows unless `--size` is given (20 for one page, as before), a fifth
   of the requests; `udi search` and `nome-tecnico search` share that pagination now.
