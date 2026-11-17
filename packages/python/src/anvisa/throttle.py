@@ -1,9 +1,11 @@
 """Client-side mirror of ANVISA's token-bucket rate limit.
 
-The gateway reports the bucket on every response (`X-RateLimit-Remaining`,
-`X-RateLimit-Burst-Capacity`, `X-RateLimit-Replenish-Rate`; observed 25 and 1/s).
-We keep an estimate of the bucket and sleep only when it is about to run dry, so a
-tight loop never hits HTTP 429 and a slow script never waits at all.
+The gateway used to report the bucket on every response (`X-RateLimit-Remaining`,
+`X-RateLimit-Burst-Capacity`, `X-RateLimit-Replenish-Rate`; observed 25 and 1/s). Since about
+2026-11-10 it sends none of them, while the limit itself still holds. We keep an estimate of
+the bucket, count every response against it, take the headers as the truth when they come,
+and sleep only when the bucket is about to run dry, so a tight loop never hits HTTP 429 and a
+slow script never waits at all.
 """
 
 from __future__ import annotations
@@ -34,7 +36,10 @@ class Throttle:
 
     def estimate(self) -> float:
         """Tokens in the bucket right now, assuming it refilled since the last response."""
-        return min(self.burst, self.remaining + (self._clock() - self._seen) * self.rate)
+        return self._estimate_at(self._clock())
+
+    def _estimate_at(self, now: float) -> float:
+        return min(self.burst, self.remaining + (now - self._seen) * self.rate)
 
     def before(self) -> None:
         needed = self.reserve + 1
@@ -42,14 +47,23 @@ class Throttle:
         if short > 0:
             self._sleep(short / self.rate)
 
-    def after(self, headers: Mapping[str, str]) -> None:
+    def after(self, headers: Mapping[str, str], *, status: int | None = None) -> None:
+        """Learn the bucket's state from a gateway response (the token request never comes
+        here: `TokenAuth` sends it inside httpx's auth flow, to another host). A 429 means the
+        bucket is empty, whatever the estimate said; a response without the headers spent one
+        token, so it is taken off the estimate."""
+        now = self._clock()
         remaining = _int(headers, "X-RateLimit-Remaining")
+        if status == 429:
+            self.remaining, self._seen = 0, now
+            return
         if remaining is None:
-            return  # not from the gateway (e.g. the token endpoint); keep the estimate
+            self.remaining, self._seen = max(0.0, self._estimate_at(now) - 1), now
+            return
         self.remaining = remaining
         self.burst = _int(headers, "X-RateLimit-Burst-Capacity") or self.burst
         self.rate = _int(headers, "X-RateLimit-Replenish-Rate") or self.rate
-        self._seen = self._clock()
+        self._seen = now
 
 
 def _int(headers: Mapping[str, str], name: str) -> int | None:

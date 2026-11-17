@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- The throttle counts every response against its estimate of the bucket and takes a 429 as an
+  empty bucket. Since about 2026-11-10 the gateway sends no `X-RateLimit-*` header, and the
+  throttle, which only learned from those headers, kept its estimate at 25 and never slept:
+  anvisa-feeds got HTTP 429 on 124 to 239 of its 318 subfilas a day. The headers are still
+  taken as the truth when they come. `Throttle.after` takes an optional `status`.
 - `dados.build` no longer fails when nothing changed but a published table's download failed:
   it writes nothing and returns `Unchanged`, whose new `falhas` names each table and its error,
   and `anvisa dados build` exits 0 with `falhas` in its `skipped` summary. dados.yml turns that

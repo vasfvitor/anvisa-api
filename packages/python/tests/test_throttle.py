@@ -53,9 +53,31 @@ def test_refill_is_estimated_from_elapsed_time():
     assert clock.slept == []
 
 
-def test_headers_from_gateway_update_limits_and_others_are_ignored():
+def test_headers_from_gateway_update_limits_and_a_response_without_them_counts_one():
     throttle, _ = make()
     throttle.after(gateway_headers(5, burst="50", rate="2"))
     assert (throttle.remaining, throttle.burst, throttle.rate) == (5, 50, 2)
-    throttle.after({"Content-Type": "application/json"})  # e.g. the token endpoint
-    assert throttle.remaining == 5
+    throttle.after({"Content-Type": "application/json"})
+    assert (throttle.remaining, throttle.burst, throttle.rate) == (4, 50, 2)
+
+
+def test_without_headers_a_tight_loop_never_overdraws_the_gateway_bucket():
+    # Since about 2026-11-10 the gateway sends no X-RateLimit-* header. The old throttle kept
+    # its estimate at 25 and never slept: anvisa-feeds got 429 on ~234 of 318 subfilas a day.
+    throttle, clock = make()
+    tokens, last = 25.0, 0.0  # the gateway's own bucket: burst 25, refill 1/s
+    for _ in range(318):
+        throttle.before()
+        tokens, last = min(25.0, tokens + (clock.now - last)), clock.now
+        tokens -= 1
+        assert tokens >= 0, f"429 at t={clock.now}"
+        throttle.after({})
+    assert 290 <= clock.now <= 300  # ~1 request/s once the burst is spent
+
+
+def test_a_429_empties_the_estimate():
+    throttle, clock = make()
+    throttle.after(gateway_headers(20), status=429)
+    assert throttle.estimate() == 0
+    throttle.before()  # reserve+1 = 3 tokens at 1/s
+    assert clock.slept == [3.0]

@@ -9,7 +9,7 @@ from anvisa import models
 from anvisa.auth import Credentials
 from anvisa.client import Client, iterate_pages, page_body
 from anvisa.download import Download, filename_from
-from anvisa.errors import InvalidPageError, MissingFilterError, NotFoundError
+from anvisa.errors import InvalidPageError, MissingFilterError, NotFoundError, RateLimitError
 from anvisa.throttle import Throttle
 
 
@@ -48,6 +48,27 @@ def test_empty_queue_is_an_empty_404_returned_as_a_list(fake_api):
         assert c.lista.query(1721) == []
         with pytest.raises(NotFoundError):  # other endpoints keep raising
             c.udi.get(999999)
+
+
+def test_responses_without_rate_limit_headers_still_drain_the_estimate():
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/token"):
+            return httpx.Response(200, json=load("token.json"))
+        if request.url.path.endswith("/fila/consulta"):
+            return httpx.Response(429)  # a 429 with no bucket headers
+        return httpx.Response(200, json=load("areafila.json"))
+
+    with Client(
+        Credentials("id", "s"),
+        transport=httpx.MockTransport(handler),
+        throttle=Throttle(sleep=lambda s: None, clock=lambda: 0.0),  # no refill between calls
+    ) as c:
+        c.fila.areas()
+        c.fila.areas()
+        assert c.throttle.remaining == 23  # the token request is not counted
+        with pytest.raises(RateLimitError):
+            c.fila.query(1158)
+        assert c.throttle.remaining == 0
 
 
 def test_lista_chain_uses_the_subfila_key(client, fake_api):

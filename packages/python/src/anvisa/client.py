@@ -105,7 +105,7 @@ class Client:
         self.throttle.before()
         response = self._http.send(request, stream=stream)
         try:
-            self.throttle.after(response.headers)
+            self.throttle.after(response.headers, status=response.status_code)
             if stream and not response.is_success:
                 response.read()  # the error envelope, for the message
             raise_for_response(response)

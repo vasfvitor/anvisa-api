@@ -15,7 +15,7 @@ ships a client that encodes it.
 |---|---|
 | User-Agent | Cloudflare answers **403** to curl's default UA, even for the spec URL. Send a descriptive one. |
 | Auth | OAuth 2.0 client credentials (Keycloak, realm `externo`). Token lasts **1740 s** (the portal tutorial says 300), **no refresh token**, one role `CONSULTASEXTERNAS_LEITURA`. |
-| Rate limit | Token bucket, **burst 25, refill 1/s**, reported only in `X-RateLimit-*` headers. Keyed by **source address**, not client id: the unauthenticated portal endpoints on the same gateway drain the same bucket. |
+| Rate limit | Token bucket, **burst 25, refill 1/s**. It was reported in `X-RateLimit-*` headers until about 2026-11-10; the gateway sends none now (seen on 200 responses, 2026-11-16) while the limit still holds. Keyed by **source address**, not client id: the unauthenticated portal endpoints on the same gateway drain the same bucket. |
 | Pagination | Requests are **1-based** (`page: 0` → error); responses are Spring `Page` objects, **0-based**. |
 | Filters | `POST /udi` needs **at least one** `filter` key; `POST /fila/consulta` **and** `POST /lista/consulta` need `filter.subfila` (yes, also for listas). `POST /certificado/` and `POST /certificadoMedicamento/` need one key **besides `contexto`** (else 500 `MSG-013`), and answer an empty-bodied **404** when nothing matches. `POST /tabaco/tabacos` silently **ignores** `cnpjEmpresa`/`cnpj`. |
 | Errors | Validation failures come back as **HTTP 500** with `{status, mensagem, data_hora, mensagem_detalhada}`. |
@@ -119,7 +119,8 @@ with Client() as anvisa:  # credentials from the environment or ~/.config/anvisa
 ```
 
 The client sends a User-Agent, caches the token and renews it before expiry, mirrors the
-gateway's token bucket so a loop never hits 429, sends `Accept: */*` on every download, and
+gateway's token bucket (counting each request itself, since the gateway no longer reports
+the bucket) so a loop never hits 429, sends `Accept: */*` on every download, and
 raises typed exceptions (`MissingFilterError`, `InvalidPageError`, `MalformedRequestError`,
 `BlockedError`, `EmptyExportError`, `NoResultError`, and others) instead of a bare 500.
 
