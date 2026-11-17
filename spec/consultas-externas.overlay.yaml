@@ -6,7 +6,7 @@
 overlay: 1.0.0
 info:
   title: ANVISA Consultas Externas — observed-behavior corrections
-  version: "2026-10-22"
+  version: "2026-11-16"
 extends: ./consultas-externas.openapi.json
 
 actions:
@@ -14,7 +14,7 @@ actions:
   - target: $.info
     update:
       title: ANVISA Consultas Externas API
-      version: "2026-10-22"
+      version: "2026-11-16"
       description: >-
         Consultas públicas da ANVISA: UDI de dispositivos médicos, nomes técnicos, fila de
         análise, listas e assuntos de peticionamento (observadas ao vivo em 2026-09) e, desde
@@ -614,3 +614,101 @@ actions:
       content:
         application/pdf:
           schema: {type: string, format: binary}
+
+  # 40. ANVISA added Bulário, Medicamento, Documento, Cannabis and Restrições on 2026-11-15;
+  #     recorded on 2026-11-16 (66 requests). CDSituacao.codigo is declared a number, but every
+  #     entry of /documento/listas is a string, many of them comma-separated lists ("28,76,182";
+  #     fixture documento_listas).
+  - target: $.components.schemas.CDSituacao.properties.codigo
+    update:
+      type: string
+      description: >-
+        One code or several joined by commas ("6,94", "28,76,182"); a string on all 167
+        entries of /documento/listas on 2026-11-16.
+
+  # 41. The three searches that refuse an empty filter with HTTP 500 mensagens.MSG-013
+  #     (fixtures err_msg013_medicamento_produtos, err_msg013_cannabis, err_msg013_documento).
+  - target: $.paths['/api/v1/medicamento/produtos'].post
+    update:
+      description: >-
+        Paginated medicamentos registrados e notificados. An empty filter is HTTP 500
+        `mensagens.MSG-013`. Verified live: `nomeProduto` (4 rows for novalgina) and `cnpj`
+        with it (11 EMS dipironas).
+      x-required-filters:
+        anyOf: [nomeProduto, cnpj, numeroRegistro, numeroProcesso]
+        verified: [nomeProduto, cnpj]
+  - target: $.paths['/api/v1/cannabis/produtos'].post
+    update:
+      description: >-
+        Paginated produtos de Cannabis. An empty filter is HTTP 500 `mensagens.MSG-013`.
+        Verified live: `nomeProduto` (4 rows for canabidiol).
+      x-required-filters:
+        anyOf: [nomeProduto, cnpj, numeroRegistro, numeroProcesso]
+        verified: [nomeProduto]
+  - target: $.paths['/api/v1/documento/tecnico'].post
+    update:
+      description: >-
+        Paginated documentos técnicos (petições) of a processo. An empty filter is HTTP 500
+        `mensagens.MSG-013`, and so is `numeroProcesso`: the key is `processo` (127 rows for
+        25351189946201975).
+      x-required-filters:
+        anyOf: [processo]
+        verified: [processo]
+
+  # 42. The GET endpoints whose `filtro` is declared one PaginationBuilder query parameter read
+  #     it as separate parameters instead (`page`, `size`, `filter[<key>]`): substâncias answers
+  #     MSG-011 to the JSON form and a page to filter[nome]=dipirona (fixtures
+  #     err_msg011_substancias, medicamento_substancias); the bulário detail kept its default
+  #     size 10 under a JSON filtro asking 5 (bulario_detail_3551564).
+  - target: $.paths['/api/v1/medicamento/filtros/substancias'].get
+    update:
+      description: >-
+        Paginated substâncias. The filter is read from separate query parameters: `page`,
+        `size` and `filter[nome]` (3 rows for dipirona). A JSON `filtro` parameter, as
+        declared, is HTTP 500 `mensagens.MSG-011`, as is `filter[descricao]`.
+      x-query-filter: flattened
+      x-verified-filters: [nome]
+  - target: $.paths['/api/v1/medicamento/filtros/produtoNotificado'].get
+    update:
+      description: >-
+        Every produto notificado (1,037 on 2026-11-16) whatever page, size or filter is sent,
+        as a JSON `filtro` or as separate parameters.
+      x-query-filter: flattened
+      x-paginated: false
+  - target: $.paths['/api/v1/consulta/bulario/{idProduto}'].get
+    update:
+      description: >-
+        One product's bulário: `bulaAtual` and the paginated `historico` of its leaflets.
+        `page` and `size` are read as separate query parameters; a JSON `filtro` is ignored
+        (the historico kept size 10). The id*Protegido fields are JWTs valid 5 minutes.
+      x-query-filter: flattened
+
+  # 43. GET /medicamento/filtros/tipos-priorizacao: without showEmpty the server dereferences a
+  #     null Boolean (HTTP 500; fixture err_tiposPriorizacao).
+  - target: $.paths['/api/v1/medicamento/filtros/tipos-priorizacao'].get.parameters[0]
+    update:
+      required: true
+      description: Required in practice; absent, the API answers HTTP 500. false gave 2 entries.
+
+  # 44. The new downloads refuse `Accept: application/json` like every other download here.
+  #     Observed: /medicamento/download (BIFF .xls), the medicamento label (a 9 MB PDF sent as
+  #     application/octet-stream), /cannabis/download (BIFF .xls) and /cannabis/download/rotulo/
+  #     {codigoHash}/ (a PDF sent as application/force-download). The parecer and the saúde anexo
+  #     were never reached: no recorded detail carried an arquivoParecer or an arquivo (fixtures
+  #     err_documento_downloadParecer, an empty 404, and err_saude_anexo).
+  - target: $.paths['/api/v1/medicamento/download'].post
+    update: {x-accept: "*/*"}
+  - target: $.paths['/api/v1/medicamento/{tipoProduto}/{numeroProcesso}/rotulo/{origem}/{rotulo}'].get
+    update: {x-accept: "*/*"}
+  - target: $.paths['/api/v1/cannabis/download'].get
+    update: {x-accept: "*/*"}
+  - target: $.paths['/api/v1/cannabis/download/{tipo}/{token}/'].get
+    update:
+      description: >-
+        A Cannabis product's file by kind and `codigoHash` (a JWT valid 5 minutes) from the
+        detail. Verified: tipo `rotulo` with codigosRotulo[].codigoHash (a 2.7 MB PDF).
+      x-accept: "*/*"
+  - target: $.paths['/api/v1/documento/downloadParecer/{idArquivoParecer}/{expediente}'].get
+    update: {x-accept: "*/*"}
+  - target: $.paths['/api/v1/saude/produtos/{numeroProcesso}/anexo/{anexoCod}/nomeArquivo/{nomeArquivo}'].get
+    update: {x-accept: "*/*"}

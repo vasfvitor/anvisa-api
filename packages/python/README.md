@@ -2,8 +2,8 @@
 
 Python client and command-line tool for ANVISA's official **Consultas Externas** API
 (fila de análise, listas, UDI de dispositivos médicos, termos GMDN, nomes técnicos, assuntos
-de peticionamento, produtos para saúde, certificados de boas práticas e tabaco: all 59
-endpoints of the spec).
+de peticionamento, produtos para saúde, certificados de boas práticas, tabaco, bulário,
+medicamentos, documentos técnicos, Cannabis e restrições: all 93 endpoints of the spec).
 
 ```bash
 uv tool install anvisa   # or: pipx install anvisa

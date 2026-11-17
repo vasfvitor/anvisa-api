@@ -1,5 +1,6 @@
-"""The HTTP client and the API domains: `fila`, `lista`, `udi`, `nome_tecnico`, `assunto` and,
-since 2026-10-01 on the gateway, `saude`, `certificado`, `certificado_medicamento` and `tabaco`."""
+"""The HTTP client and the API domains: `fila`, `lista`, `udi`, `nome_tecnico`, `assunto`;
+since 2026-10-01 on the gateway, `saude`, `certificado`, `certificado_medicamento` and `tabaco`;
+since 2026-11-15, `bulario`, `medicamento`, `documento`, `cannabis` and `restricao`."""
 
 from __future__ import annotations
 
@@ -58,6 +59,11 @@ class Client:
         self.certificado = Certificado(self)
         self.certificado_medicamento = CertificadoMedicamento(self)
         self.tabaco = Tabaco(self)
+        self.bulario = Bulario(self)
+        self.medicamento = Medicamento(self)
+        self.documento = Documento(self)
+        self.cannabis = Cannabis(self)
+        self.restricao = Restricao(self)
 
     def close(self) -> None:
         self._http.close()
@@ -68,8 +74,11 @@ class Client:
     def __exit__(self, *exc: object) -> None:
         self.close()
 
-    def get(self, path: str) -> Any:
-        return self._send(self._http.build_request("GET", path)).json()
+    def get(self, path: str, params: dict[str, str] | None = None) -> Any:
+        """The decoded JSON body, or None for an empty one (`documento/dou` answers 200 with
+        no body for a publication it does not hold)."""
+        response = self._send(self._http.build_request("GET", path, params=params))
+        return response.json() if response.content else None
 
     def post(self, path: str, body: Any) -> Any:
         """`body` is whatever the endpoint wants: usually a dict, a bare int for
@@ -499,6 +508,14 @@ class Saude:
         """The product detail as a PDF; the server names it `consulta_alimento.pdf` (sic)."""
         return self._client.get_bytes(f"/api/v1/saude/downloadPDF/{numero_processo}")
 
+    def download_anexo(self, numero_processo: str, anexo_cod: str, nome_arquivo: str) -> Download:
+        """A file from `get(...).arquivos[]` (`anexoCod`, `nomeArquivo`). Not observed: none of
+        the seven details recorded on 2026-11-16 had arquivos, and an unknown anexoCod is HTTP
+        500 `For input string: ""` (fixture err_saude_anexo). On the gateway since 2026-11-15."""
+        return self._client.get_bytes(
+            f"/api/v1/saude/produtos/{numero_processo}/anexo/{anexo_cod}/nomeArquivo/{nome_arquivo}"
+        )
+
 
 def certificado_filters(contexto: str, filters: dict[str, Any]) -> dict[str, Any]:
     """The certificado searches need one real filter key: an empty filter, and `contexto`
@@ -708,3 +725,323 @@ class Tabaco:
         """The label as a PDF/A (`rotulo_<id>.PDF`, 387 KB for 3631632), by `rotulos[].id`
         from `get`. Sent as `application/force-download`."""
         return self._client.get_bytes(f"/api/v1/tabaco/embalagem/{rotulo_id}")
+
+
+def require_filter(where: str, filters: dict[str, Any], example: str) -> None:
+    """The searches ANVISA added on 2026-11-15 answer an empty filter with HTTP 500
+    `mensagens.MSG-013` (fixtures err_msg013_medicamento_produtos, err_msg013_cannabis,
+    err_msg013_documento); checked here, before any request."""
+    if not filters:
+        raise MissingFilterError(f"{where} needs at least one filter, e.g. {example}")
+
+
+def flat_query(page: int, size: int, filters: dict[str, Any]) -> dict[str, str]:
+    """The GET endpoints that declare one `filtro` query parameter read it as separate ones:
+    `page`, `size` and `filter[<key>]` (a JSON `filtro` was ignored or refused on 2026-11-16)."""
+    query = {"page": str(page), "size": str(size)}
+    query.update({f"filter[{key}]": str(value) for key, value in filters.items()})
+    return query
+
+
+class Bulario:
+    """Bulário eletrônico: medicine leaflets and their history. On the gateway since
+    2026-11-15, recorded 2026-11-16. Unlike the Bulário's own site it takes the API token and no
+    Turnstile."""
+
+    def __init__(self, client: Client) -> None:
+        self._client = client
+
+    def search(
+        self,
+        page: int = 1,
+        size: int = 20,
+        sort: dict[str, str] | None = None,
+        **filters: Any,
+    ) -> models.PageConsultaBulaDTO:
+        """One page of products with a leaflet (8,855 on 2026-11-16). No filter is required.
+        Verified: `nomeProduto` (2 rows for novalgina). Each row's `idBulaPacienteProtegido`
+        and `idBulaProfissionalProtegido` are JWTs that expire 5 minutes after the response."""
+        data = self._client.post("/api/v1/consulta/bulario", page_body(page, size, sort, filters))
+        return models.PageConsultaBulaDTO.model_validate(data)
+
+    def iter_search(
+        self, size: int = 100, sort: dict[str, str] | None = None, **filters: Any
+    ) -> Iterator[models.ConsultaBulaDTO]:
+        """Every product matching the filters, across pages."""
+        return iterate_pages(lambda page: self.search(page, size, sort, **filters))
+
+    def get(self, id_produto: int, page: int = 1, size: int = 10) -> models.DetalheBulaDTO:
+        """One product's current leaflet (`bulaAtual`) and one page of its `historico`, by
+        `idProduto` from `search`. `page` and `size` go as separate query parameters; the
+        declared JSON `filtro` was ignored (size stayed 10)."""
+        data = self._client.get(
+            f"/api/v1/consulta/bulario/{id_produto}", params=flat_query(page, size, {})
+        )
+        return models.DetalheBulaDTO.model_validate(data)
+
+
+class Medicamento:
+    """Medicamentos registrados e notificados: search, detail, labels, clones and the lookups
+    of the portal's filters. On the gateway since 2026-11-15, recorded 2026-11-16."""
+
+    def __init__(self, client: Client) -> None:
+        self._client = client
+
+    def search(
+        self,
+        page: int = 1,
+        size: int = 20,
+        sort: dict[str, str] | None = None,
+        **filters: Any,
+    ) -> models.PageConsultaProduto:
+        """One page of medicines. At least one filter is required (`MissingFilterError`
+        locally; the API answers MSG-013). Verified: `nomeProduto` (4 rows for novalgina) and
+        `cnpj` (with it, 11 EMS dipironas); `numeroRegistro` and `numeroProcesso` are untested."""
+        require_filter("medicamento.search", filters, "nomeProduto='dipirona'")
+        data = self._client.post(
+            "/api/v1/medicamento/produtos", page_body(page, size, sort, filters)
+        )
+        return models.PageConsultaProduto.model_validate(data)
+
+    def iter_search(
+        self, size: int = 100, sort: dict[str, str] | None = None, **filters: Any
+    ) -> Iterator[models.ConsultaProduto]:
+        """Every medicine matching the filters, across pages."""
+        return iterate_pages(lambda page: self.search(page, size, sort, **filters))
+
+    def get(self, numero_processo: str) -> models.DetalheProdutoMedicamento:
+        """One medicine by processo number, with apresentações, labels (`anexoRotulos`) and
+        tokens for the leaflets and the public parecer (JWTs valid 5 minutes)."""
+        data = self._client.get(f"/api/v1/medicamento/produtos/{numero_processo}")
+        return models.DetalheProdutoMedicamento.model_validate(data)
+
+    def get_codigo(
+        self, codigo_produto: int | str, codigo_notificacao: int | str | None = None
+    ) -> models.DetalheProdutoMedicamento:
+        """The same detail by `produto.codigo` from `search`; `codigo_notificacao` (untested)
+        selects a notified product."""
+        params = {"codigoNotificacao": str(codigo_notificacao)} if codigo_notificacao else None
+        data = self._client.get(f"/api/v1/medicamento/produtos/codigo/{codigo_produto}", params)
+        return models.DetalheProdutoMedicamento.model_validate(data)
+
+    def clones(self, numero_processo: str) -> list[models.ProcessoClone]:
+        """The clone processos of a medicine (6 for an EMS dipirona). A processo with none is
+        an empty 404, returned as `[]`."""
+        try:
+            data = self._client.get(f"/api/v1/medicamento/processoColen/{numero_processo}")
+        except NotFoundError:
+            return []
+        return [models.ProcessoClone.model_validate(x) for x in data]
+
+    def ppam(self) -> list[str]:
+        """Names on the PPAM list: 1,216 strings, the first one "." on 2026-11-16."""
+        return list(self._client.get("/api/v1/medicamento/produtos/ppam"))
+
+    def download(self, size: int = 10, **filters: Any) -> Download:
+        """The matching medicines as `consulta_medicamento.xls` (BIFF .xls, 21 KB for
+        nomeProduto=tylenol). An empty filter was not tried."""
+        body = page_body(1, size, None, filters)
+        return self._client.post_bytes("/api/v1/medicamento/download", body)
+
+    def download_rotulo(
+        self, tipo_produto: int, numero_processo: str, origem: str, rotulo: int
+    ) -> Download:
+        """A label file from `get(...).anexoRotulos[]` (`codigoAnexo`, `origem`) and the
+        detail's `tipoProduto`: Mounjaro's label was a 9 MB PDF sent as
+        `application/octet-stream`, named `rotulo_<codigoAnexo>.PDF`."""
+        return self._client.get_bytes(
+            f"/api/v1/medicamento/{tipo_produto}/{numero_processo}/rotulo/{origem}/{rotulo}"
+        )
+
+    def categorias_regulatorias(self) -> list[models.TipoCategoriaRegulatoria]:
+        """Novo, genérico, similar, ...: 11 entries."""
+        data = self._client.get("/api/v1/medicamento/filtros/categorias-regulatorias")
+        return [models.TipoCategoriaRegulatoria.model_validate(x) for x in data]
+
+    def tipos_categoria_regulatoria(self) -> list[models.TipoCategoriaRegulatoria]:
+        """`/api/v1/tipoCategoriaRegulatoria`: the same 11 entries as `categorias_regulatorias`."""
+        data = self._client.get("/api/v1/tipoCategoriaRegulatoria")
+        return [models.TipoCategoriaRegulatoria.model_validate(x) for x in data]
+
+    def formas_fisicas(self) -> list[models.FormaFisica]:
+        """Physical forms: 639 entries."""
+        data = self._client.get("/api/v1/medicamento/filtros/formasFisicas")
+        return [models.FormaFisica.model_validate(x) for x in data]
+
+    def categorias(self) -> list[models.CategoriaProduto]:
+        """Medicine categories: 813 entries whose `id` is an ATC-like code (V03AB27)."""
+        data = self._client.get("/api/v1/medicamento/filtros/medicamentos")
+        return [models.CategoriaProduto.model_validate(x) for x in data]
+
+    def atc(self) -> list[models.ATC]:
+        """Every ATC code, all levels: 5,625 entries."""
+        data = self._client.get("/api/v1/medicamento/filtros/medicamentos/atc")
+        return [models.ATC.model_validate(x) for x in data]
+
+    def restricoes(self) -> list[models.Restricao]:
+        """Prescription and use restrictions: 19 entries, as `restricao.all()`."""
+        data = self._client.get("/api/v1/medicamento/filtros/restricoes")
+        return [models.Restricao.model_validate(x) for x in data]
+
+    def tarjas(self) -> list[models.Tarja]:
+        """Sem tarja, vermelha, preta, ...: 4 entries."""
+        data = self._client.get("/api/v1/medicamento/filtros/tarjas")
+        return [models.Tarja.model_validate(x) for x in data]
+
+    def tipos_priorizacao(self, show_empty: bool = False) -> list[models.TipoPriorizacao]:
+        """Priority kinds (2 entries with show_empty False). `showEmpty` is always sent:
+        without it the API answers HTTP 500 (fixture err_tiposPriorizacao)."""
+        data = self._client.get(
+            "/api/v1/medicamento/filtros/tipos-priorizacao",
+            params={"showEmpty": str(show_empty).lower()},
+        )
+        return [models.TipoPriorizacao.model_validate(x) for x in data]
+
+    def substancias(self, nome: str, page: int = 1, size: int = 20) -> models.PageSubstancia:
+        """Substances whose name matches `nome` (3 for dipirona). Sent as `filter[nome]`; the
+        declared JSON `filtro`, and `filter[descricao]`, answer MSG-011."""
+        data = self._client.get(
+            "/api/v1/medicamento/filtros/substancias", params=flat_query(page, size, {"nome": nome})
+        )
+        return models.PageSubstancia.model_validate(data)
+
+    def produtos_notificados(self) -> models.PageProdutoNotificadoDTO:
+        """Every produto notificado in one page (1,037 on 2026-11-16): page, size and filter
+        are ignored, so only `page=1` and `size=2000` are sent."""
+        data = self._client.get(
+            "/api/v1/medicamento/filtros/produtoNotificado", params=flat_query(1, 2000, {})
+        )
+        return models.PageProdutoNotificadoDTO.model_validate(data)
+
+
+class Documento:
+    """Documentos técnicos: the petições of a processo, their situation history, DOU
+    publications and pareceres. On the gateway since 2026-11-15, recorded 2026-11-16."""
+
+    def __init__(self, client: Client) -> None:
+        self._client = client
+
+    def search(
+        self,
+        page: int = 1,
+        size: int = 20,
+        sort: dict[str, str] | None = None,
+        **filters: Any,
+    ) -> models.PageConsultaDocumento:
+        """One page of petições. A filter is required (`MissingFilterError` locally; the API
+        answers MSG-013). Verified: `processo` (127 rows for 25351189946201975); `numeroProcesso`
+        is not a key (MSG-013)."""
+        require_filter("documento.search", filters, "processo='25351189946201975'")
+        data = self._client.post("/api/v1/documento/tecnico", page_body(page, size, sort, filters))
+        return models.PageConsultaDocumento.model_validate(data)
+
+    def iter_search(
+        self, size: int = 100, sort: dict[str, str] | None = None, **filters: Any
+    ) -> Iterator[models.ConsultaDocumento]:
+        """Every petição matching the filters, across pages."""
+        return iterate_pages(lambda page: self.search(page, size, sort, **filters))
+
+    def get(self, processo: str) -> models.DetalheDocumento:
+        """A processo with every petição and its last publication (122 KB for a processo with
+        127 petições)."""
+        return models.DetalheDocumento.model_validate(
+            self._client.get(f"/api/v1/documento/tecnico/{processo}")
+        )
+
+    def get_expediente(self, expediente: str) -> models.DetalheDocumento:
+        """One petição by expediente number."""
+        data = self._client.get(f"/api/v1/documento/tecnico/expediente/{expediente}")
+        return models.DetalheDocumento.model_validate(data)
+
+    def situacoes(self, expediente: str) -> list[models.SituacaoExpedienteDTO]:
+        """The situation history of a petição (distribuído, anuído, ...), newest first."""
+        data = self._client.get(f"/api/v1/documento/situacaoHist/{expediente}")
+        return [models.SituacaoExpedienteDTO.model_validate(x) for x in data]
+
+    def get_publicacao(self, publicacao_id: int) -> models.DDPublicacao | None:
+        """A DOU publication by `lastPublicacao.id`. A publication of the RL origin with no
+        `numeroDou` came back as 200 with an empty body: None."""
+        data = self._client.get(f"/api/v1/documento/dou/{publicacao_id}")
+        return None if data is None else models.DDPublicacao.model_validate(data)
+
+    def listas(self) -> models.ListaAssuntoSituacao:
+        """Every situação (167) and assunto (8,280) code: a 1.2 MB body."""
+        return models.ListaAssuntoSituacao.model_validate(
+            self._client.get("/api/v1/documento/listas")
+        )
+
+    def tipos_produto(self) -> list[models.TipoProduto]:
+        """Product types (alimento, cosmético, medicamento, ...): 10 entries."""
+        data = self._client.get("/api/v1/documento/tipoProduto")
+        return [models.TipoProduto.model_validate(x) for x in data]
+
+    def download_parecer(self, id_arquivo_parecer: int, expediente: str) -> Download:
+        """A parecer técnico by `arquivoParecer.idArquivoParecer` and its expediente. Not
+        observed: no detail recorded on 2026-11-16 carried an arquivoParecer, and an unknown
+        id is an empty 404 (`NotFoundError`)."""
+        return self._client.get_bytes(
+            f"/api/v1/documento/downloadParecer/{id_arquivo_parecer}/{expediente}"
+        )
+
+
+class Cannabis:
+    """Produtos de Cannabis (RDC 327/2019): search, detail and their files. On the gateway
+    since 2026-11-15, recorded 2026-11-16."""
+
+    def __init__(self, client: Client) -> None:
+        self._client = client
+
+    def search(
+        self,
+        page: int = 1,
+        size: int = 20,
+        sort: dict[str, str] | None = None,
+        **filters: Any,
+    ) -> models.PageConsultaProduto:
+        """One page of products. At least one filter is required (`MissingFilterError`
+        locally; the API answers MSG-013). Verified: `nomeProduto` (4 rows for canabidiol)."""
+        require_filter("cannabis.search", filters, "nomeProduto='canabidiol'")
+        data = self._client.post("/api/v1/cannabis/produtos", page_body(page, size, sort, filters))
+        return models.PageConsultaProduto.model_validate(data)
+
+    def iter_search(
+        self, size: int = 100, sort: dict[str, str] | None = None, **filters: Any
+    ) -> Iterator[models.ConsultaProduto]:
+        """Every product matching the filters, across pages."""
+        return iterate_pages(lambda page: self.search(page, size, sort, **filters))
+
+    def get(self, numero_processo: str) -> models.DetalheProdutoCannabisDTO:
+        """One product by processo number. `codigosRotulo`, `codigosFolhetoInformativo` and
+        `codigosModeloConsentimento` carry `codigoHash` JWTs, valid 5 minutes, for
+        `download_anexo`."""
+        data = self._client.get(f"/api/v1/cannabis/produtos/{numero_processo}")
+        return models.DetalheProdutoCannabisDTO.model_validate(data)
+
+    def download(self, **filters: Any) -> Download:
+        """Products as `consulta_produto_cannabis.xls` (BIFF .xls). `filtro` goes in the query
+        string as JSON and was ignored: for nomeProduto=canabidiol the file held at least 35
+        products where `search` found 4."""
+        filtro = json.dumps({"page": 1, "size": 10, "sorting": {}, "filter": dict(filters)})
+        return self._client.get_bytes("/api/v1/cannabis/download", params={"filtro": filtro})
+
+    def download_anexo(self, tipo: str, codigo_hash: str) -> Download:
+        """A product file by kind and `codigoHash` from `get`, within 5 minutes of it.
+        Verified: `tipo="rotulo"` with `codigosRotulo[].codigoHash` (a 2.7 MB PDF sent as
+        `application/force-download`); the folheto and consentimento kinds are untested."""
+        return self._client.get_bytes(f"/api/v1/cannabis/download/{tipo}/{codigo_hash}/")
+
+
+class Restricao:
+    """Prescription and use restrictions. On the gateway since 2026-11-15."""
+
+    def __init__(self, client: Client) -> None:
+        self._client = client
+
+    def all(self) -> list[models.Restricao]:
+        """Every restriction: 19 entries, as `medicamento.restricoes()`."""
+        return [models.Restricao.model_validate(x) for x in self._client.get("/api/v1/restricao")]
+
+    def cannabis(self) -> list[models.Restricao]:
+        """The two that apply to Cannabis products (notificação de receita A and B)."""
+        data = self._client.get("/api/v1/restricao/cannabis")
+        return [models.Restricao.model_validate(x) for x in data]

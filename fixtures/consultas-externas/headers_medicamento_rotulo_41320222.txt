@@ -1,0 +1,6 @@
+HTTP/1.1 200
+Content-Type: application/octet-stream
+Content-Length: 9133197
+Content-Disposition: attachment; filename="rotulo_41320222.PDF"
+
+body: 9,133,197 bytes, magic b'%PDF-1.7' (not kept); Mounjaro's label (anexoRotulos[0], origem P), sent as application/octet-stream

@@ -6,8 +6,8 @@ guess.
 
 ## Status (2026-10-23)
 
-All 59 endpoints of the OpenAPI document are wrapped (the 27 added on 2026-10-01 since
-2026-10-22), and `tests/test_spec.py` holds that count against the resolved spec. Twelve open-data tables are live on GitHub Pages,
+All 93 endpoints of the OpenAPI document are wrapped (the 27 added on 2026-10-01 since
+2026-10-22, the 34 added on 2026-11-15 since 2026-11-16), and `tests/test_spec.py` holds that count against the resolved spec. Twelve open-data tables are live on GitHub Pages,
 cosméticos also as search files (2026-10-09), plus ten derived tables (`produtos`, `empresas`, `medidas`,
 `cosmeticos_por_empresa`, `alimentos_por_produto`, `medicamentos_por_produto`,
 `produtos_saude_por_produto`, `alimentos_fabricacao`, `certificados`,
@@ -16,6 +16,26 @@ a generated data dictionary and Portuguese column descriptions in the manifest (
 parser streams, so AFE is unblocked. What
 is left is verification of claims that come only from ANVISA's examples, robustness
 (retry/backoff), and the untested filter keys of the four new domains.
+
+## New on the gateway (2026-11-15): 34 endpoints, 5 domains — wrapped 2026-11-16
+
+The `drift` run of 2026-11-15 opened issue #2: the spec grew from 59 to 93 operations and from
+74 to 133 schemas, nothing removed. Recorded on 2026-11-16 (66 requests, 43 fixtures) and wrapped
+the same day as `bulario`, `medicamento`, `documento`, `cannabis`, `restricao` and
+`saude.download_anexo`; overlay actions 40 to 44 hold what the spec got wrong (CDSituacao.codigo,
+MSG-013 on three searches, the flattened GET filters, `showEmpty`, `Accept: */*`). Not observed
+succeeding: `documento.download_parecer` and `saude.download_anexo`. Untested: the folheto and
+consentimento kinds of `cannabis.download_anexo`, `codigoNotificacao`, the example-only filter
+keys. The Bulário search works with the API token and no Turnstile, which the Bulário's own site
+demands since 2026-09-16 (buladiff and dbulario are blocked there).
+
+| Domain | Operations | Shape |
+|---|---|---|
+| `bulario` | 2 | paginated search, detail with the leaflet history |
+| `medicamento` | 17 | paginated search (filter required), detail by processo and by código, clones, PPAM, label and report downloads, substâncias, produtos notificados, eight lookup lists (with `/tipoCategoriaRegulatoria`) |
+| `documento` | 8 | paginated petições of a processo, detail by processo and by expediente, situation history, DOU publication, two lookups, parecer download |
+| `cannabis` | 4 | paginated search, detail, report and file downloads |
+| `restricao` | 2 | all, the Cannabis ones |
 
 ## New on the gateway (2026-10-01): 27 endpoints, 4 domains — wrapped 2026-10-22
 

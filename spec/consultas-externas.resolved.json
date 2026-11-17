@@ -7,7 +7,7 @@
       "name": "Contato",
       "email": "arquitetura@anvisa.gov.br"
     },
-    "version": "2026-10-22"
+    "version": "2026-11-16"
   },
   "servers": [
     {
@@ -1280,7 +1280,7 @@
           "Consulta Medicamento"
         ],
         "summary": "Consulta medicamentos",
-        "description": "Recebe os filtros de pesquisa e retorna uma lista paginada de medicamentos.",
+        "description": "Paginated medicamentos registrados e notificados. An empty filter is HTTP 500 `mensagens.MSG-013`. Verified live: `nomeProduto` (4 rows for novalgina) and `cnpj` with it (11 EMS dipironas).",
         "operationId": "buscaProdutos",
         "requestBody": {
           "description": "Filtros utilizados na consulta de medicamentos",
@@ -1431,6 +1431,18 @@
               }
             }
           }
+        },
+        "x-required-filters": {
+          "anyOf": [
+            "nomeProduto",
+            "cnpj",
+            "numeroRegistro",
+            "numeroProcesso"
+          ],
+          "verified": [
+            "nomeProduto",
+            "cnpj"
+          ]
         }
       }
     },
@@ -1584,7 +1596,8 @@
               }
             }
           }
-        }
+        },
+        "x-accept": "*/*"
       }
     },
     "/api/v1/lista/downloadlista": {
@@ -2277,7 +2290,7 @@
           "Documento"
         ],
         "summary": "Consultar documentos técnicos",
-        "description": "Recebe os filtros da consulta e retorna os documentos técnicos de forma paginada.",
+        "description": "Paginated documentos técnicos (petições) of a processo. An empty filter is HTTP 500 `mensagens.MSG-013`, and so is `numeroProcesso`: the key is `processo` (127 rows for 25351189946201975).",
         "operationId": "findTecnicos",
         "requestBody": {
           "description": "Payload completo de PaginationBuilder",
@@ -2446,6 +2459,14 @@
               }
             }
           }
+        },
+        "x-required-filters": {
+          "anyOf": [
+            "processo"
+          ],
+          "verified": [
+            "processo"
+          ]
         }
       }
     },
@@ -3540,6 +3561,18 @@
               }
             }
           }
+        },
+        "description": "Paginated produtos de Cannabis. An empty filter is HTTP 500 `mensagens.MSG-013`. Verified live: `nomeProduto` (4 rows for canabidiol).",
+        "x-required-filters": {
+          "anyOf": [
+            "nomeProduto",
+            "cnpj",
+            "numeroRegistro",
+            "numeroProcesso"
+          ],
+          "verified": [
+            "nomeProduto"
+          ]
         }
       }
     },
@@ -6707,7 +6740,8 @@
               }
             }
           }
-        }
+        },
+        "x-accept": "*/*"
       }
     },
     "/api/v1/saude/downloadPDF/{numeroProcesso}": {
@@ -7590,7 +7624,8 @@
               }
             }
           }
-        }
+        },
+        "x-accept": "*/*"
       }
     },
     "/api/v1/medicamento/produtos/{numeroProcesso}": {
@@ -8201,11 +8236,12 @@
           {
             "name": "showEmpty",
             "in": "query",
-            "required": false,
+            "required": true,
             "schema": {
               "type": "boolean",
               "default": true
-            }
+            },
+            "description": "Required in practice; absent, the API answers HTTP 500. false gave 2 entries."
           }
         ],
         "responses": {
@@ -8488,7 +8524,7 @@
           "Consulta Medicamento"
         ],
         "summary": "Consulta substâncias",
-        "description": "Recebe os filtros de pesquisa e retorna uma lista paginada de substâncias.",
+        "description": "Paginated substâncias. The filter is read from separate query parameters: `page`, `size` and `filter[nome]` (3 rows for dipirona). A JSON `filtro` parameter, as declared, is HTTP 500 `mensagens.MSG-011`, as is `filter[descricao]`.",
         "operationId": "findSubstancias",
         "parameters": [
           {
@@ -8627,7 +8663,11 @@
               }
             }
           }
-        }
+        },
+        "x-query-filter": "flattened",
+        "x-verified-filters": [
+          "nome"
+        ]
       }
     },
     "/api/v1/medicamento/filtros/restricoes": {
@@ -8777,7 +8817,7 @@
           "Consulta Medicamento"
         ],
         "summary": "Consulta produtos notificados",
-        "description": "Recebe os filtros de pesquisa e retorna uma lista paginada de produtos notificados.",
+        "description": "Every produto notificado (1,037 on 2026-11-16) whatever page, size or filter is sent, as a JSON `filtro` or as separate parameters.",
         "operationId": "find_1",
         "parameters": [
           {
@@ -8916,7 +8956,9 @@
               }
             }
           }
-        }
+        },
+        "x-query-filter": "flattened",
+        "x-paginated": false
       }
     },
     "/api/v1/medicamento/filtros/medicamentos": {
@@ -11245,7 +11287,8 @@
               }
             }
           }
-        }
+        },
+        "x-accept": "*/*"
       }
     },
     "/api/v1/documento/dou/{dou}": {
@@ -11549,7 +11592,9 @@
               }
             }
           }
-        }
+        },
+        "description": "One product's bulário: `bulaAtual` and the paginated `historico` of its leaflets. `page` and `size` are read as separate query parameters; a JSON `filtro` is ignored (the historico kept size 10). The id*Protegido fields are JWTs valid 5 minutes.",
+        "x-query-filter": "flattened"
       }
     },
     "/api/v1/certificadoMedicamento/{id}": {
@@ -13127,7 +13172,8 @@
               }
             }
           }
-        }
+        },
+        "x-accept": "*/*"
       }
     },
     "/api/v1/cannabis/download/{tipo}/{token}/": {
@@ -13274,7 +13320,9 @@
               }
             }
           }
-        }
+        },
+        "description": "A Cannabis product's file by kind and `codigoHash` (a JWT valid 5 minutes) from the detail. Verified: tipo `rotulo` with codigosRotulo[].codigoHash (a 2.7 MB PDF).",
+        "x-accept": "*/*"
       }
     },
     "/api/v1/assunto/{codigoAssunto}": {
@@ -14418,7 +14466,8 @@
         "type": "object",
         "properties": {
           "codigo": {
-            "type": "number"
+            "type": "string",
+            "description": "One code or several joined by commas (\"6,94\", \"28,76,182\"); a string on all 167 entries of /documento/listas on 2026-11-16."
           },
           "descricao": {
             "type": "string"

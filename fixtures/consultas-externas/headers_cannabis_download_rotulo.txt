@@ -1,0 +1,6 @@
+HTTP/1.1 200
+Content-Type: application/force-download
+Transfer-Encoding: chunked
+Content-Disposition: attachment; filename="rotulo_1794877247250.pdf"
+
+body: 2,764,385 bytes, magic b'%PDF-1.3' (not kept); tipo=rotulo with codigosRotulo[0].codigoHash as the token; application/force-download

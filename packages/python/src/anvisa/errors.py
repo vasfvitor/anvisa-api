@@ -167,9 +167,10 @@ def raise_for_response(response: httpx.Response) -> None:
         raise MissingFilterError(
             "at least one filter key is required (mensagens.MSG-062)", **common
         )
-    if mensagem == "mensagens.MSG-013":  # the certificado searches; `contexto` does not count
-        raise MissingFilterError(
-            "at least one filter key besides contexto is required (mensagens.MSG-013)", **common
+    if mensagem == "mensagens.MSG-013":  # certificado (`contexto` does not count), medicamento,
+        raise MissingFilterError(  # cannabis and documento searches
+            "at least one filter key is required (mensagens.MSG-013; contexto does not count)",
+            **common,
         )
     if match := _MISSING_FILTER.search(detail):
         raise MissingFilterError(mensagem, filters=[match.group(1)], **common)

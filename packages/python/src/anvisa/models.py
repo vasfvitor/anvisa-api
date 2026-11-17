@@ -56,7 +56,12 @@ class CDProcesso(BaseModel):
 
 
 class CDSituacao(BaseModel):
-    codigo: float | None = None
+    codigo: Annotated[
+        str | None,
+        Field(
+            description='One code or several joined by commas ("6,94", "28,76,182"); a string on all 167 entries of /documento/listas on 2026-11-16.'
+        ),
+    ] = None
     descricao: str | None = None
 
 

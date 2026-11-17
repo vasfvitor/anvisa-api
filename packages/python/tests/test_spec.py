@@ -1,8 +1,8 @@
 """The resolved spec against the client. Every path the client calls is in the spec, every
-operation of the spec is called or listed in `PENDENTES` (the four domains ANVISA added on
-2026-10-01 were wrapped on 2026-10-22; the 34 operations of 2026-11-15 are being wrapped now), and
-the overlay's `x-*` corrections are what the client does: `Accept: */*` on
-the downloads, required filters enforced before any request or sent in the body."""
+operation of the spec is called (the four domains ANVISA added on 2026-10-01 were wrapped on
+2026-10-22, the five of 2026-11-15 on 2026-11-16), and the overlay's `x-*` corrections are
+what the client does: `Accept: */*` on the downloads, required filters enforced before any
+request or sent in the body."""
 
 from __future__ import annotations
 
@@ -25,45 +25,6 @@ WRAPPERS = {
 }
 DOWNLOADERS = {"get_bytes", "post_bytes", "get_stream"}
 PARAM = re.compile(r"\{[^}]*\}")
-
-# Operations ANVISA added on 2026-11-15 (Bulário, Medicamento, Documento, Cannabis, Restrições),
-# not wrapped yet. Wrapping one means taking it off this list; the list empties and goes away.
-PENDENTES = {
-    ("GET", "/api/v1/cannabis/download"),
-    ("GET", "/api/v1/cannabis/download/{}/{}/"),
-    ("POST", "/api/v1/cannabis/produtos"),
-    ("GET", "/api/v1/cannabis/produtos/{}"),
-    ("POST", "/api/v1/consulta/bulario"),
-    ("GET", "/api/v1/consulta/bulario/{}"),
-    ("GET", "/api/v1/documento/dou/{}"),
-    ("GET", "/api/v1/documento/downloadParecer/{}/{}"),
-    ("GET", "/api/v1/documento/listas"),
-    ("GET", "/api/v1/documento/situacaoHist/{}"),
-    ("POST", "/api/v1/documento/tecnico"),
-    ("GET", "/api/v1/documento/tecnico/expediente/{}"),
-    ("GET", "/api/v1/documento/tecnico/{}"),
-    ("GET", "/api/v1/documento/tipoProduto"),
-    ("POST", "/api/v1/medicamento/download"),
-    ("GET", "/api/v1/medicamento/filtros/categorias-regulatorias"),
-    ("GET", "/api/v1/medicamento/filtros/formasFisicas"),
-    ("GET", "/api/v1/medicamento/filtros/medicamentos"),
-    ("GET", "/api/v1/medicamento/filtros/medicamentos/atc"),
-    ("GET", "/api/v1/medicamento/filtros/produtoNotificado"),
-    ("GET", "/api/v1/medicamento/filtros/restricoes"),
-    ("GET", "/api/v1/medicamento/filtros/substancias"),
-    ("GET", "/api/v1/medicamento/filtros/tarjas"),
-    ("GET", "/api/v1/medicamento/filtros/tipos-priorizacao"),
-    ("GET", "/api/v1/medicamento/processoColen/{}"),
-    ("POST", "/api/v1/medicamento/produtos"),
-    ("GET", "/api/v1/medicamento/produtos/codigo/{}"),
-    ("GET", "/api/v1/medicamento/produtos/ppam"),
-    ("GET", "/api/v1/medicamento/produtos/{}"),
-    ("GET", "/api/v1/medicamento/{}/{}/rotulo/{}/{}"),
-    ("GET", "/api/v1/restricao"),
-    ("GET", "/api/v1/restricao/cannabis"),
-    ("GET", "/api/v1/saude/produtos/{}/anexo/{}/nomeArquivo/{}"),
-    ("GET", "/api/v1/tipoCategoriaRegulatoria"),
-}
 
 
 def wrapped_operations() -> dict[tuple[str, str], str]:
@@ -106,14 +67,14 @@ def operations() -> dict[tuple[str, str], dict]:
 
 def test_every_wrapped_path_is_in_the_spec():
     wrapped = wrapped_operations()
-    assert len(wrapped) == 59
+    assert len(wrapped) == 93
     assert set(wrapped) <= set(operations())
 
 
 def test_every_operation_is_wrapped():
     """Fails when ANVISA adds an operation (the `drift` workflow goes red first): wrap it."""
     unwrapped = set(operations()) - set(wrapped_operations())
-    assert unwrapped == PENDENTES
+    assert unwrapped == set()
 
 
 def test_accept_any_matches_download_methods():
@@ -130,6 +91,9 @@ WITHOUT_FILTERS = {
     ("POST", "/api/v1/udi"): lambda c: c.udi.search(),
     ("POST", "/api/v1/certificado/"): lambda c: c.certificado.search(),
     ("POST", "/api/v1/certificadoMedicamento/"): lambda c: c.certificado_medicamento.search(),
+    ("POST", "/api/v1/medicamento/produtos"): lambda c: c.medicamento.search(),
+    ("POST", "/api/v1/cannabis/produtos"): lambda c: c.cannabis.search(),
+    ("POST", "/api/v1/documento/tecnico"): lambda c: c.documento.search(),
 }
 WITH_FILTERS = {
     ("POST", "/api/v1/fila/consulta"): lambda c: c.fila.query(167),

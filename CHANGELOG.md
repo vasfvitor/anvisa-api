@@ -2,9 +2,16 @@
 
 ## Unreleased
 
-- `models` has the 59 schemas ANVISA added to the Consultas Externas API on 2026-11-15 (Bulário,
-  Medicamento, Documento, Cannabis, Restrições): 74 → 133. Their 34 operations are not wrapped
-  yet; `tests/test_spec.py` lists them in `PENDENTES`.
+- The 34 operations ANVISA added to the Consultas Externas API on 2026-11-15, recorded on
+  2026-11-16: `Client.bulario` (search, get), `Client.medicamento` (search, get, get_codigo,
+  clones, ppam, download, download_rotulo, substancias, produtos_notificados and eight lookup
+  lists), `Client.documento` (search, get, get_expediente, situacoes, get_publicacao, listas,
+  tipos_produto, download_parecer), `Client.cannabis` (search, get, download, download_anexo),
+  `Client.restricao` (all, cannabis) and `Saude.download_anexo`. `models` has their 59 schemas
+  (74 → 133); `CDSituacao.codigo` is a string (overlay 40). The medicamento, cannabis and
+  documento searches raise `MissingFilterError` on an empty filter, before any request.
+- `Client.get` takes `params` and returns None for an empty body.
+- The `MissingFilterError` message for `MSG-013` no longer says "besides contexto" only.
 
 ## 0.9.0 (2026-11-16)
 
