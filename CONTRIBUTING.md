@@ -145,6 +145,11 @@ make spec models          # from the repo root; commit the diff if any
 make snapshot             # re-download ANVISA's spec and portal docs (~20 unauthenticated requests)
 ```
 
+A recorded first page says `last: false`, so a test that walks every page (`--all`,
+`iter_search`) over the plain `fake_api` never stops; it hung the suite on 2026-11-16. Serve it
+with `conftest.last_page(fixture, bodies)` through `conftest.patch_cli(monkeypatch, handler)`,
+which also keeps the bodies sent (the page size, for one).
+
 ## Pull requests
 
 Small and specific. A PR that adds behavior should carry its fixture. A PR that changes the

@@ -6,7 +6,7 @@ import json
 
 import httpx
 import pytest
-from conftest import FIXTURES, load, response_for
+from conftest import FIXTURES, last_page, load, patch_cli, response_for
 from typer.main import get_command
 from typer.testing import CliRunner
 
@@ -318,36 +318,6 @@ def test_cli_downloads_write_the_files(fake_cli_client, tmp_path):
     result = runner.invoke(cli.app, ["cannabis", "download", "-o", str(tmp_path)])
     assert result.exit_code == 0, result.output
     assert (tmp_path / "consulta_produto_cannabis.xls").exists()
-
-
-def patch_cli(monkeypatch, handler) -> None:
-    """The CLI's client served by `handler` (after the token)."""
-
-    def transport(request: httpx.Request) -> httpx.Response:
-        if request.url.path.endswith("/token"):
-            return httpx.Response(200, json=load("token.json"))
-        return handler(request)
-
-    monkeypatch.setattr(
-        cli,
-        "make_client",
-        lambda: Client(
-            Credentials("id", "s"),
-            transport=httpx.MockTransport(transport),
-            throttle=Throttle(sleep=lambda s: None),
-        ),
-    )
-
-
-def last_page(fixture: str, bodies: list):
-    """A handler answering every search with `fixture` marked as the last page (the recorded
-    first pages say last: false, so `--all` over them would never stop) and keeping the bodies."""
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        bodies.append(json.loads(request.content))
-        return httpx.Response(200, json={**load(fixture), "last": True})
-
-    return handler
 
 
 def test_cli_all_pages_at_100_unless_size_is_given(monkeypatch):

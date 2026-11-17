@@ -8,6 +8,7 @@ from pathlib import Path
 import httpx
 import pytest
 
+from anvisa import cli
 from anvisa.auth import Credentials
 from anvisa.client import Client
 from anvisa.throttle import Throttle
@@ -111,3 +112,36 @@ def client(fake_api: FakeApi) -> Client:
         throttle=Throttle(sleep=lambda s: None),
     ) as c:
         yield c
+
+
+# --- CLI tests with a hand-made transport -----------------------------------
+
+
+def patch_cli(monkeypatch, handler) -> None:
+    """The CLI's client served by `handler` (after the token)."""
+
+    def transport(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/token"):
+            return httpx.Response(200, json=load("token.json"))
+        return handler(request)
+
+    monkeypatch.setattr(
+        cli,
+        "make_client",
+        lambda: Client(
+            Credentials("id", "s"),
+            transport=httpx.MockTransport(transport),
+            throttle=Throttle(sleep=lambda s: None),
+        ),
+    )
+
+
+def last_page(fixture: str, bodies: list):
+    """A handler answering every search with `fixture` marked as the last page (the recorded
+    first pages say last: false, so `--all` over them would never stop) and keeping the bodies."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        bodies.append(json.loads(request.content))
+        return httpx.Response(200, json={**load(fixture), "last": True})
+
+    return handler
