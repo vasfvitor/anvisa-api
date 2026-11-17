@@ -25,7 +25,9 @@
 - CLI: `anvisa bulario`, `medicamento`, `documento`, `cannabis` and `restricao`, one command per
   method, and `anvisa saude download-anexo`.
 - `Client.get` takes `params` and returns None for an empty body.
-- The `MissingFilterError` message for `MSG-013` no longer says "besides contexto" only.
+- The `MissingFilterError` message for `MSG-013` no longer says "besides contexto" only, and
+  the local check of the medicamento, cannabis and documento searches (and of
+  `medicamento.download`) ends with "(mensagens.MSG-013)".
 
 ## 0.9.0 (2026-11-16)
 

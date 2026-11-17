@@ -1,5 +1,6 @@
 """`anvisa` command line: fila, lista, UDI, nome técnico, assunto, produtos para saúde,
-certificados de boas práticas and tabaco lookups, and `dados`."""
+certificados de boas práticas, tabaco, bulário, medicamento, documento, Cannabis and restrição
+lookups, and `dados`."""
 
 from __future__ import annotations
 
@@ -316,17 +317,9 @@ def udi_search(
     ),
 ) -> None:
     """Busca de dispositivos por UDI. Pelo menos um filtro é obrigatório."""
-    filters = {
-        k: v
-        for k, v in {
-            "nomeComercial": nome,
-            "udiDi": udi_di,
-            "cnpjDetentora": cnpj,
-            "codigoGmdn": gmdn,
-            "nuRegistro": registro,
-        }.items()
-        if v
-    }
+    filters = only_set(
+        nomeComercial=nome, udiDi=udi_di, cnpjDetentora=cnpj, codigoGmdn=gmdn, nuRegistro=registro
+    )
     paginated(ctx, "udi", page, size, all_pages, "UDI", **filters)
 
 
@@ -411,11 +404,7 @@ def nome_tecnico_search(
     ),
 ) -> None:
     """Nomes técnicos, paginados. Sem filtro retorna todos (~2.700)."""
-    filters = {
-        k: v
-        for k, v in {"nomeTecnico": nome, "codigo": codigo, "categoriaProduto": categoria}.items()
-        if v
-    }
+    filters = only_set(nomeTecnico=nome, codigo=codigo, categoriaProduto=categoria)
     paginated(ctx, "nome_tecnico", page, size, all_pages, "Nomes técnicos", **filters)
 
 
@@ -435,7 +424,7 @@ def nome_tecnico_download(
     out: str = OUT,
 ) -> None:
     """Exporta nomes técnicos como planilha (.xls). Sem filtro exporta todos."""
-    filters = {k: v for k, v in {"nomeTecnico": nome, "categoriaProduto": categoria}.items() if v}
+    filters = only_set(nomeTecnico=nome, categoriaProduto=categoria)
     with handle_errors(), make_client() as client:
         write(
             client.nome_tecnico.download(**filters),
@@ -644,6 +633,11 @@ def dados_idade(
 # --- saude ------------------------------------------------------------------
 
 
+def only_set(**filters: Any) -> dict[str, Any]:
+    """The filters the user gave: unset (None) and empty options are not sent."""
+    return {k: v for k, v in filters.items() if v}
+
+
 def page_size(size: int | None, all_pages: bool) -> int:
     """`--size` when given; otherwise 20 for one page and 100 for `--all`, so walking every page
     takes a fifth of the requests (8,855 bulário rows: 89 instead of 443)."""
@@ -688,16 +682,7 @@ def saude_search(
     all_pages: bool = ALL,
 ) -> None:
     """Busca de produtos para saúde regularizados. Sem filtro lista todos (193 mil)."""
-    filters = {
-        k: v
-        for k, v in {
-            "nomeProduto": nome,
-            "cnpj": cnpj,
-            "registro": registro,
-            "numeroProcesso": processo,
-        }.items()
-        if v
-    }
+    filters = only_set(nomeProduto=nome, cnpj=cnpj, registro=registro, numeroProcesso=processo)
     paginated(ctx, "saude", page, size, all_pages, "Produtos para saúde", **filters)
 
 
@@ -758,7 +743,7 @@ def certificado_filters_from(
         filters["nacional"] = True
     if internacional:
         filters["internacional"] = True
-    filters.update({k: v for k, v in {"status": status, "ufs": uf, **more}.items() if v})
+    filters.update(only_set(status=status, ufs=uf, **more))
     if "cnpjCertificada" not in filters and cnpj:
         filters["cnpjCertificada"] = cnpj
     return filters
@@ -1002,10 +987,6 @@ def tabaco_download_rotulo(
 # --- bulario ----------------------------------------------------------------
 
 
-def only_set(**filters: Any) -> dict[str, Any]:
-    return {k: v for k, v in filters.items() if v}
-
-
 @bulario_app.command("search")
 def bulario_search(
     ctx: typer.Context,
@@ -1124,33 +1105,53 @@ def medicamento_download_rotulo(
         write(download, out, f"rotulo_{rotulo}.pdf")
 
 
-def medicamento_lookup(name: str, help_text: str, title: str) -> None:
-    def command(ctx: typer.Context) -> None:
-        with handle_errors(), make_client() as client:
-            emit(ctx, getattr(client.medicamento, name)(), title)
-
-    command.__doc__ = help_text
-    medicamento_app.command(name.replace("_", "-"))(command)
+@medicamento_app.command("categorias-regulatorias")
+def medicamento_categorias_regulatorias(ctx: typer.Context) -> None:
+    """Categorias regulatórias (novo, genérico, similar, ...)."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.medicamento.categorias_regulatorias(), "Categorias regulatórias")
 
 
-for _name, _help, _title in (
-    (
-        "categorias_regulatorias",
-        "Categorias regulatórias (novo, genérico, similar, ...).",
-        "Categorias regulatórias",
-    ),
-    (
-        "tipos_categoria_regulatoria",
-        "As mesmas categorias, por /tipoCategoriaRegulatoria.",
-        "Categorias regulatórias",
-    ),
-    ("formas_fisicas", "Formas físicas.", "Formas físicas"),
-    ("categorias", "Categorias de medicamento (id em código ATC).", "Categorias"),
-    ("atc", "Códigos ATC, todos os níveis.", "ATC"),
-    ("restricoes", "Restrições de prescrição e uso.", "Restrições"),
-    ("tarjas", "Tarjas.", "Tarjas"),
-):
-    medicamento_lookup(_name, _help, _title)
+@medicamento_app.command("tipos-categoria-regulatoria")
+def medicamento_tipos_categoria_regulatoria(ctx: typer.Context) -> None:
+    """As mesmas categorias, por /tipoCategoriaRegulatoria."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.medicamento.tipos_categoria_regulatoria(), "Categorias regulatórias")
+
+
+@medicamento_app.command("formas-fisicas")
+def medicamento_formas_fisicas(ctx: typer.Context) -> None:
+    """Formas físicas."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.medicamento.formas_fisicas(), "Formas físicas")
+
+
+@medicamento_app.command("categorias")
+def medicamento_categorias(ctx: typer.Context) -> None:
+    """Categorias de medicamento (id em código ATC)."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.medicamento.categorias(), "Categorias")
+
+
+@medicamento_app.command("atc")
+def medicamento_atc(ctx: typer.Context) -> None:
+    """Códigos ATC, todos os níveis."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.medicamento.atc(), "ATC")
+
+
+@medicamento_app.command("restricoes")
+def medicamento_restricoes(ctx: typer.Context) -> None:
+    """Restrições de prescrição e uso."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.medicamento.restricoes(), "Restrições")
+
+
+@medicamento_app.command("tarjas")
+def medicamento_tarjas(ctx: typer.Context) -> None:
+    """Tarjas."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.medicamento.tarjas(), "Tarjas")
 
 
 @medicamento_app.command("tipos-priorizacao")
