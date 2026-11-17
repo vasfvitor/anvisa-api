@@ -22,14 +22,25 @@ def filename_from(content_disposition: str | None) -> str | None:
     return match.group(1).strip() if match else None
 
 
+def base_name(name: str | None) -> str | None:
+    """The last part of a file name, so neither a server's `Content-Disposition` nor a name
+    taken from a response (`arquivos[].nomeArquivo`) can climb out of the chosen directory:
+    `../../x.pdf` and `/abs/x.pdf` become `x.pdf`; empty, `.` and `..` become None."""
+    if not name:
+        return None
+    last = Path(name.replace("\\", "/")).name
+    return None if last in ("", ".", "..") else last
+
+
 def target_path(path: str | Path, name: str | None, default_name: str) -> Path:
     """Where a file goes. `path` is a directory when it exists as one or is written with a
     trailing separator (`Path("exports/")` alone forgets the slash, so a new directory would
-    otherwise become the file's name); the file is then `name` (what the server sent) or
-    `default_name`. Anything else is the file itself. Parent directories are created."""
+    otherwise become the file's name); the file is then the base name of `name` (what the
+    server sent) or of `default_name`. Anything else is the file itself. Parent directories are
+    created."""
     target = Path(path)
     if target.is_dir() or str(path).endswith(("/", os.sep)):
-        target = target / (name or default_name)
+        target = target / (base_name(name) or base_name(default_name) or "download")
     target.parent.mkdir(parents=True, exist_ok=True)
     return target
 

@@ -205,6 +205,26 @@ def test_restricao(client):
     assert [r.id for r in client.restricao.cannabis()] == [537, 538]
 
 
+def test_download_path_parts_are_percent_encoded():
+    seen = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/token"):
+            return httpx.Response(200, json=load("token.json"))
+        seen.append(request.url.raw_path.decode())
+        return httpx.Response(200, content=b"%PDF-")
+
+    with Client(
+        Credentials("id", "s"),
+        transport=httpx.MockTransport(handler),
+        throttle=Throttle(sleep=lambda s: None),
+    ) as c:
+        c.saude.download_anexo("25351321393200637", "12/3", "IFU v2#rev?.pdf")
+        c.cannabis.download_anexo("rotulo", "a/b")
+    assert seen[0].endswith("/anexo/12%2F3/nomeArquivo/IFU%20v2%23rev%3F.pdf")
+    assert seen[1].endswith("/cannabis/download/rotulo/a%2Fb/")
+
+
 def test_saude_unknown_anexo_is_a_500():
     with (
         client_answering("err_saude_anexo") as c,

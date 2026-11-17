@@ -9,6 +9,7 @@ from collections.abc import Callable, Iterator
 from dataclasses import replace
 from pathlib import Path
 from typing import Any, Protocol, TypeVar
+from urllib.parse import quote
 
 import httpx
 
@@ -511,9 +512,11 @@ class Saude:
     def download_anexo(self, numero_processo: str, anexo_cod: str, nome_arquivo: str) -> Download:
         """A file from `get(...).arquivos[]` (`anexoCod`, `nomeArquivo`). Not observed: none of
         the seven details recorded on 2026-11-16 had arquivos, and an unknown anexoCod is HTTP
-        500 `For input string: ""` (fixture err_saude_anexo). On the gateway since 2026-11-15."""
+        500 `For input string: ""` (fixture err_saude_anexo). On the gateway since 2026-11-15.
+        The parts are percent-encoded, so a name with `/`, `?` or `#` stays one path segment."""
+        cod, nome = quote(str(anexo_cod), safe=""), quote(nome_arquivo, safe="")
         return self._client.get_bytes(
-            f"/api/v1/saude/produtos/{numero_processo}/anexo/{anexo_cod}/nomeArquivo/{nome_arquivo}"
+            f"/api/v1/saude/produtos/{numero_processo}/anexo/{cod}/nomeArquivo/{nome}"
         )
 
 
@@ -1030,6 +1033,7 @@ class Cannabis:
         """A product file by kind and `codigoHash` from `get`, within 5 minutes of it.
         Verified: `tipo="rotulo"` with `codigosRotulo[].codigoHash` (a 2.7 MB PDF sent as
         `application/force-download`); the folheto and consentimento kinds are untested."""
+        tipo, codigo_hash = quote(tipo, safe=""), quote(codigo_hash, safe="")
         return self._client.get_bytes(f"/api/v1/cannabis/download/{tipo}/{codigo_hash}/")
 
 

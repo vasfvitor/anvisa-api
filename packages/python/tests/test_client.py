@@ -327,6 +327,15 @@ def test_download_save_and_filename_parsing(tmp_path):
     assert named.save(tmp_path / "deeper" / "new").name == "new"  # no slash: a file name
 
 
+def test_download_names_cannot_leave_the_directory(tmp_path):
+    """A server name or a name taken from a response keeps only its last part."""
+    assert Download(b"x", "../../x.pdf").save(tmp_path) == tmp_path / "x.pdf"
+    assert Download(b"x", "..\\..\\w.pdf").save(tmp_path) == tmp_path / "w.pdf"
+    assert Download(b"x").save(tmp_path, "/abs/y.pdf") == tmp_path / "y.pdf"
+    assert Download(b"x", "..").save(tmp_path, "z.bin") == tmp_path / "z.bin"
+    assert Download(b"x", "/").save(tmp_path, "") == tmp_path / "download"
+
+
 def test_iterate_pages_stops_on_empty_content():
     class Page:
         content = []

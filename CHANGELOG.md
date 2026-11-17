@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- `Download.save` (and every CLI download) keeps only the base name of the server's
+  `Content-Disposition` name or of the default name, so `../x.pdf` or `/abs/x.pdf` cannot
+  write outside the chosen directory. `Saude.download_anexo` and `Cannabis.download_anexo`
+  percent-encode their path parts (a `#`, `?` or `/` in `nomeArquivo` no longer changes the
+  request).
 - The 34 operations ANVISA added to the Consultas Externas API on 2026-11-15, recorded on
   2026-11-16: `Client.bulario` (search, get), `Client.medicamento` (search, get, get_codigo,
   clones, ppam, download, download_rotulo, substancias, produtos_notificados and eight lookup
