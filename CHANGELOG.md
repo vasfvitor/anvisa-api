@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- CLI: `--all` pages at 100 rows unless `--size` is given (20 for one page, as before), a fifth
+  of the requests; `udi search` and `nome-tecnico search` share that pagination now.
+- `Medicamento.download` refuses an empty filter locally, like `search`; `anvisa medicamento
+  download` gains `--registro`, `--processo` and `--size`.
+- `anvisa documento get-publicacao` prints `null` (JSON) or "(nenhum resultado)" for a
+  publication the API answers with an empty body, instead of `[]`.
+- `anvisa medicamento substancias` gains `--all`.
 - `Download.save` (and every CLI download) keeps only the base name of the server's
   `Content-Disposition` name or of the default name, so `../x.pdf` or `/abs/x.pdf` cannot
   write outside the chosen directory. `Saude.download_anexo` and `Cannabis.download_anexo`

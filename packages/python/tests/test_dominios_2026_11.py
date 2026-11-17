@@ -318,3 +318,91 @@ def test_cli_downloads_write_the_files(fake_cli_client, tmp_path):
     result = runner.invoke(cli.app, ["cannabis", "download", "-o", str(tmp_path)])
     assert result.exit_code == 0, result.output
     assert (tmp_path / "consulta_produto_cannabis.xls").exists()
+
+
+def patch_cli(monkeypatch, handler) -> None:
+    """The CLI's client served by `handler` (after the token)."""
+
+    def transport(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("/token"):
+            return httpx.Response(200, json=load("token.json"))
+        return handler(request)
+
+    monkeypatch.setattr(
+        cli,
+        "make_client",
+        lambda: Client(
+            Credentials("id", "s"),
+            transport=httpx.MockTransport(transport),
+            throttle=Throttle(sleep=lambda s: None),
+        ),
+    )
+
+
+def last_page(fixture: str, bodies: list):
+    """A handler answering every search with `fixture` marked as the last page (the recorded
+    first pages say last: false, so `--all` over them would never stop) and keeping the bodies."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        bodies.append(json.loads(request.content))
+        return httpx.Response(200, json={**load(fixture), "last": True})
+
+    return handler
+
+
+def test_cli_all_pages_at_100_unless_size_is_given(monkeypatch):
+    """Review finding: --all at the one-page default of 20 took five times the requests."""
+    bodies = []
+    patch_cli(monkeypatch, last_page("bulario_p1.json", bodies))
+    result = runner.invoke(cli.app, ["-f", "json", "bulario", "search", "--all"])
+    assert result.exit_code == 0, result.output
+    runner.invoke(cli.app, ["-f", "json", "bulario", "search", "--all", "--size", "5"])
+    runner.invoke(cli.app, ["-f", "json", "bulario", "search"])
+    assert [b["size"] for b in bodies] == [100, 5, 20]
+
+
+def test_cli_udi_and_nome_tecnico_go_through_the_shared_pagination(fake_cli_client, monkeypatch):
+    result = runner.invoke(cli.app, ["udi", "search"])
+    assert result.exit_code == 1 and fake_cli_client.requests == []  # still refused locally
+    bodies = []
+    patch_cli(monkeypatch, last_page("nomeTecnico_p1.json", bodies))
+    result = runner.invoke(cli.app, ["-f", "json", "nome-tecnico", "search", "--all"])
+    assert result.exit_code == 0, result.output
+    assert [b["size"] for b in bodies] == [100]
+
+
+def test_cli_medicamento_download_needs_a_filter(fake_cli_client, tmp_path):
+    result = runner.invoke(cli.app, ["medicamento", "download"])
+    assert result.exit_code == 1 and "MSG-013" in result.output
+    assert fake_cli_client.requests == []
+    result = runner.invoke(
+        cli.app, ["medicamento", "download", "-n", "tylenol", "--size", "50", "-o", str(tmp_path)]
+    )
+    assert fake_cli_client.json_bodies()[-1]["size"] == 50
+
+
+def test_cli_get_publicacao_without_body_prints_null(monkeypatch):
+    patch_cli(monkeypatch, lambda request: response_for("documento_dou_vazio"))
+    result = runner.invoke(cli.app, ["-f", "json", "documento", "get-publicacao", "17601299"])
+    assert result.exit_code == 0 and result.output.strip() == "null"
+    result = runner.invoke(cli.app, ["-f", "table", "documento", "get-publicacao", "17601299"])
+    assert "(nenhum resultado)" in result.output
+
+
+def test_cli_substancias_all_walks_every_page(monkeypatch):
+    pages = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        page = int(request.url.params["page"])
+        pages.append(page)
+        body = load("medicamento_substancias.json")  # 2 of 3 rows, last: false
+        if page == 2:
+            body = {**body, "content": [{"id": 1, "descricao": "dipirona sódica"}], "last": True}
+        return httpx.Response(200, json=body)
+
+    patch_cli(monkeypatch, handler)
+    result = runner.invoke(
+        cli.app, ["-f", "json", "medicamento", "substancias", "dipirona", "--all"]
+    )
+    assert result.exit_code == 0, result.output
+    assert len(json.loads(result.output)) == 3 and pages == [1, 2]

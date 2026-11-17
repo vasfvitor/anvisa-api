@@ -19,7 +19,7 @@ from rich.console import Console
 from rich.table import Table
 
 from . import __version__, dados
-from .client import Client
+from .client import Client, iterate_pages
 from .dados.build import MIN_ROWS_RATIO, catalog_limits, published_manifest, source_ages
 from .dados.convert import ROW_GROUP_SIZE
 from .download import Download
@@ -308,7 +308,9 @@ def udi_search(
     gmdn: str | None = typer.Option(None, "--gmdn", help="codigoGmdn"),
     registro: str | None = typer.Option(None, "--registro", help="nuRegistro"),
     page: int = typer.Option(1, "--page", min=1),
-    size: int = typer.Option(20, "--size", min=1),
+    size: int | None = typer.Option(
+        None, "--size", min=1, help="rows per page: 20, or 100 with --all"
+    ),
     all_pages: bool = typer.Option(
         False, "--all", help="iterate every page (respects the rate limit)"
     ),
@@ -325,13 +327,7 @@ def udi_search(
         }.items()
         if v
     }
-    with handle_errors(), make_client() as client:
-        if all_pages:
-            emit(ctx, list(client.udi.iter_search(size=size, **filters)), "UDI")
-        else:
-            result = client.udi.search(page=page, size=size, **filters)
-            total = f" (página {page} de {result.totalPages}, {result.totalElements} no total)"
-            emit(ctx, result.content or [], "UDI" + total)
+    paginated(ctx, "udi", page, size, all_pages, "UDI", **filters)
 
 
 @udi_app.command("get")
@@ -407,7 +403,9 @@ def nome_tecnico_search(
         None, "--categoria", help="categoriaProduto, id from `categorias`"
     ),
     page: int = typer.Option(1, "--page", min=1),
-    size: int = typer.Option(20, "--size", min=1),
+    size: int | None = typer.Option(
+        None, "--size", min=1, help="rows per page: 20, or 100 with --all"
+    ),
     all_pages: bool = typer.Option(
         False, "--all", help="iterate every page (respects the rate limit)"
     ),
@@ -418,13 +416,7 @@ def nome_tecnico_search(
         for k, v in {"nomeTecnico": nome, "codigo": codigo, "categoriaProduto": categoria}.items()
         if v
     }
-    with handle_errors(), make_client() as client:
-        if all_pages:
-            emit(ctx, list(client.nome_tecnico.iter_search(size=size, **filters)), "Nomes técnicos")
-        else:
-            result = client.nome_tecnico.search(page=page, size=size, **filters)
-            total = f" (página {page} de {result.totalPages}, {result.totalElements} no total)"
-            emit(ctx, result.content or [], "Nomes técnicos" + total)
+    paginated(ctx, "nome_tecnico", page, size, all_pages, "Nomes técnicos", **filters)
 
 
 @nome_tecnico_app.command("categorias")
@@ -652,16 +644,23 @@ def dados_idade(
 # --- saude ------------------------------------------------------------------
 
 
+def page_size(size: int | None, all_pages: bool) -> int:
+    """`--size` when given; otherwise 20 for one page and 100 for `--all`, so walking every page
+    takes a fifth of the requests (8,855 bulário rows: 89 instead of 443)."""
+    return size or (100 if all_pages else 20)
+
+
 def paginated(
     ctx: typer.Context,
     domain: Any,
     page: int,
-    size: int,
+    size: int | None,
     all_pages: bool,
     title: str,
     **filters: Any,
 ) -> None:
     """Emit one page of a paginated search, or every page with `--all`."""
+    size = page_size(size, all_pages)
     with handle_errors(), make_client() as client:
         target = getattr(client, domain)
         if all_pages:
@@ -673,7 +672,7 @@ def paginated(
 
 
 PAGE = typer.Option(1, "--page", min=1)
-SIZE = typer.Option(20, "--size", min=1)
+SIZE = typer.Option(None, "--size", min=1, help="rows per page: 20, or 100 with --all")
 ALL = typer.Option(False, "--all", help="iterate every page (respects the rate limit)")
 
 
@@ -685,7 +684,7 @@ def saude_search(
     registro: str | None = typer.Option(None, "--registro", help="registro (untested filter)"),
     processo: str | None = typer.Option(None, "--processo", help="numeroProcesso (untested)"),
     page: int = PAGE,
-    size: int = SIZE,
+    size: int | None = SIZE,
     all_pages: bool = ALL,
 ) -> None:
     """Busca de produtos para saúde regularizados. Sem filtro lista todos (193 mil)."""
@@ -781,7 +780,7 @@ def certificado_search(
     cnpj: str | None = CNPJ_CERTIFICADA,
     uf: str | None = UF,
     page: int = PAGE,
-    size: int = SIZE,
+    size: int | None = SIZE,
     all_pages: bool = ALL,
 ) -> None:
     """Certificados de boas práticas (exceto medicamentos). Pelo menos um filtro é obrigatório."""
@@ -835,7 +834,7 @@ def certificado_medicamento_search(
     solicitante: str | None = typer.Option(None, "--solicitante", help="cnpjSolicitante"),
     uf: str | None = UF,
     page: int = PAGE,
-    size: int = SIZE,
+    size: int | None = SIZE,
     all_pages: bool = ALL,
 ) -> None:
     """Certificados de boas práticas de medicamentos. Pelo menos um filtro é obrigatório."""
@@ -923,7 +922,7 @@ def tabaco_search(
     ctx: typer.Context,
     nome: str | None = typer.Option(None, "--nome", "-n", help="nomeProduto"),
     page: int = PAGE,
-    size: int = SIZE,
+    size: int | None = SIZE,
     all_pages: bool = ALL,
 ) -> None:
     """Produtos derivados do tabaco. Sem filtro lista todos (3,6 mil); a API ignora o CNPJ."""
@@ -1012,7 +1011,7 @@ def bulario_search(
     ctx: typer.Context,
     nome: str | None = typer.Option(None, "--nome", "-n", help="nomeProduto"),
     page: int = PAGE,
-    size: int = SIZE,
+    size: int | None = SIZE,
     all_pages: bool = ALL,
 ) -> None:
     """Busca de produtos com bula. Sem filtro lista todos (8,8 mil)."""
@@ -1042,7 +1041,7 @@ def medicamento_search(
     registro: str | None = typer.Option(None, "--registro", help="numeroRegistro (untested)"),
     processo: str | None = typer.Option(None, "--processo", help="numeroProcesso (untested)"),
     page: int = PAGE,
-    size: int = SIZE,
+    size: int | None = SIZE,
     all_pages: bool = ALL,
 ) -> None:
     """Busca de medicamentos. Exige ao menos um filtro."""
@@ -1097,12 +1096,18 @@ def medicamento_ppam(ctx: typer.Context) -> None:
 def medicamento_download(
     nome: str | None = typer.Option(None, "--nome", "-n", help="nomeProduto"),
     cnpj: str | None = typer.Option(None, "--cnpj", help="cnpj of the company"),
+    registro: str | None = typer.Option(None, "--registro", help="numeroRegistro (untested)"),
+    processo: str | None = typer.Option(None, "--processo", help="numeroProcesso (untested)"),
+    size: int = typer.Option(10, "--size", min=1, help="sent in the body; 10 when recorded"),
     out: str = OUT,
 ) -> None:
-    """Exporta os medicamentos do filtro como planilha (consulta_medicamento.xls)."""
+    """Exporta os medicamentos do filtro como planilha (consulta_medicamento.xls). Exige ao
+    menos um filtro, como a busca."""
+    filters = only_set(
+        nomeProduto=nome, cnpj=cnpj, numeroRegistro=registro, numeroProcesso=processo
+    )
     with handle_errors(), make_client() as client:
-        download = client.medicamento.download(**only_set(nomeProduto=nome, cnpj=cnpj))
-        write(download, out, "consulta_medicamento.xls")
+        write(client.medicamento.download(size, **filters), out, "consulta_medicamento.xls")
 
 
 @medicamento_app.command("download-rotulo")
@@ -1162,12 +1167,19 @@ def medicamento_substancias(
     ctx: typer.Context,
     nome: str = typer.Argument(help="part of the substance name"),
     page: int = PAGE,
-    size: int = SIZE,
+    size: int | None = SIZE,
+    all_pages: bool = ALL,
 ) -> None:
     """Busca de substâncias pelo nome."""
+    size = page_size(size, all_pages)
     with handle_errors(), make_client() as client:
+        if all_pages:
+            rows = list(iterate_pages(lambda p: client.medicamento.substancias(nome, p, size)))
+            emit(ctx, rows, "Substâncias")
+            return
         result = client.medicamento.substancias(nome, page, size)
-        emit(ctx, result.content or [], f"Substâncias ({result.totalElements} no total)")
+        total = f" (página {page} de {result.totalPages}, {result.totalElements} no total)"
+        emit(ctx, result.content or [], "Substâncias" + total)
 
 
 @medicamento_app.command("produtos-notificados")
@@ -1185,7 +1197,7 @@ def documento_search(
     ctx: typer.Context,
     processo: str = typer.Argument(help="processo, 17 digits"),
     page: int = PAGE,
-    size: int = SIZE,
+    size: int | None = SIZE,
     all_pages: bool = ALL,
 ) -> None:
     """Petições de um processo."""
@@ -1222,7 +1234,10 @@ def documento_get_publicacao(
     """Uma publicação no DOU."""
     with handle_errors(), make_client() as client:
         pub = client.documento.get_publicacao(publicacao_id)
-        emit(ctx, [] if pub is None else pub, f"Publicação {publicacao_id}")
+    if pub is None:  # 200 with an empty body
+        typer.echo("null" if ctx.obj == Format.json else "(nenhum resultado)")
+        return
+    emit(ctx, pub, f"Publicação {publicacao_id}")
 
 
 class Lista(str, Enum):
@@ -1267,7 +1282,7 @@ def cannabis_search(
     nome: str | None = typer.Option(None, "--nome", "-n", help="nomeProduto"),
     cnpj: str | None = typer.Option(None, "--cnpj", help="cnpj (untested)"),
     page: int = PAGE,
-    size: int = SIZE,
+    size: int | None = SIZE,
     all_pages: bool = ALL,
 ) -> None:
     """Busca de produtos de Cannabis. Exige ao menos um filtro."""

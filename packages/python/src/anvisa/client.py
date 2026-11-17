@@ -844,7 +844,9 @@ class Medicamento:
 
     def download(self, size: int = 10, **filters: Any) -> Download:
         """The matching medicines as `consulta_medicamento.xls` (BIFF .xls, 21 KB for
-        nomeProduto=tylenol). An empty filter was not tried."""
+        nomeProduto=tylenol). Takes the filter keys of `search`, and like it refuses an empty
+        filter locally (`MissingFilterError`): that request was never sent."""
+        require_filter("medicamento.download", filters, "nomeProduto='dipirona'")
         body = page_body(1, size, None, filters)
         return self._client.post_bytes("/api/v1/medicamento/download", body)
 
