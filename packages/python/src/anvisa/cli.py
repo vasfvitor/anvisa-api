@@ -40,7 +40,8 @@ class Format(str, Enum):
 
 app = typer.Typer(
     help="ANVISA Consultas Externas: filas, listas, UDI, nomes técnicos, assuntos, produtos para "
-    "saúde, certificados de boas práticas e tabaco.",
+    "saúde, certificados de boas práticas, tabaco, bulário, medicamentos, documentos técnicos, "
+    "Cannabis e restrições.",
     no_args_is_help=True,
 )
 fila_app = typer.Typer(
@@ -63,6 +64,17 @@ certificado_medicamento_app = typer.Typer(
     help="Certificados de boas práticas de fabricação de medicamentos.", no_args_is_help=True
 )
 tabaco_app = typer.Typer(help="Produtos derivados do tabaco.", no_args_is_help=True)
+bulario_app = typer.Typer(help="Bulário eletrônico: bulas e seu histórico.", no_args_is_help=True)
+medicamento_app = typer.Typer(
+    help="Medicamentos registrados e notificados, rótulos e listas de filtros.",
+    no_args_is_help=True,
+)
+documento_app = typer.Typer(
+    help="Documentos técnicos: petições de um processo, histórico, publicações no DOU.",
+    no_args_is_help=True,
+)
+cannabis_app = typer.Typer(help="Produtos de Cannabis e seus arquivos.", no_args_is_help=True)
+restricao_app = typer.Typer(help="Restrições de prescrição e uso.", no_args_is_help=True)
 dados_app = typer.Typer(
     help="Dados abertos (dados.anvisa.gov.br): CSV → Parquet.", no_args_is_help=True
 )
@@ -75,6 +87,11 @@ app.add_typer(saude_app, name="saude")
 app.add_typer(certificado_app, name="certificado")
 app.add_typer(certificado_medicamento_app, name="certificado-medicamento")
 app.add_typer(tabaco_app, name="tabaco")
+app.add_typer(bulario_app, name="bulario")
+app.add_typer(medicamento_app, name="medicamento")
+app.add_typer(documento_app, name="documento")
+app.add_typer(cannabis_app, name="cannabis")
+app.add_typer(restricao_app, name="restricao")
 app.add_typer(dados_app, name="dados")
 
 
@@ -712,6 +729,20 @@ def saude_download_pdf(
         write(client.saude.download_pdf(numero_processo), out, f"saude_{numero_processo}.pdf")
 
 
+@saude_app.command("download-anexo")
+def saude_download_anexo(
+    numero_processo: str = typer.Argument(help="processo, 17 digits"),
+    anexo_cod: str = typer.Argument(help="arquivos[].anexoCod from `get`"),
+    nome_arquivo: str = typer.Argument(help="arquivos[].nomeArquivo from `get`"),
+    out: str = OUT,
+) -> None:
+    """Baixa um anexo do produto (arquivos[] do detalhe). Nunca visto com sucesso."""
+    with handle_errors(), make_client() as client:
+        write(
+            client.saude.download_anexo(numero_processo, anexo_cod, nome_arquivo), out, nome_arquivo
+        )
+
+
 # --- certificado / certificado-medicamento ----------------------------------
 
 
@@ -967,3 +998,322 @@ def tabaco_download_rotulo(
     """Baixa o rótulo (PDF) de um produto."""
     with handle_errors(), make_client() as client:
         write(client.tabaco.download_rotulo(rotulo_id), out, f"rotulo_{rotulo_id}.pdf")
+
+
+# --- bulario ----------------------------------------------------------------
+
+
+def only_set(**filters: Any) -> dict[str, Any]:
+    return {k: v for k, v in filters.items() if v}
+
+
+@bulario_app.command("search")
+def bulario_search(
+    ctx: typer.Context,
+    nome: str | None = typer.Option(None, "--nome", "-n", help="nomeProduto"),
+    page: int = PAGE,
+    size: int = SIZE,
+    all_pages: bool = ALL,
+) -> None:
+    """Busca de produtos com bula. Sem filtro lista todos (8,8 mil)."""
+    paginated(ctx, "bulario", page, size, all_pages, "Bulário", **only_set(nomeProduto=nome))
+
+
+@bulario_app.command("get")
+def bulario_get(
+    ctx: typer.Context,
+    id_produto: int = typer.Argument(help="idProduto from `search`"),
+    page: int = PAGE,
+    size: int = typer.Option(10, "--size", min=1),
+) -> None:
+    """Bula atual e uma página do histórico de bulas de um produto."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.bulario.get(id_produto, page, size), f"Bulário {id_produto}")
+
+
+# --- medicamento ------------------------------------------------------------
+
+
+@medicamento_app.command("search")
+def medicamento_search(
+    ctx: typer.Context,
+    nome: str | None = typer.Option(None, "--nome", "-n", help="nomeProduto"),
+    cnpj: str | None = typer.Option(None, "--cnpj", help="cnpj of the company"),
+    registro: str | None = typer.Option(None, "--registro", help="numeroRegistro (untested)"),
+    processo: str | None = typer.Option(None, "--processo", help="numeroProcesso (untested)"),
+    page: int = PAGE,
+    size: int = SIZE,
+    all_pages: bool = ALL,
+) -> None:
+    """Busca de medicamentos. Exige ao menos um filtro."""
+    filters = only_set(
+        nomeProduto=nome, cnpj=cnpj, numeroRegistro=registro, numeroProcesso=processo
+    )
+    paginated(ctx, "medicamento", page, size, all_pages, "Medicamentos", **filters)
+
+
+@medicamento_app.command("get")
+def medicamento_get(
+    ctx: typer.Context, numero_processo: str = typer.Argument(help="processo.numero from `search`")
+) -> None:
+    """Detalhe de um medicamento: apresentações, rótulos, categoria regulatória."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.medicamento.get(numero_processo), f"Medicamento {numero_processo}")
+
+
+@medicamento_app.command("get-codigo")
+def medicamento_get_codigo(
+    ctx: typer.Context,
+    codigo_produto: str = typer.Argument(help="produto.codigo from `search`"),
+    codigo_notificacao: str | None = typer.Option(None, "--notificacao", help="untested"),
+) -> None:
+    """O mesmo detalhe, pelo código do produto."""
+    with handle_errors(), make_client() as client:
+        detail = client.medicamento.get_codigo(codigo_produto, codigo_notificacao)
+        emit(ctx, detail, f"Medicamento {codigo_produto}")
+
+
+@medicamento_app.command("clones")
+def medicamento_clones(
+    ctx: typer.Context, numero_processo: str = typer.Argument(help="processo, 17 digits")
+) -> None:
+    """Processos clone de um medicamento."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.medicamento.clones(numero_processo), f"Clones de {numero_processo}")
+
+
+@medicamento_app.command("ppam")
+def medicamento_ppam(ctx: typer.Context) -> None:
+    """Nomes da lista PPAM."""
+    with handle_errors(), make_client() as client:
+        names = client.medicamento.ppam()
+    if ctx.obj == Format.json:
+        typer.echo(json.dumps(names, ensure_ascii=False, indent=2))
+    else:
+        typer.echo("\n".join(names))
+
+
+@medicamento_app.command("download")
+def medicamento_download(
+    nome: str | None = typer.Option(None, "--nome", "-n", help="nomeProduto"),
+    cnpj: str | None = typer.Option(None, "--cnpj", help="cnpj of the company"),
+    out: str = OUT,
+) -> None:
+    """Exporta os medicamentos do filtro como planilha (consulta_medicamento.xls)."""
+    with handle_errors(), make_client() as client:
+        download = client.medicamento.download(**only_set(nomeProduto=nome, cnpj=cnpj))
+        write(download, out, "consulta_medicamento.xls")
+
+
+@medicamento_app.command("download-rotulo")
+def medicamento_download_rotulo(
+    tipo_produto: int = typer.Argument(help="tipoProduto from `get`"),
+    numero_processo: str = typer.Argument(help="processo, 17 digits"),
+    origem: str = typer.Argument(help="anexoRotulos[].origem from `get`"),
+    rotulo: int = typer.Argument(help="anexoRotulos[].codigoAnexo from `get`"),
+    out: str = OUT,
+) -> None:
+    """Baixa um rótulo do medicamento (anexoRotulos[] do detalhe)."""
+    with handle_errors(), make_client() as client:
+        download = client.medicamento.download_rotulo(tipo_produto, numero_processo, origem, rotulo)
+        write(download, out, f"rotulo_{rotulo}.pdf")
+
+
+def medicamento_lookup(name: str, help_text: str, title: str) -> None:
+    def command(ctx: typer.Context) -> None:
+        with handle_errors(), make_client() as client:
+            emit(ctx, getattr(client.medicamento, name)(), title)
+
+    command.__doc__ = help_text
+    medicamento_app.command(name.replace("_", "-"))(command)
+
+
+for _name, _help, _title in (
+    (
+        "categorias_regulatorias",
+        "Categorias regulatórias (novo, genérico, similar, ...).",
+        "Categorias regulatórias",
+    ),
+    (
+        "tipos_categoria_regulatoria",
+        "As mesmas categorias, por /tipoCategoriaRegulatoria.",
+        "Categorias regulatórias",
+    ),
+    ("formas_fisicas", "Formas físicas.", "Formas físicas"),
+    ("categorias", "Categorias de medicamento (id em código ATC).", "Categorias"),
+    ("atc", "Códigos ATC, todos os níveis.", "ATC"),
+    ("restricoes", "Restrições de prescrição e uso.", "Restrições"),
+    ("tarjas", "Tarjas.", "Tarjas"),
+):
+    medicamento_lookup(_name, _help, _title)
+
+
+@medicamento_app.command("tipos-priorizacao")
+def medicamento_tipos_priorizacao(
+    ctx: typer.Context, show_empty: bool = typer.Option(False, "--show-empty")
+) -> None:
+    """Tipos de priorização de análise."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.medicamento.tipos_priorizacao(show_empty), "Tipos de priorização")
+
+
+@medicamento_app.command("substancias")
+def medicamento_substancias(
+    ctx: typer.Context,
+    nome: str = typer.Argument(help="part of the substance name"),
+    page: int = PAGE,
+    size: int = SIZE,
+) -> None:
+    """Busca de substâncias pelo nome."""
+    with handle_errors(), make_client() as client:
+        result = client.medicamento.substancias(nome, page, size)
+        emit(ctx, result.content or [], f"Substâncias ({result.totalElements} no total)")
+
+
+@medicamento_app.command("produtos-notificados")
+def medicamento_produtos_notificados(ctx: typer.Context) -> None:
+    """Todos os produtos notificados (a API ignora página e filtro)."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.medicamento.produtos_notificados().content or [], "Produtos notificados")
+
+
+# --- documento --------------------------------------------------------------
+
+
+@documento_app.command("search")
+def documento_search(
+    ctx: typer.Context,
+    processo: str = typer.Argument(help="processo, 17 digits"),
+    page: int = PAGE,
+    size: int = SIZE,
+    all_pages: bool = ALL,
+) -> None:
+    """Petições de um processo."""
+    paginated(ctx, "documento", page, size, all_pages, f"Petições de {processo}", processo=processo)
+
+
+@documento_app.command("get")
+def documento_get(
+    ctx: typer.Context, processo: str = typer.Argument(help="processo, 17 digits")
+) -> None:
+    """Um processo com todas as petições e publicações."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.documento.get(processo), f"Processo {processo}")
+
+
+@documento_app.command("get-expediente")
+def documento_get_expediente(ctx: typer.Context, expediente: str) -> None:
+    """Uma petição pelo número do expediente."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.documento.get_expediente(expediente), f"Expediente {expediente}")
+
+
+@documento_app.command("situacoes")
+def documento_situacoes(ctx: typer.Context, expediente: str) -> None:
+    """Histórico de situações de uma petição."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.documento.situacoes(expediente), f"Situações de {expediente}")
+
+
+@documento_app.command("get-publicacao")
+def documento_get_publicacao(
+    ctx: typer.Context, publicacao_id: int = typer.Argument(help="lastPublicacao.id")
+) -> None:
+    """Uma publicação no DOU."""
+    with handle_errors(), make_client() as client:
+        pub = client.documento.get_publicacao(publicacao_id)
+        emit(ctx, [] if pub is None else pub, f"Publicação {publicacao_id}")
+
+
+class Lista(str, Enum):
+    situacoes = "situacoes"
+    assuntos = "assuntos"
+
+
+@documento_app.command("listas")
+def documento_listas(ctx: typer.Context, qual: Lista = typer.Argument(Lista.situacoes)) -> None:
+    """Códigos de situação ou de assunto (a resposta inteira tem 1,2 MB)."""
+    with handle_errors(), make_client() as client:
+        listas = client.documento.listas()
+    rows = listas.listaSituacao if qual == Lista.situacoes else listas.listaAssunto
+    emit(ctx, rows or [], "Situações" if qual == Lista.situacoes else "Assuntos")
+
+
+@documento_app.command("tipos-produto")
+def documento_tipos_produto(ctx: typer.Context) -> None:
+    """Tipos de produto."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.documento.tipos_produto(), "Tipos de produto")
+
+
+@documento_app.command("download-parecer")
+def documento_download_parecer(
+    id_arquivo_parecer: int = typer.Argument(help="arquivoParecer.idArquivoParecer"),
+    expediente: str = typer.Argument(help="the petição's expediente"),
+    out: str = OUT,
+) -> None:
+    """Baixa um parecer técnico. Nunca visto com sucesso."""
+    with handle_errors(), make_client() as client:
+        download = client.documento.download_parecer(id_arquivo_parecer, expediente)
+        write(download, out, f"parecer_{id_arquivo_parecer}.pdf")
+
+
+# --- cannabis ---------------------------------------------------------------
+
+
+@cannabis_app.command("search")
+def cannabis_search(
+    ctx: typer.Context,
+    nome: str | None = typer.Option(None, "--nome", "-n", help="nomeProduto"),
+    cnpj: str | None = typer.Option(None, "--cnpj", help="cnpj (untested)"),
+    page: int = PAGE,
+    size: int = SIZE,
+    all_pages: bool = ALL,
+) -> None:
+    """Busca de produtos de Cannabis. Exige ao menos um filtro."""
+    filters = only_set(nomeProduto=nome, cnpj=cnpj)
+    paginated(ctx, "cannabis", page, size, all_pages, "Produtos de Cannabis", **filters)
+
+
+@cannabis_app.command("get")
+def cannabis_get(
+    ctx: typer.Context, numero_processo: str = typer.Argument(help="processo.numero from `search`")
+) -> None:
+    """Detalhe de um produto de Cannabis, com os códigos dos arquivos (válidos 5 minutos)."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.cannabis.get(numero_processo), f"Produto {numero_processo}")
+
+
+@cannabis_app.command("download")
+def cannabis_download(out: str = OUT) -> None:
+    """Exporta a tabela inteira como planilha (consulta_produto_cannabis.xls)."""
+    with handle_errors(), make_client() as client:
+        write(client.cannabis.download(), out, "consulta_produto_cannabis.xls")
+
+
+@cannabis_app.command("download-anexo")
+def cannabis_download_anexo(
+    tipo: str = typer.Argument(help="rotulo (verified); other kinds untested"),
+    codigo_hash: str = typer.Argument(help="codigoHash from `get`, within 5 minutes"),
+    out: str = OUT,
+) -> None:
+    """Baixa um arquivo do produto (rótulo) pelo codigoHash do detalhe."""
+    with handle_errors(), make_client() as client:
+        write(client.cannabis.download_anexo(tipo, codigo_hash), out, f"cannabis_{tipo}.pdf")
+
+
+# --- restricao --------------------------------------------------------------
+
+
+@restricao_app.command("all")
+def restricao_all(ctx: typer.Context) -> None:
+    """Todas as restrições."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.restricao.all(), "Restrições")
+
+
+@restricao_app.command("cannabis")
+def restricao_cannabis(ctx: typer.Context) -> None:
+    """As restrições que valem para produtos de Cannabis."""
+    with handle_errors(), make_client() as client:
+        emit(ctx, client.restricao.cannabis(), "Restrições (Cannabis)")

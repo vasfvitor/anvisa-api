@@ -10,6 +10,8 @@
   `Client.restricao` (all, cannabis) and `Saude.download_anexo`. `models` has their 59 schemas
   (74 → 133); `CDSituacao.codigo` is a string (overlay 40). The medicamento, cannabis and
   documento searches raise `MissingFilterError` on an empty filter, before any request.
+- CLI: `anvisa bulario`, `medicamento`, `documento`, `cannabis` and `restricao`, one command per
+  method, and `anvisa saude download-anexo`.
 - `Client.get` takes `params` and returns None for an empty body.
 - The `MissingFilterError` message for `MSG-013` no longer says "besides contexto" only.
 

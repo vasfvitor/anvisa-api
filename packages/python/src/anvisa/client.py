@@ -732,7 +732,9 @@ def require_filter(where: str, filters: dict[str, Any], example: str) -> None:
     `mensagens.MSG-013` (fixtures err_msg013_medicamento_produtos, err_msg013_cannabis,
     err_msg013_documento); checked here, before any request."""
     if not filters:
-        raise MissingFilterError(f"{where} needs at least one filter, e.g. {example}")
+        raise MissingFilterError(
+            f"{where} needs at least one filter, e.g. {example} (mensagens.MSG-013)"
+        )
 
 
 def flat_query(page: int, size: int, filters: dict[str, Any]) -> dict[str, str]:

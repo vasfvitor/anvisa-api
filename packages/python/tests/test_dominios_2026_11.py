@@ -1,10 +1,17 @@
 """The five domains ANVISA added on 2026-11-15 (bulario, medicamento, documento, cannabis,
 restricao) and the saude anexo download, against the responses recorded on 2026-11-16."""
 
+import inspect
+import json
+
 import httpx
 import pytest
-from conftest import load, response_for
+from conftest import FIXTURES, load, response_for
+from typer.main import get_command
+from typer.testing import CliRunner
 
+from anvisa import cli
+from anvisa import client as client_module
 from anvisa.auth import Credentials
 from anvisa.client import Client
 from anvisa.errors import ApiError, MissingFilterError, NotFoundError
@@ -204,3 +211,84 @@ def test_saude_unknown_anexo_is_a_500():
         pytest.raises(ApiError, match="For input string"),
     ):
         c.saude.download_anexo("25351321393200637", "1", "x.pdf")
+
+
+# --- CLI --------------------------------------------------------------------
+
+runner = CliRunner()
+
+
+@pytest.fixture
+def fake_cli_client(fake_api, monkeypatch):
+    def make_client():
+        return Client(
+            Credentials("id", "s"),
+            transport=httpx.MockTransport(fake_api.handler),
+            throttle=Throttle(sleep=lambda s: None),
+        )
+
+    monkeypatch.setattr(cli, "make_client", make_client)
+    return fake_api
+
+
+@pytest.mark.parametrize(
+    "group, cls",
+    [
+        ("bulario", client_module.Bulario),
+        ("medicamento", client_module.Medicamento),
+        ("documento", client_module.Documento),
+        ("cannabis", client_module.Cannabis),
+        ("restricao", client_module.Restricao),
+    ],
+)
+def test_every_new_method_has_a_cli_command(group, cls):
+    """CONTRIBUTING: the CLI command is the method name with `-` for `_` (`--all` covers
+    iter_search)."""
+    methods = {
+        name.replace("_", "-")
+        for name, _ in inspect.getmembers(cls, inspect.isfunction)
+        if not name.startswith("_") and name != "iter_search"
+    }
+    commands = set(get_command(cli.app).commands[group].commands)
+    assert methods == commands
+
+
+def test_cli_searches_without_filter_fail_locally(fake_cli_client):
+    for group in ("medicamento", "cannabis"):
+        result = runner.invoke(cli.app, [group, "search"])
+        assert result.exit_code == 1 and "MSG-013" in result.output, group
+    assert fake_cli_client.requests == []
+
+
+def test_cli_bulario_and_medicamento_json(fake_cli_client):
+    result = runner.invoke(cli.app, ["-f", "json", "bulario", "search", "--size", "2"])
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output)[0]["nomeProduto"] == "IRNO"
+    result = runner.invoke(cli.app, ["-f", "json", "medicamento", "formas-fisicas"])
+    assert result.exit_code == 0, result.output
+    assert len(json.loads(result.output)) == 639
+    result = runner.invoke(cli.app, ["-f", "json", "medicamento", "ppam"])
+    assert json.loads(result.output)[:2][0] == "."
+    result = runner.invoke(cli.app, ["-f", "json", "medicamento", "substancias", "dipirona"])
+    assert json.loads(result.output)[0]["descricao"] == "dipirona"
+
+
+def test_cli_documento_listas_and_publicacao(fake_cli_client):
+    result = runner.invoke(cli.app, ["-f", "json", "documento", "listas", "assuntos"])
+    assert result.exit_code == 0, result.output
+    assert len(json.loads(result.output)) == 200  # the fixture keeps the first 200
+    result = runner.invoke(cli.app, ["-f", "json", "documento", "get-publicacao", "1115142"])
+    assert json.loads(result.output)["numeroDou"] == "74"
+
+
+def test_cli_downloads_write_the_files(fake_cli_client, tmp_path):
+    result = runner.invoke(
+        cli.app, ["medicamento", "download", "-n", "tylenol", "-o", str(tmp_path)]
+    )
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "consulta_medicamento.xls").read_bytes() == (
+        FIXTURES / "medicamento_download.xls"
+    ).read_bytes()
+    result = runner.invoke(cli.app, ["cannabis", "download", "-o", str(tmp_path)])
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "consulta_produto_cannabis.xls").exists()

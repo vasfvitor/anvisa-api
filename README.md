@@ -84,6 +84,15 @@ anvisa certificado-medicamento search --solicitante 39809660000153
 anvisa certificado-medicamento linhas     # also: classes, formas, status, concedida-por
 anvisa tabaco search --nome "7 PONTAS"
 anvisa tabaco get 33007111                # codDocumento from search: embalagens, rótulos
+anvisa bulario search --nome novalgina    # 8,855 produtos com bula; no Turnstile here
+anvisa bulario get 3551564                # bula atual e histórico, idProduto from search
+anvisa medicamento search --nome mounjaro # a filter is required (MSG-013)
+anvisa medicamento get 25351880657202129  # apresentações, anexoRotulos, categoria
+anvisa medicamento clones 25351375698201983
+anvisa medicamento substancias dipirona   # also: atc, tarjas, formas-fisicas, restricoes, ...
+anvisa documento search 25351189946201975 # the petições of a processo
+anvisa documento situacoes 5045315217     # a petição's situation history
+anvisa cannabis search --nome canabidiol
 anvisa --format json fila query 167 | jq length
 ```
 
@@ -102,6 +111,9 @@ anvisa saude download 25351279419201172    # DetalheProdutoSaude.xls; download-p
 anvisa certificado download --cnpj 05993698000450   # consulta_certificado.xls (OOXML)
 anvisa tabaco download                     # the whole table, consulta_fumigenos.xls
 anvisa tabaco download-rotulo 3631632      # the label PDF, rotulos[].id from `tabaco get`
+anvisa medicamento download --nome tylenol # consulta_medicamento.xls
+anvisa medicamento download-rotulo 1 25351880657202129 P 41320222   # from `medicamento get`
+anvisa cannabis download-anexo rotulo <codigoHash>   # from `cannabis get`, within 5 minutes
 ```
 
 ```python
