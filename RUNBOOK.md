@@ -225,7 +225,8 @@ abre, e basta seguir o roteiro abaixo.
     2. ler o `git diff`, e o arquivo novo se houver;
     3. commit. A issue fecha sozinha no próximo `drift` (dia 1 ou 15, ou "Run workflow").
   - **`spec/consultas-externas.openapi.json`:** a própria API mudou. Se apareceram endpoints novos,
-    `test_spec.py` falha até eles serem tratados. Pedir ajuda.
+    `test_spec.py` falha até eles serem tratados ou listados em `PENDENTES`, no mesmo arquivo (foi o
+    caminho em 16/11/2026, com 34 endpoints novos). Pedir ajuda.
 
 ### O snapshot da documentação falhou
 

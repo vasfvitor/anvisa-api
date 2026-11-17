@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- `models` has the 59 schemas ANVISA added to the Consultas Externas API on 2026-11-15 (Bulário,
+  Medicamento, Documento, Cannabis, Restrições): 74 → 133. Their 34 operations are not wrapped
+  yet; `tests/test_spec.py` lists them in `PENDENTES`.
+
 ## 0.9.0 (2026-11-16)
 
 - The throttle counts every response against its estimate of the bucket and takes a 429 as an

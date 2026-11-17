@@ -9,8 +9,87 @@ from typing import Annotated, Any
 from pydantic import AwareDatetime, BaseModel, Field
 
 
+class ATC(BaseModel):
+    id: str | None = None
+    descricao: str | None = None
+
+
+class AnexoCannabis(BaseModel):
+    codigoHash: str | None = None
+    nome: str | None = None
+    dtEnvio: AwareDatetime | None = None
+    nuExpediente: str | None = None
+
+
+class AnexoRotulagemDTO(BaseModel):
+    codigoAnexo: float | None = None
+    nomeAnexo: str | None = None
+    tipoArquivo: str | None = None
+    origem: str | None = None
+
+
 class AssuntoDTO(BaseModel):
     id: int | None = None
+    descricao: str | None = None
+
+
+class CDArea(BaseModel):
+    sigla: str | None = None
+    nome: str | None = None
+    recebimento: AwareDatetime | None = None
+    remessa: AwareDatetime | None = None
+
+
+class CDAssunto(BaseModel):
+    codigo: str | None = None
+    descricao: str | None = None
+
+
+class CDEmpresa(BaseModel):
+    cnpj: str | None = None
+    razaoSocial: str | None = None
+
+
+class CDProcesso(BaseModel):
+    numero: str | None = None
+    ativo: bool | None = None
+
+
+class CDSituacao(BaseModel):
+    codigo: float | None = None
+    descricao: str | None = None
+
+
+class CMCategoriaProduto(BaseModel):
+    codigo: str | None = None
+    descricao: str | None = None
+
+
+class CMCategoriaRegulatoria(BaseModel):
+    codigo: float | None = None
+    descricao: str | None = None
+
+
+class CMEmpresa(BaseModel):
+    cnpj: str | None = None
+    razaoSocial: str | None = None
+    numeroAutorizacao: str | None = None
+    cnpjFormatado: str | None = None
+
+
+class CMProcesso(BaseModel):
+    numero: str | None = None
+    situacao: float | None = None
+    numeroProcessoFormatado: str | None = None
+
+
+class CMTipoPriorizacao(BaseModel):
+    codigo: str | None = None
+    descricao: str | None = None
+
+
+class CMTipoProduto(BaseModel):
+    codigo: float | None = None
     descricao: str | None = None
 
 
@@ -42,6 +121,13 @@ class CategoriaAditivo(BaseModel):
     id: int | None = None
     descricao: str | None = None
     ativo: Ativo | None = None
+
+
+class CategoriaProduto(BaseModel):
+    id: str | None = None
+    descricao: str | None = None
+    situacao: str | None = None
+    tipo: int | None = None
 
 
 class Status(Enum):
@@ -116,6 +202,21 @@ class ClasseCertificacao(BaseModel):
     ativa: Ativa | None = None
 
 
+class ConsultaBulaDTO(BaseModel):
+    idProduto: float | None = None
+    numeroRegistro: str | None = None
+    nomeProduto: str | None = None
+    expediente: str | None = None
+    razaoSocial: str | None = None
+    cnpj: str | None = None
+    numeroTransacao: str | None = None
+    data: AwareDatetime | None = None
+    numProcesso: str | None = None
+    idBulaPacienteProtegido: str | None = None
+    idBulaProfissionalProtegido: str | None = None
+    dataAtualizacao: AwareDatetime | None = None
+
+
 class ConsultaEmbalagemDTO(BaseModel):
     tipoEmbalagem: str | None = None
     qtdEmbalagem: float | None = None
@@ -149,9 +250,90 @@ class ConsultaFuncionamento(BaseModel):
     ativa: bool | None = None
 
 
+class DDArea(BaseModel):
+    sigla: str | None = None
+    nome: str | None = None
+    recebimento: AwareDatetime | None = None
+    remessa: AwareDatetime | None = None
+
+
+class DDArquivoParecer(BaseModel):
+    idArquivoParecer: int | None = None
+
+
+class DDAssunto(BaseModel):
+    codigo: str | None = None
+    descricao: str | None = None
+
+
+class DDEmpresa(BaseModel):
+    cnpj: str | None = None
+    razaoSocial: str | None = None
+
+
+class DDPublicacao(BaseModel):
+    id: int | None = None
+    dataResolucao: AwareDatetime | None = None
+    numeroDou: str | None = None
+    dataPublicacao: AwareDatetime | None = None
+    numeroResolucao: str | None = None
+    origem: str | None = None
+    textoPublicacao: str | None = None
+    resolucaoFormatada: str | None = None
+
+
+class DDSituacao(BaseModel):
+    descricao: str | None = None
+    data: AwareDatetime | None = None
+    rotulo: str | None = None
+
+
 class DI(BaseModel):
     id: str | None = None
     entidadeEmissora: str | None = None
+
+
+class DMAProcessoMatriz(BaseModel):
+    nomeProduto: str | None = None
+    codProduto: float | None = None
+
+
+class DMAcessorio(BaseModel):
+    descricao: str | None = None
+    quantidade: float | None = None
+
+
+class DMEmbalagem(BaseModel):
+    tipo: str | None = None
+    observacao: str | None = None
+
+
+class DMEmpresa(BaseModel):
+    cnpj: str | None = None
+    razaoSocial: str | None = None
+    numeroAutorizacao: str | None = None
+
+
+class DMFabricante(BaseModel):
+    fabricante: str | None = None
+    cnpj: str | None = None
+    pais: str | None = None
+    uf: str | None = None
+    cidade: str | None = None
+    etapaFabricacao: str | None = None
+
+
+class DMFabricanteInternacional(BaseModel):
+    fabricante: str | None = None
+    endereco: str | None = None
+    pais: str | None = None
+    etapaFabricacao: str | None = None
+    codigoUnico: str | None = None
+
+
+class DMProcesso(BaseModel):
+    numero: str | None = None
+    situacao: float | None = None
 
 
 class DPSAnexo(BaseModel):
@@ -371,6 +553,12 @@ class FormaFarmaceuticaBasica(BaseModel):
     ativa: Ativa | None = None
 
 
+class FormaFisica(BaseModel):
+    id: int | None = None
+    descricao: str | None = None
+    dataFimVigencia: AwareDatetime | None = None
+
+
 class Conteudo(BaseModel):
     binaryStream: dict[str, Any] | None = None
 
@@ -381,6 +569,28 @@ class Formulario(BaseModel):
     nomeArquivo: str | None = None
     tipoArquivo: str | None = None
     conteudo: Conteudo | None = None
+
+
+class HistoricoBulaDTO(BaseModel):
+    idDocumento: float | None = None
+    expediente: str | None = None
+    idSituacao: float | None = None
+    numeroRegistro: str | None = None
+    descSituacao: str | None = None
+    idBulaPaciente: str | None = None
+    idBulaProfissional: str | None = None
+    priDtSitValDocumento: AwareDatetime | None = None
+    ultDtSitDocumento: AwareDatetime | None = None
+    ultimaSituacaoDocumento: float | None = None
+    nuTransacao: str | None = None
+    dtTransacao: AwareDatetime | None = None
+    historicoCod: float | None = None
+    historicoDtSit: AwareDatetime | None = None
+    descHistSituacao: str | None = None
+    dataPublicacao: AwareDatetime | None = None
+    situacaoAtual: str | None = None
+    ultimaSitVal: bool | None = None
+    histSitVal: bool | None = None
 
 
 class HistoricoIdDTO(BaseModel):
@@ -422,6 +632,11 @@ class Status1(Enum):
     VIGENTE = "VIGENTE"
     INDEFERIDA = "INDEFERIDA"
     CANCELADA = "CANCELADA"
+
+
+class ListaAssuntoSituacao(BaseModel):
+    listaSituacao: list[CDSituacao] | None = None
+    listaAssunto: list[CDAssunto] | None = None
 
 
 class Motivo(BaseModel):
@@ -479,6 +694,16 @@ class PaginationBuilder(BaseModel):
     ] = None
 
 
+class ProcessoClone(BaseModel):
+    nomeProduto: str | None = None
+    numeroProcesso: str | None = None
+    codProduto: float | None = None
+
+
+class ProdutoNotificadoDTO(BaseModel):
+    descricao: str | None = None
+
+
 class RegistroProdutoDTO(BaseModel):
     numeroRegistro: str | None = None
     nomeProduto: str | None = None
@@ -525,6 +750,13 @@ class RegistroProdutoView(BaseModel):
     classeRisco: str | None = None
 
 
+class Restricao(BaseModel):
+    id: int | None = None
+    descricao: str | None = None
+    ativa: Ativa | None = None
+    tipoClassificacao: str | None = None
+
+
 class RotuloDTO(BaseModel):
     id: float | None = None
     descricao: str | None = None
@@ -558,10 +790,31 @@ class SistemaDTO(BaseModel):
     nome: str | None = None
 
 
+class SituacaoExpedienteDTO(BaseModel):
+    situacao: str | None = None
+    rotulo: str | None = None
+    dataInicio: AwareDatetime | None = None
+    dataFim: AwareDatetime | None = None
+    ddPublicacao: str | None = None
+    codHistPublicacao: str | None = None
+    txPublicacao: str | None = None
+
+
 class Sort(BaseModel):
     sorted: bool | None = None
     empty: bool | None = None
     unsorted: bool | None = None
+
+
+class Substancia(BaseModel):
+    id: int | None = None
+    descricao: str | None = None
+
+
+class Tarja(BaseModel):
+    id: int | None = None
+    descricao: str | None = None
+    ativo: Ativo | None = None
 
 
 class TermoGMDNDTO(BaseModel):
@@ -573,9 +826,21 @@ class TermoGMDNDTO(BaseModel):
     ativo: Ativo | None = None
 
 
+class TipoCategoriaRegulatoria(BaseModel):
+    id: int | None = None
+    descricao: str | None = None
+    ativo: Ativo | None = None
+
+
 class TipoEmissao(BaseModel):
     codigo: int | None = None
     descricao: str | None = None
+
+
+class TipoPriorizacao(BaseModel):
+    id: int | None = None
+    nome: str | None = None
+    ativa: Ativa | None = None
 
 
 class TipoProduto(BaseModel):
@@ -597,6 +862,14 @@ class TipoProdutoTabaco(BaseModel):
 class TipoSolicitacaoDTO(BaseModel):
     nome: str | None = None
     valor: str | None = None
+
+
+class TreeFolderDTO(BaseModel):
+    id: str | None = None
+    idLabelDiretorio: int | None = None
+    nome: str | None = None
+    descricao: str | None = None
+    children: list[TreeFolderDTO] | None = None
 
 
 class UdiDTO(BaseModel):
@@ -681,6 +954,46 @@ class ErroApi(BaseModel):
     ] = None
 
 
+class CDPeticao(BaseModel):
+    expediente: str | None = None
+    protocolo: str | None = None
+    remetente: str | None = None
+    assunto: CDAssunto | None = None
+    situacao: CDSituacao | None = None
+
+
+class CMProduto(BaseModel):
+    codigo: float | None = None
+    nome: str | None = None
+    numeroRegistro: str | None = None
+    tipo: CMTipoProduto | None = None
+    categoria: CMCategoriaProduto | None = None
+    situacaoRotulo: str | None = None
+    dataVencimento: AwareDatetime | None = None
+    mesAnoVencimento: str | None = None
+    dataVencimentoRegistro: AwareDatetime | None = None
+    principioAtivo: str | None = None
+    situacaoApresentacao: str | None = None
+    dataRegistro: AwareDatetime | None = None
+    categoriaRegulatoria: CMCategoriaRegulatoria | None = None
+    medicamentoReferencia: str | None = None
+    categoriaProduto: str | None = None
+    complemento: str | None = None
+    tipoAutorizacao: str | None = None
+    tipoPriorizacao: CMTipoPriorizacao | None = None
+    descricaoMedicamentoNotificado: str | None = None
+    categoriaMedicamentoNotificado: str | None = None
+    codigoNotificacao: float | None = None
+    sinonimos: str | None = None
+    indicacoes: str | None = None
+    dataCancelamento: AwareDatetime | None = None
+    dataAtualizacao: AwareDatetime | None = None
+    biossimilar: str | None = None
+    numeroRegistroFormatado: str | None = None
+    mesAnoVencimentoFormatado: str | None = None
+    acancelar: bool | None = None
+
+
 class CampoCertificacao(BaseModel):
     ordem: int | None = None
     campo: str | None = None
@@ -695,6 +1008,25 @@ class ConsultaAssunto(BaseModel):
     tipoProduto: TipoProduto | None = None
     sistemas: list[Sistema] | None = None
     fatoGerador: str | None = None
+
+
+class ConsultaDocumento(BaseModel):
+    tipo: str | None = None
+    dataEntrada: AwareDatetime | None = None
+    empresa: CDEmpresa | None = None
+    processo: CDProcesso | None = None
+    peticao: CDPeticao | None = None
+    areas: list[CDArea] | None = None
+    sei: bool | None = None
+    dataAtualizacao: AwareDatetime | None = None
+
+
+class ConsultaProduto(BaseModel):
+    ordem: float | None = None
+    produto: CMProduto | None = None
+    empresa: CMEmpresa | None = None
+    processo: CMProcesso | None = None
+    dataCarga: AwareDatetime | None = None
 
 
 class ConsultaProdutoSaude(BaseModel):
@@ -735,6 +1067,165 @@ class ConsultaTabacoDTO(BaseModel):
     idProduto: int | None = None
     rotulos: list[RotuloDTO] | None = None
     processosMedidaCautelar: list[str] | None = None
+
+
+class DDPeticao(BaseModel):
+    expediente: str | None = None
+    dataEntrada: AwareDatetime | None = None
+    protocolo: str | None = None
+    assunto: DDAssunto | None = None
+    situacao: DDSituacao | None = None
+    area: DDArea | None = None
+    dataPublicacao: AwareDatetime | None = None
+    resolucao: str | None = None
+    dataResolucao: AwareDatetime | None = None
+    resolucoes: dict[str, list[DDPublicacao]] | None = None
+    vazioResolucao: int | None = None
+    conhecimentoCarga: str | None = None
+    lastPublicacao: DDPublicacao | None = None
+    arquivoParecer: DDArquivoParecer | None = None
+    lastResolucaoFormatado: str | None = None
+    treeFolders: TreeFolderDTO | None = None
+
+
+class DDProcesso(BaseModel):
+    numero: str | None = None
+    peticao: DDPeticao | None = None
+
+
+class DMAcondicionamento(BaseModel):
+    codigo: float | None = None
+    apresentacao: str | None = None
+    dsValidade: str | None = None
+    volume: str | None = None
+    unidadeMedida: str | None = None
+    insumos: str | None = None
+    principiosAtivos: str | None = None
+    embalagemPrimaria: DMEmbalagem | None = None
+    embalagemSecundaria: DMEmbalagem | None = None
+    fabricantesNacionais: list[DMFabricante] | None = None
+    fabricantesInternacionais: list[DMFabricanteInternacional] | None = None
+
+
+class DMApresentacao(BaseModel):
+    codigo: float | None = None
+    apresentacao: str | None = None
+    formasFarmaceuticas: list[str] | None = None
+    numero: float | None = None
+    tonalidade: str | None = None
+    dataPublicacao: AwareDatetime | None = None
+    validade: str | None = None
+    tipoValidade: str | None = None
+    registro: str | None = None
+    principiosAtivos: list[str] | None = None
+    complemento: str | None = None
+    qtdUnidadeMedida: str | None = None
+    embalagemPrimaria: DMEmbalagem | None = None
+    embalagemSecundaria: DMEmbalagem | None = None
+    embalagemPrimariaTodas: list[DMEmbalagem] | None = None
+    embalagemSecundariaTodas: list[DMEmbalagem] | None = None
+    envoltorios: list[str] | None = None
+    acessorios: list[DMAcessorio] | None = None
+    acondicionamento: str | None = None
+    marcas: list[str] | None = None
+    fabricantesNacionais: list[DMFabricante] | None = None
+    fabricantesInternacionais: list[DMFabricanteInternacional] | None = None
+    viasAdministracao: list[str] | None = None
+    ifaUnico: bool | None = None
+    conservacao: list[str] | None = None
+    restricaoPrescricao: list[str] | None = None
+    restricaoUso: list[str] | None = None
+    destinacao: list[str] | None = None
+    restricaoHospitais: str | None = None
+    tarja: str | None = None
+    medicamentoReferencia: str | None = None
+    apresentacaoFracionada: str | None = None
+    dataVencimentoRegistro: AwareDatetime | None = None
+    inativa: bool | None = None
+    ativa: bool | None = None
+    emAnalise: bool | None = None
+    tipoAutorizacao: str | None = None
+
+
+class DetalheDocumento(BaseModel):
+    empresa: DDEmpresa | None = None
+    processo: DDProcesso | None = None
+    documentoPai: DetalheDocumento | None = None
+    peticoes: list[DDPeticao] | None = None
+    resolucoes: dict[str, list[DDPublicacao]] | None = None
+    lastPublicacao: DDPublicacao | None = None
+    arquivoParecer: DDArquivoParecer | None = None
+    lastResolucaoFormatado: str | None = None
+    registroRlAssuntoDocumento: DDPublicacao | None = None
+    treeFolders: TreeFolderDTO | None = None
+
+
+class DetalheProdutoCannabisDTO(BaseModel):
+    codigoProduto: float | None = None
+    tipoProduto: float | None = None
+    dataProduto: AwareDatetime | None = None
+    nomeComercial: str | None = None
+    classesTerapeuticas: list[str] | None = None
+    numeroRegistro: str | None = None
+    dataVencimento: AwareDatetime | None = None
+    mesAnoVencimento: str | None = None
+    dataVencimentoRegistro: AwareDatetime | None = None
+    principioAtivo: str | None = None
+    medicamentoReferencia: str | None = None
+    categoriaRegulatoria: str | None = None
+    classeTerapeutica: str | None = None
+    atc: str | None = None
+    processosMedidaCautelar: list[str] | None = None
+    dataAtualizacao: AwareDatetime | None = None
+    empresa: DMEmpresa | None = None
+    processo: DMProcesso | None = None
+    apresentacoes: list[DMApresentacao] | None = None
+    rotulos: list[float] | None = None
+    codigosRotulo: list[AnexoCannabis] | None = None
+    codigosModeloConsentimento: list[AnexoCannabis] | None = None
+    codigosFolhetoInformativo: list[AnexoCannabis] | None = None
+
+
+class DetalheProdutoMedicamento(BaseModel):
+    codigoProduto: float | None = None
+    codigoNotificacao: float | None = None
+    tipoProduto: float | None = None
+    dataProduto: AwareDatetime | None = None
+    nomeComercial: str | None = None
+    classesTerapeuticas: list[str] | None = None
+    atcs: list[str] | None = None
+    numeroRegistro: str | None = None
+    dataVencimento: AwareDatetime | None = None
+    mesAnoVencimento: str | None = None
+    codigoParecerPublico: str | None = None
+    codigoBulaPaciente: str | None = None
+    codigoBulaProfissional: str | None = None
+    dataVencimentoRegistro: AwareDatetime | None = None
+    principioAtivo: str | None = None
+    medicamentoReferencia: str | None = None
+    categoriaRegulatoria: str | None = None
+    classeTerapeutica: str | None = None
+    atc: str | None = None
+    tipoPriorizacao: str | None = None
+    complemento: str | None = None
+    descricaoMedicamentoNotificado: str | None = None
+    categoriaMedicamentoNotificado: str | None = None
+    processosMedidaCautelar: list[str] | None = None
+    empresa: DMEmpresa | None = None
+    processo: DMProcesso | None = None
+    apresentacoes: list[DMApresentacao] | None = None
+    acondicionamentos: list[DMAcondicionamento] | None = None
+    rotulos: list[str] | None = None
+    anexoRotulos: list[AnexoRotulagemDTO] | None = None
+    existeBula: bool | None = None
+    tipoAutorizacao: str | None = None
+    processoMatriz: DMAProcessoMatriz | None = None
+    isProcessoClone: bool | None = None
+    sinonimos: str | None = None
+    indicacoes: str | None = None
+    codigoCategoriaRegulatoria: float | None = None
+    dataCancelamento: AwareDatetime | None = None
+    biossimilar: str | None = None
 
 
 class DispositivoDTO(BaseModel):
@@ -926,6 +1417,48 @@ class PageConsultaAssunto(BaseModel):
     empty: bool | None = None
 
 
+class PageConsultaBulaDTO(BaseModel):
+    totalPages: int | None = None
+    totalElements: int | None = None
+    number: int | None = None
+    size: int | None = None
+    numberOfElements: int | None = None
+    content: list[ConsultaBulaDTO] | None = None
+    sort: Sort | None = None
+    first: bool | None = None
+    last: bool | None = None
+    pageable: PageableObject | None = None
+    empty: bool | None = None
+
+
+class PageConsultaDocumento(BaseModel):
+    totalPages: int | None = None
+    totalElements: int | None = None
+    number: int | None = None
+    size: int | None = None
+    numberOfElements: int | None = None
+    content: list[ConsultaDocumento] | None = None
+    sort: Sort | None = None
+    first: bool | None = None
+    last: bool | None = None
+    pageable: PageableObject | None = None
+    empty: bool | None = None
+
+
+class PageConsultaProduto(BaseModel):
+    totalPages: int | None = None
+    totalElements: int | None = None
+    number: int | None = None
+    size: int | None = None
+    numberOfElements: int | None = None
+    content: list[ConsultaProduto] | None = None
+    sort: Sort | None = None
+    first: bool | None = None
+    last: bool | None = None
+    pageable: PageableObject | None = None
+    empty: bool | None = None
+
+
 class PageConsultaProdutoSaude(BaseModel):
     totalPages: int | None = None
     totalElements: int | None = None
@@ -968,6 +1501,20 @@ class PageDPSApresentacao(BaseModel):
     empty: bool | None = None
 
 
+class PageHistoricoBulaDTO(BaseModel):
+    totalPages: int | None = None
+    totalElements: int | None = None
+    number: int | None = None
+    size: int | None = None
+    numberOfElements: int | None = None
+    content: list[HistoricoBulaDTO] | None = None
+    sort: Sort | None = None
+    first: bool | None = None
+    last: bool | None = None
+    pageable: PageableObject | None = None
+    empty: bool | None = None
+
+
 class PageNomeTecnicoDTO(BaseModel):
     totalPages: int | None = None
     totalElements: int | None = None
@@ -975,6 +1522,34 @@ class PageNomeTecnicoDTO(BaseModel):
     size: int | None = None
     numberOfElements: int | None = None
     content: list[NomeTecnicoDTO] | None = None
+    sort: Sort | None = None
+    first: bool | None = None
+    last: bool | None = None
+    pageable: PageableObject | None = None
+    empty: bool | None = None
+
+
+class PageProdutoNotificadoDTO(BaseModel):
+    totalPages: int | None = None
+    totalElements: int | None = None
+    number: int | None = None
+    size: int | None = None
+    numberOfElements: int | None = None
+    content: list[ProdutoNotificadoDTO] | None = None
+    sort: Sort | None = None
+    first: bool | None = None
+    last: bool | None = None
+    pageable: PageableObject | None = None
+    empty: bool | None = None
+
+
+class PageSubstancia(BaseModel):
+    totalPages: int | None = None
+    totalElements: int | None = None
+    number: int | None = None
+    size: int | None = None
+    numberOfElements: int | None = None
+    content: list[Substancia] | None = None
     sort: Sort | None = None
     first: bool | None = None
     last: bool | None = None
@@ -1010,6 +1585,13 @@ class PageUdiDTO(BaseModel):
     empty: bool | None = None
 
 
+class DetalheBulaDTO(BaseModel):
+    registroProduto: str | None = None
+    nomeProduto: str | None = None
+    historico: PageHistoricoBulaDTO | None = None
+    bulaAtual: HistoricoBulaDTO | None = None
+
+
 class DetalheProdutoSaude(BaseModel):
     produto: str | None = None
     empresa: DPSEmpresa | None = None
@@ -1032,3 +1614,7 @@ class DetalheProdutoSaude(BaseModel):
     dataInicioVigencia: AwareDatetime | None = None
     codigoSituacaoAssuntoDoc: float | None = None
     situacao: str | None = None
+
+
+TreeFolderDTO.model_rebuild()
+DetalheDocumento.model_rebuild()
