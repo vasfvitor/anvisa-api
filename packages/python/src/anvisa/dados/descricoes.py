@@ -106,10 +106,15 @@ _PRODUTOS_COLS = {
         "vazia nas notificações e nos saneantes."
     ),
     "gluten": (
-        '"Sim", "Não" ou "Varia" (apresentações divergem), pelo rótulo; nulo quando o '
-        "alimento não declara e nos saneantes."
+        '"Sim", "Não", "Varia" (uma apresentação diz Sim e outra Não) ou "Não informado" (uma '
+        "apresentação traz um valor que não é Sim nem Não, e nenhuma diz Sim), como a empresa "
+        'declara no rótulo; "Não" só quando todas as apresentações que declaram dizem Não; nulo '
+        "quando o alimento não declara e nos saneantes."
     ),
-    "lactose": '"Sim", "Não" ou "Varia", pelo rótulo; nulo quando não declara e nos saneantes.',
+    "lactose": (
+        '"Sim", "Não", "Varia" ou "Não informado", com a mesma regra de gluten, como a empresa '
+        "declara no rótulo; nulo quando não declara e nos saneantes."
+    ),
     "contem": (
         'Alergênicos que o rótulo declara conter ("Contém" ou "Contém derivado de"), nomes '
         "legais em ordem, juntando todas as apresentações; nulo quando não declara."

@@ -6,6 +6,17 @@ when known. The package's own `CHANGELOG.md` records the Python API; a data chan
 no package release still appears here. `schema_version` in the manifest only changes when a
 consumer must change to keep reading it; everything below has been additive, so it is still 1.
 
+## 2026-11-24
+
+- **`produtos` and `alimentos_por_produto`**: `gluten` and `lactose` can now be **Não
+  informado**, the summary for a product where some apresentação declares a value other than
+  Sim or Não and none says Sim. Each ` | ` part of `intolerancias` is read as rótulo and value
+  at its last ` - `, the value trimmed and compared without case or accents, which is the rule
+  contém (anvisa-dash) applies. Before, a substring match read a value such as "Não informado"
+  as Não, and a product mixing Não with another value came out Não. Today's data has only Sim
+  and Não, so no value changed: on the build of 2026-11-21 (`20261121T015219Z`), old and new
+  rules agree on all 51,788 products of `alimentos_resultado`.
+
 ## 2026-11-03
 
 - **`produtos_saude_por_produto`**: the descriptions of `tipo` and `ativo` no longer say that a

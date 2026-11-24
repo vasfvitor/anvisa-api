@@ -57,9 +57,27 @@ def _alergia(resultado: str) -> str:
     # declare anything). Apresentações of one product can disagree (227 products): the lists
     # join every apresentação, an item some apresentação contains leaves "pode conter" and
     # "não contém", and alergia_varia says so. Same rules as the site's resumirAlergia.
+    # gluten and lactose: each " | " part of `intolerancias` is "rótulo - valor", split at its
+    # last " - "; the rótulo picks the term (gluten before lactose) and the valor, trimmed and
+    # normalised, is sim, nao or anything else ("?", not informed; an empty one is skipped).
+    # Sim and Não together are Varia, then Sim, then Não informado, and Não only when every
+    # declared valor is Não: an unknown valor never reads as "sem glúten".
     rotulo = "lower(strip_accents(rotulo))"
-    sinal = "CASE WHEN {sim} AND {nao} THEN 'Varia' WHEN {sim} THEN 'Sim' WHEN {nao} THEN 'Não' END"
-    flag = "bool_or(lower(strip_accents(intolerancias)) LIKE '%{termo} - {valor}%')"
+    sinal = (
+        "CASE WHEN {t}_sim AND {t}_nao THEN 'Varia' WHEN {t}_sim THEN 'Sim' "
+        "WHEN {t}_outro THEN 'Não informado' WHEN {t}_nao THEN 'Não' END"
+    )
+    flags = ", ".join(
+        f"bool_or(termo = '{t}' AND valor {cond}) AS {t}_{nome}"
+        for t in ("gluten", "lactose")
+        for nome, cond in (
+            ("sim", "= 'sim'"),
+            ("nao", "= 'nao'"),
+            ("outro", "NOT IN ('sim', 'nao')"),
+        )
+    )
+    aparar = r"regexp_replace({}, '^\s+|\s+$', '', 'g')"  # JS trim(), not only spaces
+    par = "regexp_extract(p, '(?s)^(.*) - (.*)$', {})"  # greedy: at the last " - "
     return f"""
         WITH grupos AS (
           SELECT co_produto, trim(g) AS g
@@ -84,19 +102,29 @@ def _alergia(resultado: str) -> str:
             coalesce(list_sort(list(DISTINCT item) FILTER (WHERE {rotulo} = 'nao contem')), [])
               AS nao
           FROM itens GROUP BY co_produto),
+        pares AS (
+          SELECT co_produto, lower(strip_accents({par.format(1)})) AS rotulo,
+            lower(strip_accents({aparar.format(par.format(2))})) AS valor
+          FROM (SELECT co_produto, {aparar.format("p")} AS p
+                FROM (SELECT co_produto, unnest(string_split(intolerancias, '|')) AS p
+                      FROM {resultado}))),
+        termos AS (
+          SELECT co_produto, {flags}
+          FROM (SELECT co_produto,
+                  CASE WHEN rotulo LIKE '%gluten%' THEN 'gluten'
+                       WHEN rotulo LIKE '%lactose%' THEN 'lactose' END AS termo,
+                  CASE WHEN valor IN ('sim', 'nao') THEN valor ELSE '?' END AS valor
+                FROM pares WHERE valor <> '')
+          GROUP BY co_produto),
         sinais AS (
           SELECT co_produto,
-            {flag.format(termo="gluten", valor="sim")} AS g_sim,
-            {flag.format(termo="gluten", valor="nao")} AS g_nao,
-            {flag.format(termo="lactose", valor="sim")} AS l_sim,
-            {flag.format(termo="lactose", valor="nao")} AS l_nao,
             count(DISTINCT nullif(alergenicos, '')) > 1 OR count(DISTINCT intolerancias) > 1
               AS varia,
             count(nullif(alergenicos, '')) + count(intolerancias) > 0 AS declara
           FROM {resultado} GROUP BY co_produto)
         SELECT co_produto,
-          {sinal.format(sim="g_sim", nao="g_nao")} AS gluten,
-          {sinal.format(sim="l_sim", nao="l_nao")} AS lactose,
+          {sinal.format(t="gluten")} AS gluten,
+          {sinal.format(t="lactose")} AS lactose,
           CASE WHEN declara THEN coalesce(contem, []) END AS contem,
           CASE WHEN declara THEN
             list_filter(coalesce(pode, []), x -> NOT list_contains(coalesce(contem, []), x)) END
@@ -106,7 +134,7 @@ def _alergia(resultado: str) -> str:
                                                AND NOT list_contains(coalesce(pode, []), x)) END
             AS nao_contem,
           CASE WHEN declara THEN varia END AS alergia_varia
-        FROM sinais LEFT JOIN listas USING (co_produto)"""
+        FROM sinais LEFT JOIN listas USING (co_produto) LEFT JOIN termos USING (co_produto)"""
 
 
 def _saneantes_unicos(saneantes: str) -> str:

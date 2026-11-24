@@ -2381,6 +2381,48 @@ def test_allergen_summary_rules(tmp_path):
 
 
 @needs_duckdb
+def test_gluten_and_lactose_values_other_than_sim_or_nao(tmp_path):
+    """gluten and lactose follow the site's rule (anvisa-dash alergia.ts, sinal and declarado):
+    the valor after the last " - " of each part, trimmed and normalised, is sim, nao or not
+    informed; Sim with Não is Varia, then Sim, then Não informado, then Não. The live data has
+    only Sim and Não; the old substring match read "Não informado" and "Não declarado" as Não."""
+    import duckdb
+
+    con = duckdb.connect()
+    con.execute(
+        "CREATE TABLE r AS SELECT * FROM (VALUES "
+        "(1, 'Contém Glúten - Não informado | Contém Lactose - Não declarado'), "
+        "(2, 'Contém Glúten - Não | Contém Lactose - Não'), "
+        "(2, 'Contém Glúten - Talvez | Contém Lactose - Não'), "
+        "(3, 'Contém Glúten - Sim'), "
+        "(3, 'Contém Glúten - Desconhecido'), "
+        "(4, 'Contém Glúten -  | Contém Lactose - '), "
+        "(5, ' CONTÉM GLÚTEN - não\t|Contém Lactose - SIM '), "
+        "(6, 'Contém Glúten - Sim | Contém Lactose - Não'), "
+        "(6, 'Contém Glúten - Não | Contém Lactose - Talvez'), "
+        "(7, 'Contém Glúten - Trigo - Não'), "
+        "(8, NULL)) t(co_produto, intolerancias)"
+    )
+    con.execute("ALTER TABLE r ADD COLUMN alergenicos VARCHAR DEFAULT ''")
+    got = {
+        r[0]: r[1:]
+        for r in con.execute(
+            f"SELECT co_produto, gluten, lactose FROM ({derivar._alergia('r')})"
+        ).fetchall()
+    }
+    assert got == {
+        1: ("Não informado", "Não informado"),
+        2: ("Não informado", "Não"),  # Não with another valor is not Não
+        3: ("Sim", None),  # Sim wins over a valor not informed
+        4: (None, None),  # an empty valor declares nothing
+        5: ("Não", "Sim"),  # case, accents and surrounding whitespace do not matter
+        6: ("Varia", "Não informado"),
+        7: ("Não", None),  # the valor is after the last " - "
+        8: (None, None),
+    }
+
+
+@needs_duckdb
 def test_empresas_on_the_fixtures(fake_dados, tmp_path):
     """One row per 14-digit CNPJ across the three product tables, the measures' targets and
     the food packers; counts are products, and only a real CNPJ makes a company."""
