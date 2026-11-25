@@ -76,11 +76,15 @@ jobs:
       # GitHub's artifact service sometimes answers "No artifacts named github-pages were found" right after a
       # successful upload (2026-11-24 and 25 here). One retry two minutes later, never more: if it fails too,
       # the job is red as before. The age check below runs when either attempt published.
+      # deploy-pages cancels its own deployment when it fails or times out, so the retry does not meet a
+      # pending one; that error comes before any deployment is created anyway.
       - name: Deploy
         if: hashFiles('dist/manifest.json') != ''
         id: deploy
         continue-on-error: true
         uses: actions/deploy-pages@v5
+        with:
+          timeout: 240000 # 4 min per attempt (default 10), so both fit in the job's limit
       - name: Wait before the one retry of the deploy
         if: steps.deploy.outcome == 'failure'
         run: sleep 120
@@ -88,6 +92,8 @@ jobs:
         if: steps.deploy.outcome == 'failure'
         id: deploy_retry
         uses: actions/deploy-pages@v5
+        with:
+          timeout: 240000 # 4 min per attempt (default 10), so both fit in the job's limit
       # "Nothing changed" every day would keep this job green forever if ANVISA's ETL stopped.
       # Each source is held to its own limit (catalog max_age_days: 7 days for the weekday files,
       # 45 for CMED), since one file still moving hid eight others stalled from 2026-10-13. A

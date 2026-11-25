@@ -196,9 +196,14 @@ Build falha, o passo da idade não roda, e a issue não muda naquele dia.
   rede do PyPI, rodar de novo.
 - **"Read the Pages URL" falhou:** o Pages deste repo não está configurado. Settings → Pages → Source:
   GitHub Actions.
-- **Passou de 20 minutos:** rodar de novo. Se repetir, o servidor da ANVISA está lento.
-- **Upload ou Deploy falhou:** rodar de novo. O site anterior continua. Nesse caso, o passo da idade não
-  roda, mas o de downloads que falharam roda.
+- **Passou de 25 minutos:** rodar de novo. Se repetir, o servidor da ANVISA está lento.
+- **Deploy falhou e "Retry the deploy" passou:** nada a fazer, o site foi publicado. O erro da primeira
+  tentativa continua marcado no resumo do run. A que motivou a segunda tentativa (24 e 25/11/2026) é
+  `Error: No artifacts named "github-pages" were found for this workflow run.`, seguida de
+  `Fetching artifact metadata failed. Is githubstatus.com reporting issues with API requests, Pages, or Actions? Please re-run the deployment at a later time.`
+- **Upload falhou, ou Deploy e "Retry the deploy" falharam:** rodar de novo só o job
+  (`gh run rerun <id> --failed -R vasfvitor/anvisa-api`). O site anterior continua. Nesse caso, o passo
+  da idade não roda, mas o de downloads que falharam roda. Cada tentativa espera no máximo 4 minutos.
 
 ## drift
 
