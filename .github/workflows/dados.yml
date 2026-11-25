@@ -36,10 +36,10 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     environment:
       name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
+      url: ${{ steps.deploy.outputs.page_url || steps.deploy_retry.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
       - name: Install uv and Python 3.12
@@ -73,9 +73,20 @@ jobs:
         uses: actions/upload-pages-artifact@v5
         with:
           path: dist
+      # GitHub's artifact service sometimes answers "No artifacts named github-pages were found" right after a
+      # successful upload (2026-11-24 and 25 here). One retry two minutes later, never more: if it fails too,
+      # the job is red as before. The age check below runs when either attempt published.
       - name: Deploy
         if: hashFiles('dist/manifest.json') != ''
         id: deploy
+        continue-on-error: true
+        uses: actions/deploy-pages@v5
+      - name: Wait before the one retry of the deploy
+        if: steps.deploy.outcome == 'failure'
+        run: sleep 120
+      - name: Retry the deploy
+        if: steps.deploy.outcome == 'failure'
+        id: deploy_retry
         uses: actions/deploy-pages@v5
       # "Nothing changed" every day would keep this job green forever if ANVISA's ETL stopped.
       # Each source is held to its own limit (catalog max_age_days: 7 days for the weekday files,
